@@ -1,0 +1,315 @@
+import * as PIXI from "pixi";
+import { LoadAsset, LoadSVG } from "./assets.js";
+import { Key, makeInput } from "./Input.js";
+
+/**
+ * 循环的控制器对象，用于控制该循环
+ * @example
+ * loop.stop(); // 从下一帧开始，停止该循环
+ */
+export interface LoopController {
+    /** 从下一帧起，停止该循环 */
+    stop(): void,
+}
+
+export type CoDoGenerator = Generator<void, void, LoopController>;
+
+/** @async 启动 JSTG 游戏 */
+export async function LaunchGame(options: {
+    /** @default 640 */
+    stageWidth?: number,
+    /** @default 480 */
+    stageHeight?: number,
+    /**
+     * 此值为假时，不会自动调用 input.update()  
+     * 默认的优先级是65535
+     * @default true
+     */
+    autoUpdateInput?: boolean,
+    pixiApplicationOptions?: Partial<PIXI.ApplicationOptions>,
+    onResizeWindow?: (app: PIXI.Application) => any,
+} = {}) {
+
+    const app = new PIXI.Application();
+
+    const stageWidth = options.stageWidth ?? 640;
+    const stageHeight = options.stageHeight ?? 480;
+    /** 宽高比 */
+    const stageProportion = stageWidth / stageHeight;
+
+    let rendererResolution = Math.min(window.innerWidth, window.innerHeight * stageProportion) / stageWidth;
+    if (options.onResizeWindow) {
+        window.addEventListener("resize", () => options.onResizeWindow!(app));
+    } else {
+        let isResizing = false;
+        window.addEventListener("resize", () => {
+            if (isResizing) return;
+            isResizing = true;
+            setTimeout(() => {
+                rendererResolution = Math.min(window.innerWidth, window.innerHeight * stageProportion) / stageWidth;
+                app.renderer.resize(stageWidth, stageHeight, rendererResolution);
+                isResizing = false;
+            }, 200);
+        });
+    }
+
+    await app.init(options.pixiApplicationOptions ?? {
+        backgroundColor: "#ffffff",
+        preference: "webgpu",
+    });
+    // 重设画面尺寸，填充整个窗口
+    app.renderer.resize(stageWidth, stageHeight, rendererResolution);
+    PIXI.sayHello(app.renderer.name); // 仪式感这块，别的我不知道但我就知道在控制台输出这么一条五彩斑斓的信息实在太酷了
+    app.canvas.style.display = "flex";
+    document.body.appendChild(app.canvas);
+
+
+    await PIXI.Assets.init({
+        texturePreference: {
+            resolution: window.devicePixelRatio,
+            format: ["avif", "webp", "png", "jpg", "jpeg"],
+        },
+    });
+
+    app.ticker.maxFPS = 60;
+
+    //#region game
+
+    let timeScale: number = 1;
+
+    function forever(
+        /** 要循环执行的回调函数 */
+        fn: (loop: LoopController) => any,
+        /** 执行优先级，每帧都会先执行优先级较大的脚本 */
+        priority: number = 0
+    ): LoopController {
+        const loop: LoopController = {
+            stop,
+        };
+        const tickerFn = () => fn(loop);
+        function stop() {
+            app.ticker.remove(tickerFn);
+        }
+        app.ticker.add(tickerFn, undefined, priority);
+        return loop;
+    };
+
+    function coDo(
+        /**
+         * 要执行的生成器实例  
+         * 注意：应为生成器实例，而非生成器函数！
+         * @example
+         * // 通过自调用的方式构造生成器
+         * (function*() {
+         *     // 干啥干啥
+         * })()
+         */
+        generator: CoDoGenerator,
+        /** 执行优先级，每帧都会先执行优先级较大的脚本 */
+        priority: number = 0
+    ): LoopController {
+        return forever(loop => {
+            const result = generator.next();
+            if (result.done) {
+                loop.stop();
+            }
+        });
+    }
+
+    const input = makeInput();
+    forever(() => input._update(), 30000);
+
+    function* Sleep(
+        /** 要等待的时间（帧） */
+        timeFrame: number
+    ): CoDoGenerator {
+        while (timeFrame > 0) {
+            timeFrame -= timeScale;
+            yield;
+        }
+    }
+
+    const destroyOption = { children: true };
+
+    class Entity {
+        readonly sprites: PIXI.ContainerChild[] = [];
+        readonly loops: LoopController[] = [];
+        constructor (
+            /** 
+             * @readonly
+             * 与该Entity生命周期所绑定的对象，通常是一个 PIXI.Sprite  
+             * 应当把该绘图对象的所有权完全移交给该 Entity
+             */
+            ...sprites: PIXI.ContainerChild[]
+        ) {
+            this.bindLife(...sprites);
+        }
+
+        /** 把一批对象的生命周期绑定到该实体上 */
+        bindLife(...sprites: PIXI.ContainerChild[]) {
+            this.sprites.push(...sprites);
+            app.stage.addChild(...sprites);
+            return this;
+        }
+
+        /** 销毁该实体
+         * @alias die */
+        destroy() {
+            app.stage.removeChild(...this.sprites);
+            this.sprites.forEach(sprite => sprite.destroy(destroyOption));
+            this.loops.forEach(loop => loop.stop());
+        }
+
+        /** 销毁该实体
+         * @alias destroy */
+        die() {
+            this.destroy();
+        }
+
+        /**
+         * 每帧执行一次给定的回调函数，在该实体死亡后自动停止回调函数。  
+         * @example
+         * let t = 0;
+         * myDammaku.forever(loop => {
+         *     myDanmaku.step(2);
+         *     myDanmaku.boundaryDelete();
+         *     t++;
+         *     if (t >= 200) {
+         *         myDanmaku.die(); // 自动停止该函数
+         *     }
+         * });
+         */
+        forever(
+            /** 要循环执行的回调函数 */
+            fn: (loop: LoopController) => any,
+            /** 执行优先级，每帧都会先执行优先级较大的脚本 */
+            priority: number = 0
+        ): LoopController {
+            const loop = forever(fn, priority);
+            this.loops.push(loop);
+            return loop;
+        };
+
+        /**
+         * 启动一个生成器函数，可以简单理解为启动一个协程，可以编写 Scratch 风格的代码，会在实体死亡时自动停止运行  
+         * @example 
+         * myPerson.coDo(function*() {
+         *     console.log("准备……"); // 这行代码立刻执行
+         *     yield* Sleep(60); // 这行代码让该脚本暂停 1 秒（60帧）
+         *     myPerson.die();
+         *     yield;
+         *     // 这后面的代码不会执行
+         *     console.log("计时开始"); // 然后，执行这行代码
+         *     for (let t = 120; t >= 0; t--) {
+         *         console.log(t); // 输出 t 的值
+         *         yield; // 这行代码让脚本暂停并等待下一帧
+         *     }
+         *     console.log("结束"); // 上述循环总共执行了 120 帧之后，才会执行这行代码
+         * });
+         */
+        coDo(
+            /**
+             * 要执行的生成器实例  
+             * 注意：应为生成器实例，而非生成器函数！
+             * @example
+             * // 通过自调用的方式构造生成器
+             * (function*() {
+             *     // 干啥干啥
+             * })()
+             */
+            generator: CoDoGenerator,
+            /** 执行优先级，每帧都会先执行优先级较大的脚本 */
+            priority: number = 0
+        ): LoopController {
+            const loop = coDo(generator, priority);
+            this.loops.push(loop);
+            return loop;
+        }
+    }
+
+    //#endregion
+
+    return {
+        /** PIXI.Application 实例 */
+        app,
+        /**
+         * 每帧执行一次给定的回调函数。  
+         * @example
+         * let t = 0;
+         * forever(loop => {
+         *     myDanmaku.step(2);
+         *     myDanmaku.boundaryDelete();
+         *     t++;
+         *     if (t >= 200) {
+         *         loop.stop();
+         *         myDanmaku.die();
+         *     }
+         * });
+         */
+        forever,
+        /**
+         * 启动一个生成器函数，可以简单理解为启动一个协程，可以编写 Scratch 风格的代码
+         * @example 
+         * coDo((function*() {
+         *     console.log("准备……"); // 这行代码立刻执行
+         *     yield* Sleep(60); // 这行代码让该脚本暂停 1 秒（60帧）
+         *     console.log("计时开始"); // 然后，执行这行代码
+         *     for (let t = 120; t >= 0; t--) {
+         *         console.log(t); // 输出 t 的值
+         *         yield; // 这行代码让脚本暂停并等待下一帧
+         *     }
+         *     console.log("结束"); // 上述循环总共执行了 120 帧之后，才会执行这行代码
+         * })());
+         */
+        coDo,
+        /**
+         * 用来获取用户输入，例如检测键盘上的某个键是否按下  
+         * 按键名称为实体建码，即 HTML 按键事件的 code 属性
+         * @see {@link [MDN KeyboardEvent.code](https://developer.mozilla.org/zh-CN/docs/Web/API/KeyboardEvent/code)}
+         * @example
+         * if (input.isHold(JSTG.Key.ArrowUp)) {
+         *     // 如果现在正在按着上方向键，干啥干啥
+         * }
+         * if (input.isDown(JSTG.Key.KeyX)) {
+         *     // 如果现在是刚按下 X 键的那一帧，干啥干啥
+         * }
+         * if (input.isIdle(JSTG.Key.ShiftLeft)) {
+         *     // 如果现在没按左 Shift，干啥干啥
+         * }
+         * // 可以引用 JSTG.Key ，如果愿意的话也可以直接写字符串字面量（不推荐）
+         */
+        input,
+        //#region game.timeScale
+        /** 游戏的时间流速，可以用来做慢镜头啥的  
+         * @alias ts */
+        get timeScale() {
+            return timeScale;
+        },
+        /** 游戏的时间流速，可以用来做慢镜头啥的  
+         * @alias ts */
+        set timeScale(v: number) {
+            timeScale = v;
+        },
+        /** 游戏的时间流速，可以用来做慢镜头啥的  
+         * @alias timeScale */
+        get ts() {
+            return timeScale;
+        },
+        /** 游戏的时间流速，可以用来做慢镜头啥的  
+         * @alias timeScale */
+        set ts(v: number) {
+            timeScale = v;
+        },
+        //#endregion
+        /** @generator 等待 timeFrame 帧 */
+        Sleep,
+        Entity,
+    };
+
+};
+
+export {
+    LoadAsset,
+    LoadSVG,
+    Key,
+}

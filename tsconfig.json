@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+        "target": "es2020",
+        "module": "es2020",
+        "outDir": "dist",
+        "rootDir": "src",
+        "strict": true,
+		"newLine": "crlf",
+        "noImplicitReturns": true,
+        "noImplicitOverride": true,
+        "incremental": true,
+        "declaration": true,
+        "paths": {
+            "pixi": ["./lib/pixi"],
+        }
+    },
+    "include": ["src/**/*"],
+}
