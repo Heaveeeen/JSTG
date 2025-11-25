@@ -1,3 +1,5 @@
+/// <reference path="./lib/pixi.d.ts" />
+
 import * as JSTG from "./dist/jstg.js";
 import * as PIXI from "pixi";
 
