@@ -7,20 +7,20 @@ import * as PIXI from "pixi";
 
     const game = await JSTG.LaunchGame();
     const { LoadAsset, LoadSVG, Key } = JSTG;
-    const { forever, coDo, Entity } = game;
+    const { forever, coDo, Entity, app } = game;
     const { isDown, isUp, isHold, isIdle } = game.input;
 
     console.log("game:", game);
 
     const txt = new PIXI.Text({
-        text: "Hello, PIXI & JSTG! \n你好你好你好说的道理",
+        text: "Hello, PIXI & JSTG! \n测试文本你好你好你好\n1\t2\t3\t\n45\t67\t890\r\n这是小 simple，她很可爱，我借来用用，而且她很可爱\n按方向键让她移动，按L可以杀了她",
         x: 320,
         y: 240,
     });
     txt.anchor = 0.5;
-    game.app.stage.addChild(txt);
-
-    const fooTexture = await LoadSVG("assets/images/foo.svg", 2); // 这是小 simple，她很可爱，我借来用用，而且她很可爱
+    txt.scale = 0.6;
+    app.stage.addChild(txt);
+    const fooTexture = await LoadSVG("assets/images/foo.svg", 2);
 
     const fooSpr = new PIXI.Sprite(fooTexture);
     fooSpr.x = 320;
