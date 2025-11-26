@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 26.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" id="图层_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 width="75px" height="75px" viewBox="0 0 75 75" style="enable-background:new 0 0 75 75;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:none;stroke:url(#SVGID_1_);stroke-width:16;stroke-miterlimit:10;}
+	.st1{fill:url(#SVGID_00000010272449215415647960000011664930700404667827_);stroke:#FFFFFF;stroke-width:9;stroke-miterlimit:10;}
+	.st2{fill:none;stroke:url(#SVGID_00000072245775027417414620000007779740445133930928_);stroke-width:9;stroke-miterlimit:10;}
+</style>
+<radialGradient id="SVGID_1_" cx="177.8125" cy="-40.1875" r="35.9623" gradientTransform="matrix(1 0 0 -1 -140.3125 -2.6875)" gradientUnits="userSpaceOnUse">
+	<stop  offset="0" style="stop-color:#FF3333"/>
+	<stop  offset="1" style="stop-color:#FF3333;stop-opacity:0"/>
+</radialGradient>
+<path class="st0" d="M1.5,37.5c0-19.9,16.1-36,36-36s36,16.1,36,36s-16.1,36-36,36C17.6,73.5,1.5,57.4,1.5,37.5z"/>
+<radialGradient id="SVGID_00000141441893914062357330000009692725427309509518_" cx="177.8125" cy="-40.1875" r="24.0575" gradientTransform="matrix(1 0 0 -1 -140.3125 -2.6875)" gradientUnits="userSpaceOnUse">
+	<stop  offset="0" style="stop-color:#FF6666;stop-opacity:0"/>
+	<stop  offset="1" style="stop-color:#FF6666"/>
+</radialGradient>
+<path style="fill:url(#SVGID_00000141441893914062357330000009692725427309509518_);stroke:#FFFFFF;stroke-width:9;stroke-miterlimit:10;" d="
+	M13.4,37.5c0-13.3,10.8-24.1,24.1-24.1s24.1,10.8,24.1,24.1S50.8,61.6,37.5,61.6S13.4,50.8,13.4,37.5L13.4,37.5z"/>
+<radialGradient id="SVGID_00000122680944447907662380000016647448940183179151_" cx="177.8125" cy="-40.1875" r="24.0309" gradientTransform="matrix(1 0 0 -1 -140.3125 -2.6875)" gradientUnits="userSpaceOnUse">
+	<stop  offset="0" style="stop-color:#FF0000"/>
+	<stop  offset="1" style="stop-color:#FF0000;stop-opacity:0"/>
+</radialGradient>
+<path style="fill:none;stroke:url(#SVGID_00000122680944447907662380000016647448940183179151_);stroke-width:9;stroke-miterlimit:10;" d="
+	M13.5,37.5c0-13.3,10.8-24,24-24c13.3,0,24,10.8,24,24c0,13.3-10.8,24-24,24C24.2,61.5,13.5,50.8,13.5,37.5L13.5,37.5z"/>
+</svg>

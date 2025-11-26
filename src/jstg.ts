@@ -1,6 +1,7 @@
-import * as PIXI from "pixi";
-import { LoadAsset, LoadSVG } from "./assets.js";
+import * as pixi from "pixi";
+import { LoadAsset, LoadPrefabDanmakuTextures, LoadSvg, loadSvgDefaultResolution } from "./assets.js";
 import { Key, makeInput } from "./Input.js";
+import { prefabPlayers, Player } from "./player.js";
 
 /**
  * 循环的控制器对象，用于控制该循环
@@ -14,39 +15,46 @@ export interface LoopController {
 
 export type CoDoGenerator = Generator<void, void, LoopController>;
 
+export type Game = ReturnType<typeof LaunchGame>;
+
+export interface Board {
+    root: pixi.Sprite,
+    width: number, height: number
+};
+
 /** @async 启动 JSTG 游戏 */
-export async function LaunchGame(options: {
+export async function LaunchGame(/** 不建议填参数，想干啥自己去改源码吧 */options: {
     /** @default 640 */
     stageWidth?: number,
     /** @default 480 */
     stageHeight?: number,
     /**
      * 此值为假时，不会自动调用 input.update()  
-     * 默认的优先级是65535
+     * 默认的优先级是 30000
      * @default true
      */
     autoUpdateInput?: boolean,
-    pixiApplicationOptions?: Partial<PIXI.ApplicationOptions>,
-    onResizeWindow?: (app: PIXI.Application) => any,
+    pixiApplicationOptions?: Partial<pixi.ApplicationOptions>,
+    onResizeWindow?: (app: pixi.Application) => any,
 } = {}) {
 
-    const app = new PIXI.Application();
+    const app = new pixi.Application();
 
     const stageWidth = options.stageWidth ?? 640;
     const stageHeight = options.stageHeight ?? 480;
     /** 宽高比 */
     const stageProportion = stageWidth / stageHeight;
 
-    let rendererResolution = Math.min(window.innerWidth, window.innerHeight * stageProportion) / stageWidth;
+    let rendererResolution = Math.min(globalThis.innerWidth, globalThis.innerHeight * stageProportion) / stageWidth;
     if (options.onResizeWindow) {
-        window.addEventListener("resize", () => options.onResizeWindow!(app));
+        globalThis.addEventListener("resize", () => options.onResizeWindow!(app));
     } else {
         let isResizing = false;
-        window.addEventListener("resize", () => {
+        globalThis.addEventListener("resize", () => {
             if (isResizing) return;
             isResizing = true;
             setTimeout(() => {
-                rendererResolution = Math.min(window.innerWidth, window.innerHeight * stageProportion) / stageWidth;
+                rendererResolution = Math.min(globalThis.innerWidth, globalThis.innerHeight * stageProportion) / stageWidth;
                 app.renderer.resize(stageWidth, stageHeight, rendererResolution);
                 isResizing = false;
             }, 200);
@@ -54,19 +62,20 @@ export async function LaunchGame(options: {
     }
 
     await app.init(options.pixiApplicationOptions ?? {
-        backgroundColor: "#ffffff",
+        backgroundColor: "#000000",
         preference: "webgpu",
     });
     // 重设画面尺寸，填充整个窗口
     app.renderer.resize(stageWidth, stageHeight, rendererResolution);
-    PIXI.sayHello(app.renderer.name); // 仪式感这块，别的我不知道但我就知道在控制台输出这么一条五彩斑斓的信息实在太酷了
+    //app.renderer.resize(stageWidth, stageHeight, 1);
+    pixi.sayHello(app.renderer.name); // 仪式感这块，别的我不知道但我就知道在控制台输出这么一条五彩斑斓的信息实在太酷了
     app.canvas.style.display = "flex";
     document.body.appendChild(app.canvas);
 
 
-    await PIXI.Assets.init({
+    await pixi.Assets.init({
         texturePreference: {
-            resolution: window.devicePixelRatio,
+            resolution: globalThis.devicePixelRatio,
             format: ["avif", "webp", "png", "jpg", "jpeg"],
         },
     });
@@ -117,7 +126,7 @@ export async function LaunchGame(options: {
     }
 
     const input = makeInput();
-    forever(() => input._update(), 30000);
+    if (options.autoUpdateInput ?? true) { forever(() => input._update(), 30000); }
 
     function* Sleep(
         /** 要等待的时间（帧） */
@@ -132,21 +141,21 @@ export async function LaunchGame(options: {
     const destroyOption = { children: true };
 
     class Entity {
-        readonly sprites: PIXI.ContainerChild[] = [];
+        readonly sprites: pixi.ContainerChild[] = [];
         readonly loops: LoopController[] = [];
         constructor (
             /** 
              * @readonly
-             * 与该Entity生命周期所绑定的对象，通常是一个 PIXI.Sprite  
+             * 与该Entity生命周期所绑定的对象，通常是一个 pixi.Sprite  
              * 应当把该绘图对象的所有权完全移交给该 Entity
              */
-            ...sprites: PIXI.ContainerChild[]
+            ...sprites: pixi.ContainerChild[]
         ) {
             this.bindLife(...sprites);
         }
 
         /** 把一批对象的生命周期绑定到该实体上 */
-        bindLife(...sprites: PIXI.ContainerChild[]) {
+        bindLife(...sprites: pixi.ContainerChild[]) {
             this.sprites.push(...sprites);
             app.stage.addChild(...sprites);
             return this;
@@ -227,11 +236,37 @@ export async function LaunchGame(options: {
         }
     }
 
+    const board: Board = await (async () => {
+        const root = new pixi.Sprite({
+            parent: app.stage,
+            x: (240 - 70) * stageWidth / 480, // (sc舞台半宽 - CameraX) * jstg相比sc的放大倍数
+            y: stageHeight / 2,
+        });
+        return {
+            /** 根节点 */
+            root,
+            /** 场地宽度的一半 */
+            width: 200,
+            /** 场地高度的一半 */
+            height: 240,
+        }
+    })();
+
+    const ingameUI = new pixi.Sprite({parent: app.stage});
+    const ingameUI_windowFrame
+        = new pixi.Sprite({parent: ingameUI, texture: await LoadSvg("assets/images/ingameUI/window.svg")});
+
     //#endregion
 
     return {
-        /** PIXI.Application 实例 */
+        /** pixi.Application 实例 */
         app,
+        /** 游戏内 UI ，版面上盖着的那一层 UI ，包括血条啥的以及那个像窗口框架的东西 */
+        ingameUI,
+        /** 游戏内 UI 的那个像窗口框架的大背景 */
+        ingameUI_windowFrame,
+        /** 版面，就是自机和弹幕所处的那个主要场地 */
+        board,
         /**
          * 每帧执行一次给定的回调函数。  
          * @example
@@ -303,13 +338,17 @@ export async function LaunchGame(options: {
         //#endregion
         /** @generator 等待 timeFrame 帧 */
         Sleep,
-        Entity,
+        //Entity,
     };
 
 };
 
 export {
     LoadAsset,
-    LoadSVG,
+    LoadSvg,
+    loadSvgDefaultResolution,
+    LoadPrefabDanmakuTextures,
     Key,
+    Player,
+    prefabPlayers,
 }

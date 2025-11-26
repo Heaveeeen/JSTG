@@ -1,39 +1,79 @@
+// @ts-check
+
 /// <reference path="./lib/pixi.d.ts" />
+// ↑ 上面这行用来联动 pixi 的类型注释
 
-import * as JSTG from "./dist/jstg.js";
-import * as PIXI from "pixi";
+import * as jstg from "./dist/jstg.js";
+//import * as jstg from "./src/jstg.ts";
+import * as pixi from "pixi";
 
+//jstg.loadSvgDefaultResolution.set(3);
+
+// 启动游戏
 (async () => {
 
-    const game = await JSTG.LaunchGame();
-    const { LoadAsset, LoadSVG, Key } = JSTG;
-    const { forever, coDo, Entity, app } = game;
-    const { isDown, isUp, isHold, isIdle } = game.input;
+    const game = await jstg.LaunchGame();
+    const { LoadAsset, LoadSvg, Key } = jstg;
+    const { input, forever, coDo, app, board, ingameUI } = game;
+    const { isDown, isUp, isHold, isIdle } = input;
 
     console.log("game:", game);
 
-    const txt = new PIXI.Text({
-        text: "Hello, PIXI & JSTG! \n测试文本你好你好你好\n1\t2\t3\t\n45\t67\t890\r\n这是小 simple，她很可爱，我借来用用，而且她很可爱\n按方向键让她移动，按L可以杀了她",
-        x: 320,
-        y: 240,
+    const txt = new pixi.Text({
+        parent: board.root,
+        text: 
+`Hello, PIXI & JSTG!
+测试文本你好你好你好
+1\t2\t3\t
+45\t67\t890
+这是小 simple，她很可爱，我借来用用，而且她很可爱
+按方向键让她移动，按G可以杀了她
+（别问我为什么是G，随便选的）`,
+        x: 0,
+        y: 0,
+        anchor: 0.5,
+        style: {
+            fontSize: 16,
+            fill: "#000000",
+            align: "center",
+            stroke: {
+                color: "#ffffff",
+                width: 3,
+                join: "round",
+            }
+        },
     });
-    txt.anchor = 0.5;
-    txt.scale = 0.6;
-    app.stage.addChild(txt);
-    const fooTexture = await LoadSVG("assets/images/foo.svg", 2);
 
-    const fooSpr = new PIXI.Sprite(fooTexture);
-    fooSpr.x = 320;
-    fooSpr.y = 240;
-    fooSpr.anchor = 0.5;
-    const fooEnt = new Entity(fooSpr);
+    /*let fooFilter = new pixi.ColorMatrixFilter({resolution: "inherit"});
+    const fooSpr = new pixi.Sprite({
+        parent: board,
+        texture: await LoadSvg("assets/images/foo.svg", 3),
+        x: 0,
+        y: 0,
+        anchor: 0.5,
+        scale: 4/3,
+        filters: fooFilter,
+    });*/
 
-    fooEnt.forever(() => {
-        if (isHold(Key.ArrowLeft)) fooSpr.x -= 2 * game.ts;
-        if (isHold(Key.ArrowRight)) fooSpr.x += 2 * game.ts;
-        if (isHold(Key.ArrowUp)) fooSpr.y -= 2 * game.ts;
-        if (isHold(Key.ArrowDown)) fooSpr.y += 2 * game.ts;
-        if (isHold(Key.KeyL)) fooEnt.die();
+    /** 自机 */
+    const pl = await jstg.prefabPlayers.makeSimpleOn(board);
+
+    const danTextures = await jstg.LoadPrefabDanmakuTextures();
+
+    forever(loop => {
+        pl.update(input, game.ts, {
+            up: [Key.ArrowUp, Key.KeyW],
+            down: [Key.ArrowDown, Key.KeyS],
+            left: [Key.ArrowLeft, Key.KeyA],
+            right: [Key.ArrowRight, Key.KeyD],
+            slow: [Key.ShiftLeft, Key.KeyL, Key.Space],
+            attack: [Key.KeyZ, Key.KeyK],
+            bomb: [Key.KeyX, Key.KeyJ],
+        });
+        if (isDown(Key.KeyG)) {
+            pl.destroy();
+            loop.stop();
+        }
     });
 
 })();

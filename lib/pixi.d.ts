@@ -45023,6 +45023,4 @@ export {
 	earcut$1 as earcut,
 };
 
-export as namespace PIXI;
-
 }

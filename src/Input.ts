@@ -243,6 +243,8 @@ export enum Key {
     Pause = "Pause",
 }
 
+export type Input = ReturnType<typeof makeInput>;
+
 export function makeInput() {
 
     // 注意：如果按住一个键，突然松开极短的时间，然后再次按住，有可能忽视这次抬手，视为一直按住。

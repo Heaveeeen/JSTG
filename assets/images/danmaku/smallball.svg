@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 26.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" id="图层_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 width="22px" height="22px" viewBox="0 0 22 22" style="enable-background:new 0 0 22 22;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:url(#SVGID_1_);}
+	.st1{fill:#FF6666;}
+	.st2{fill:url(#SVGID_00000028313025272487143340000008837434373985417919_);}
+	.st3{fill:url(#SVGID_00000042704004205354184700000003873731342745991556_);}
+</style>
+<radialGradient id="SVGID_1_" cx="46.3125" cy="38.3125" r="10" gradientTransform="matrix(1 0 0 -1 -35.3125 49.3125)" gradientUnits="userSpaceOnUse">
+	<stop  offset="0" style="stop-color:#FF3333"/>
+	<stop  offset="1" style="stop-color:#FF3333;stop-opacity:0"/>
+</radialGradient>
+<path class="st0" d="M1,11C1,5.5,5.5,1,11,1c5.5,0,10,4.5,10,10c0,5.5-4.5,10-10,10C5.5,21,1,16.5,1,11z"/>
+<path class="st1" d="M4.9,11c0-3.3,2.7-6.1,6.1-6.1s6.1,2.7,6.1,6.1s-2.7,6.1-6.1,6.1S4.9,14.3,4.9,11z"/>
+<g>
+	
+		<radialGradient id="SVGID_00000165229732693729967450000003261992170462776725_" cx="46.3125" cy="38.3125" r="6.0593" gradientTransform="matrix(1 0 0 -1 -35.3125 49.3125)" gradientUnits="userSpaceOnUse">
+		<stop  offset="0" style="stop-color:#FFFFFF"/>
+		<stop  offset="1" style="stop-color:#FFFFFF;stop-opacity:0"/>
+	</radialGradient>
+	<path style="fill:url(#SVGID_00000165229732693729967450000003261992170462776725_);" d="M4.9,11c0-3.3,2.7-6.1,6.1-6.1
+		s6.1,2.7,6.1,6.1s-2.7,6.1-6.1,6.1S4.9,14.3,4.9,11z"/>
+	
+		<radialGradient id="SVGID_00000121986474190209627500000005882704234956241580_" cx="46.3125" cy="38.3125" r="6.0593" gradientTransform="matrix(1 0 0 -1 -35.3125 49.3125)" gradientUnits="userSpaceOnUse">
+		<stop  offset="0" style="stop-color:#FFFFFF"/>
+		<stop  offset="1" style="stop-color:#FFFFFF;stop-opacity:0"/>
+	</radialGradient>
+	<path style="fill:url(#SVGID_00000121986474190209627500000005882704234956241580_);" d="M4.9,11c0-3.3,2.7-6.1,6.1-6.1
+		s6.1,2.7,6.1,6.1s-2.7,6.1-6.1,6.1S4.9,14.3,4.9,11z"/>
+</g>
+</svg>
