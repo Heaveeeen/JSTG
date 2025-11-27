@@ -15,7 +15,8 @@ export interface LoopController {
 
 export type CoDoGenerator = Generator<void, void, LoopController>;
 
-export type Game = ReturnType<typeof LaunchGame>;
+type ExtractPromiseType<U> = U extends Promise<infer T> ? T : never
+export type Game = ExtractPromiseType<ReturnType<typeof LaunchGame>>;
 
 export interface Board {
     root: pixi.Sprite,
@@ -140,6 +141,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
 
     const destroyOption = { children: true };
 
+    /** @deprecated */
     class Entity {
         readonly sprites: pixi.ContainerChild[] = [];
         readonly loops: LoopController[] = [];

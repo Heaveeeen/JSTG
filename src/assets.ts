@@ -57,11 +57,11 @@ export async function LoadPrefabDanmakuTextures(options: {
 } = {}) {
     const base = options.baseURL ?? "assets/images/danmaku/";
     const res = options.resolution;
-    return { // 这里要注意，文件名不带驼峰
-        smallBall: await LoadSvg(`${base}smallball.svg`, res),
-        ringBall: await LoadSvg(`${base}ringball.svg`, res),
-        glowBall: await LoadSvg(`${base}glowball.svg`, res),
-        fireBall: await LoadSvg(`${base}fireball.svg`, res),
+    return {
+        smallball: await LoadSvg(`${base}smallball.svg`, res),
+        ringball: await LoadSvg(`${base}ringball.svg`, res),
+        glowball: await LoadSvg(`${base}glowball.svg`, res),
+        fireball: await LoadSvg(`${base}fireball.svg`, res),
         dot: await LoadSvg(`${base}dot.svg`, res),
         grain: await LoadSvg(`${base}grain.svg`, res),
         chain: await LoadSvg(`${base}chain.svg`, res),
@@ -73,12 +73,12 @@ export async function LoadPrefabDanmakuTextures(options: {
         note: await LoadSvg(`${base}note.svg`, res),
         arrow: await LoadSvg(`${base}arrow.svg`, res),
         butterfly: await LoadSvg(`${base}butterfly.svg`, res),
-        smallStar: await LoadSvg(`${base}smallstar.svg`, res),
-        bigStar: await LoadSvg(`${base}bigstar.svg`, res),
+        smallstar: await LoadSvg(`${base}smallstar.svg`, res),
+        bigstar: await LoadSvg(`${base}bigstar.svg`, res),
         ellipse: await LoadSvg(`${base}ellipse.svg`, res),
         heart: await LoadSvg(`${base}heart.svg`, res),
-        middleBall: await LoadSvg(`${base}middleball.svg`, res),
-        lightBall: await LoadSvg(`${base}lightball.svg`, res),
+        middleball: await LoadSvg(`${base}middleball.svg`, res),
+        lightball: await LoadSvg(`${base}lightball.svg`, res),
         bubble: await LoadSvg(`${base}bubble.svg`, res),
         nuclear: await LoadSvg(`${base}nuclear.svg`, res),
         crystal: await LoadSvg(`${base}crystal.svg`, res),
@@ -90,3 +90,7 @@ export async function LoadPrefabDanmakuTextures(options: {
         sword: await LoadSvg(`${base}sword.svg`, res),
     }
 }
+
+type ExtractPromiseType<U> = U extends Promise<infer T> ? T : never
+
+export type PrefabDanmakuNames = keyof ExtractPromiseType<ReturnType<typeof LoadPrefabDanmakuTextures>>

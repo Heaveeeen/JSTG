@@ -47,6 +47,11 @@ export class Player {
     /** 减速时那个半透明转转转的魔法阵 */
     slowModeRing: pixi.Sprite;
 
+    /** @internal 玩家在上一次判定时的 x */
+    _lastX: number;
+    /** @internal 玩家在上一次判定时的 y */
+    _lastY: number;
+
     get x() { return this.frontParts.x; }
     set x(n: number) {
         this.backParts.x = n;
@@ -110,8 +115,8 @@ export class Player {
             rotation: 0,
         });
 
-        this.x = 0;
-        this.y = 185;
+        this.x = this._lastX = 0;
+        this.y = this._lastY = 185;
     }
 
     /**
@@ -172,8 +177,17 @@ export class Player {
     }
 
     destroy() {
+        if (this.destroyed) return;
         this.backParts.destroy();
         this.frontParts.destroy();
+    }
+
+    /** 
+     * 返回该对象是否被摧毁，已被摧毁的对象不应该继续使用，应该丢弃  
+     * 例如：一个跟踪弹保留了一个玩家的引用，并且追踪玩家的位置；那么，该跟踪弹应该在每帧都检查玩家是否已被摧毁，如果已被摧毁则失去目标，寻找新的目标或者进入游荡状态或者怎么怎么样
+     */
+    get destroyed() {
+        return this.backParts.destroyed;
     }
 
 }
