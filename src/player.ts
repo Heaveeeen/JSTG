@@ -178,13 +178,17 @@ export class Player {
 
 }
 
+const playerTextures: Record<string, pixi.Texture | undefined> = {};
+const getOrLoad = async (name: string) =>
+    playerTextures[name] ?? (playerTextures[name] = await LoadSvg(`assets/images/player/${name}.svg`));
+
 const makePlayer = async (options: {board: Board, name: string, hue1: number,
     hitboxRadius: number, highSpeed: number, slowSpeed: number
 }) => new Player(
     options.name, options.board,
-    await LoadSvg(`assets/images/player/${options.name}.svg`),
-    await LoadSvg("assets/images/player/hitbox.svg"),
-    await LoadSvg("assets/images/player/slow_mode.svg"),
+    await getOrLoad(options.name),
+    await getOrLoad("hitbox"),
+    await getOrLoad("slow_mode"),
     options.hue1,
     options.hitboxRadius, options.highSpeed, options.slowSpeed
 );
