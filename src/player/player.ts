@@ -1,7 +1,7 @@
 import * as pixi from "pixi";
-import { LoadSvg } from "./assets.js";
-import { Input, Key } from "./Input.js";
-import { Board } from "./jstg.js";
+import { LoadSvg } from "../assets.js";
+import { Input, Key } from "../Input.js";
+import { Board } from "../jstg.js";
 
 const clamp = (n: number, a: number, b: number) => Math.min(Math.max(a, n), b);
 
@@ -34,7 +34,39 @@ interface PlayerKeyMapOptions {
     bomb?: string | string[],
 }
 
+interface PlayerUpdateOptions {
+    /** @example game.input */
+    input: Input,
+
+    /**
+     * @default 1
+     * @example game.timeScale
+     */
+    timeScale?: number,
+    keyMap?: PlayerKeyMapOptions,
+    /**
+     * 高速时的移速
+     * @default this.highSpeed
+     */
+    highSpeed?: number,
+    /**
+     * 低速时的移速
+     * @default this.slowSpeed
+     */
+    slowSpeed?: number,
+}
+
 export class Player {
+
+    readonly name: string;
+    readonly board: Board;
+
+    hue1: number;
+    hitboxRadius: number;
+    highSpeed: number;
+    slowSpeed: number;
+
+    isSlow: boolean = false;
 
     /** 图层低于弹幕的节点们的父节点，这个节点里有像素绘、低速魔法阵 */
     backParts: pixi.Sprite;
@@ -64,51 +96,64 @@ export class Player {
         this.frontParts.y = n;
     }
 
-    constructor(
-        readonly name: string,
-        readonly board: Board,
+    constructor(options: {
+        name: string,
+        board: Board,
         mainTexture: pixi.Texture,
         hitboxTexture: pixi.Texture,
         slowModeRingTexture: pixi.Texture,
-        readonly hue1: number,
-        public hitboxRadius: number,
-        public highSpeed: number,
-        public slowSpeed: number
-    ) {
+        /** @default 0 */
+        hue1?: number,
+        /** @default 3 */
+        hitboxRadius?: number,
+        /** @default 4 */
+        highSpeed?: number,
+        /** @default 1.6 */
+        slowSpeed?: number,
+        updateFn: (this: Player, options: PlayerUpdateOptions) => any,
+    }) {
+
+        this.name = options.name;
+        this.board = options.board;
+        this.hue1 = options.hue1 ?? 0;
+        this.hitboxRadius = options.hitboxRadius ?? 3;
+        this.highSpeed = options.highSpeed ?? 4;
+        this.slowSpeed = options.slowSpeed ?? 1.6;
+        this.update = options.updateFn;
 
         this.backParts = new pixi.Sprite({
-            parent: board.root,
+            parent: options.board.root,
             anchor: 0.5,
             zIndex: -100,
         });
 
         this.frontParts = new pixi.Sprite({
-            parent: board.root,
+            parent: options.board.root,
             anchor: 0.5,
             zIndex: 100,
         });
 
         this.avatar = new pixi.Sprite({
             parent: this.backParts,
-            texture: mainTexture,
+            texture: options.mainTexture,
             anchor: 0.5,
             scale: 1.1,
         });
 
         const plColorFilter = new pixi.ColorMatrixFilter({resolution: "inherit"});
-        plColorFilter.hue(hue1, false);
+        plColorFilter.hue(this.hue1, false);
 
         this.hitboxPoint = new pixi.Sprite({
             parent: this.frontParts,
-            texture: hitboxTexture,
-            scale: hitboxRadius * 0.04 + 0.12, anchor: 0.5,
+            texture: options.hitboxTexture,
+            scale: this.hitboxRadius * 0.04 + 0.12, anchor: 0.5,
             filters: plColorFilter,
             alpha: 0,
         });
 
         this.slowModeRing = new pixi.Sprite({
             parent: this.backParts,
-            texture: slowModeRingTexture,
+            texture: options.slowModeRingTexture,
             scale: 1.1, anchor: 0.5,
             filters: plColorFilter,
             alpha: 0,
@@ -124,47 +169,48 @@ export class Player {
      * @example
      * game.forever(loop => {
      *     // 基本的写法
-     *     player.update(game.input, game.ts);
+     *     player.update({input: game.input});
      * 
      *     // 更高级的写法
+     *     // 玩家移速可被 game.timeScale 影响
      *     // 将移动键位重设为 WASD ，并且按 Z 或者 K 都可以开火，按 Shift 或空格都可以低速
-     *     player.update(game.input, game.ts, {
+     *     player.update({input: game.input, timescale: game.ts, keyMap: {
      *         up: Key.KeyW, down: Key.KeyS, left: Key.KeyA, right: Key.KeyD,
      *         attack: [Key.KeyZ, Key.KeyK],
      *         slow: [Key.ShiftLeft, Key.Space],
      *     });
      * });
      */
-    update(
-        input: Input,
-        timeScale: number, keyMap: PlayerKeyMapOptions = {}
-    ) {
-        const { isHold } = input;
+    update: (this: Player, options: PlayerUpdateOptions) => any;
+
+    /** 移动自机 */
+    move(options: PlayerUpdateOptions) {
+        const ts = options.timeScale ?? 1;
+        const keyMap = options.keyMap ?? {};
+        const { isDown, isHold } = options.input;
         let dx = 0;
         let dy = 0;
-        let slow = false;
 
-        const kh = (keyOrKeys: string | string[]) =>
-            typeof keyOrKeys === "string" ? isHold(keyOrKeys) : keyOrKeys.some(key => isHold(key));
+        const kh = (keyOrKeys: string | string[]) => typeof keyOrKeys === "string" ? isHold(keyOrKeys) : keyOrKeys.some(key => isHold(key));
         // @ts-expect-error 隐式转换的奇技淫巧
         dx = kh(keyMap.right ?? Key.ArrowRight) - kh(keyMap.left ?? Key.ArrowLeft);
         // @ts-expect-error
         dy = kh(keyMap.down ?? Key.ArrowDown) - kh(keyMap.up ?? Key.ArrowUp);
-        slow = kh(keyMap.slow ?? Key.ShiftLeft);
+        this.isSlow = kh(keyMap.slow ?? Key.ShiftLeft);
 
-        if (slow) {
-            alphaTo(this.avatar, 0.5, 0.1 * timeScale);
-            alphaTo(this.hitboxPoint, 1, 0.1 * timeScale);
-            alphaTo(this.slowModeRing, 1, 0.1 * timeScale);
+        if (this.isSlow) {
+            alphaTo(this.avatar, 0.5, 0.1 * ts);
+            alphaTo(this.hitboxPoint, 1, 0.1 * ts);
+            alphaTo(this.slowModeRing, 1, 0.1 * ts);
         } else {
-            alphaTo(this.avatar, 1, 0.1 * timeScale);
-            alphaTo(this.hitboxPoint, 0, 0.1 * timeScale);
-            alphaTo(this.slowModeRing, 0, 0.1 * timeScale);
+            alphaTo(this.avatar, 1, 0.1 * ts);
+            alphaTo(this.hitboxPoint, 0, 0.1 * ts);
+            alphaTo(this.slowModeRing, 0, 0.1 * ts);
         }
-        this.slowModeRing.rotation += deg(2 * timeScale);
+        this.slowModeRing.rotation += deg(2 * ts);
         if (dx !== 0 || dy !== 0) {
-            let v = slow ? 1.6 : 4;
-            v *= timeScale;
+            let v = this.isSlow ? options.slowSpeed ?? this.slowSpeed : options.highSpeed ?? this.highSpeed;
+            v *= ts;
             let m = v / Math.sqrt(dx * dx + dy * dy);
             dx *= m;
             dy *= m;
@@ -192,35 +238,9 @@ export class Player {
 
 }
 
-const playerTextures: Record<string, pixi.Texture | undefined> = {};
-const getOrLoad = async (name: string) =>
-    playerTextures[name] ?? (playerTextures[name] = await LoadSvg(`assets/images/player/${name}.svg`));
+/** @internal */
+export const _playerTextures: Record<string, pixi.Texture | undefined> = {};
 
-const makePlayer = async (options: {board: Board, name: string, hue1: number,
-    hitboxRadius: number, highSpeed: number, slowSpeed: number
-}) => new Player(
-    options.name, options.board,
-    await getOrLoad(options.name),
-    await getOrLoad("hitbox"),
-    await getOrLoad("slow_mode"),
-    options.hue1,
-    options.hitboxRadius, options.highSpeed, options.slowSpeed
-);
-
-/**
- * JSTG 预置的自机
- * @example
- * const player = jstg.prefabPlayers.makeSimpleOn(game.board);
- * game.forever(loop => {
- *     player.update(game.input, game.ts);
- * });
- */
-export const prefabPlayers = {
-    /** @async 创建预置自机：Simple */
-    makeSimpleOn: async (board: Board) => await makePlayer({
-        board,
-        name: "Simple",
-        hue1: 208.8,
-        hitboxRadius: 3, highSpeed: 4, slowSpeed: 1.6,
-    }),
-};
+/** @internal @async */
+export const _getOrLoadPlayerTexture = async (name: string) =>
+    _playerTextures[name] ?? (_playerTextures[name] = await LoadSvg(`assets/images/player/${name}.svg`));

@@ -61,7 +61,7 @@ import * as pixi from "pixi";
     const danTextures = await jstg.LoadPrefabDanmakuTextures();
 
     forever(loop => {
-        pl.update(input, game.ts, {
+        pl.update({input, timeScale: game.ts, keyMap: {
             up: [Key.ArrowUp, Key.KeyW],
             down: [Key.ArrowDown, Key.KeyS],
             left: [Key.ArrowLeft, Key.KeyA],
@@ -69,7 +69,7 @@ import * as pixi from "pixi";
             slow: [Key.ShiftLeft, Key.KeyL, Key.Space],
             attack: [Key.KeyZ, Key.KeyK],
             bomb: [Key.KeyX, Key.KeyJ],
-        });
+        }});
         if (isDown(Key.KeyG)) {
             pl.destroy();
             loop.stop();

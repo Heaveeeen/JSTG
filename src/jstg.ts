@@ -1,7 +1,8 @@
 import * as pixi from "pixi";
 import { LoadAsset, LoadPrefabDanmakuTextures, LoadSvg, loadSvgDefaultResolution } from "./assets.js";
 import { Key, makeInput } from "./Input.js";
-import { prefabPlayers, Player } from "./player.js";
+import { Player } from "./player/player.js";
+import { makeSimpleOn } from "./player/simple.js";
 
 /**
  * 循环的控制器对象，用于控制该循环
@@ -345,6 +346,19 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
 
 };
 
+/**
+ * JSTG 预置的自机
+ * @example
+ * const player = jstg.prefabPlayers.makeSimpleOn(game.board);
+ * game.forever(loop => {
+ *     player.update({input: game.input, timeScale: game.ts});
+ * });
+ */
+export const prefabPlayers = {
+    /** @async 创建预置自机：Simple */
+    makeSimpleOn,
+}
+
 export {
     LoadAsset,
     LoadSvg,
@@ -352,5 +366,4 @@ export {
     LoadPrefabDanmakuTextures,
     Key,
     Player,
-    prefabPlayers,
 }
