@@ -20,6 +20,7 @@ type ExtractPromiseType<U> = U extends Promise<infer T> ? T : never
 export type Game = ExtractPromiseType<ReturnType<typeof LaunchGame>>;
 
 export type Board = Game["board"];
+export type IngameUI = Game["ingameUI"];
 
 /** @async 启动 JSTG 游戏 */
 export async function LaunchGame(/** 不建议填参数，想干啥自己去改源码吧 */options: {
