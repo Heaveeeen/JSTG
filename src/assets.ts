@@ -40,57 +40,72 @@ export function LoadSvg(
     }) as Promise<pixi.Texture>;
 }
 
-/**
- * @async 加载 JSTG 预置的弹幕贴图（主要来源于 Simple 的弹幕引擎250724）
- * @example
- * const danTextures = jstg.LoadPrefabDanmakuTextures();
- * const myBubbleDanmaku = new jstg.Danmaku(danTextures.bubble);
- */
-export async function LoadPrefabDanmakuTextures(options: {
+export interface LoadPrefabTexturesOptions {
     /**
-     * 如果路径错误，请填写此参数，改变预置弹幕贴图的根目录
-     * @default "assets/images/danmaku/"
+     * 如果路径错误，请填写此参数，改变预置贴图的根目录
+     * @default "assets/images/"
      */
-    baseURL?: string,
+    baseUrl?: string,
     /** 默认值为 {@linkcode loadSvgDefaultResolution} 的值 */
     resolution?: number,
-} = {}) {
-    const base = options.baseURL ?? "assets/images/danmaku/";
+}
+
+/**
+ * @async 加载 JSTG 预置的各种贴图（主要来源于 Simple 的弹幕引擎250724）
+ */
+export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions = {}) {
+    const base = options.baseUrl ?? "assets/images/";
     const res = options.resolution;
     return {
-        smallball: await LoadSvg(`${base}smallball.svg`, res),
-        ringball: await LoadSvg(`${base}ringball.svg`, res),
-        glowball: await LoadSvg(`${base}glowball.svg`, res),
-        fireball: await LoadSvg(`${base}fireball.svg`, res),
-        dot: await LoadSvg(`${base}dot.svg`, res),
-        grain: await LoadSvg(`${base}grain.svg`, res),
-        chain: await LoadSvg(`${base}chain.svg`, res),
-        seed: await LoadSvg(`${base}seed.svg`, res),
-        scale: await LoadSvg(`${base}scale.svg`, res),
-        bullet: await LoadSvg(`${base}bullet.svg`, res),
-        drip: await LoadSvg(`${base}drip.svg`, res),
-        card: await LoadSvg(`${base}card.svg`, res),
-        note: await LoadSvg(`${base}note.svg`, res),
-        arrow: await LoadSvg(`${base}arrow.svg`, res),
-        butterfly: await LoadSvg(`${base}butterfly.svg`, res),
-        smallstar: await LoadSvg(`${base}smallstar.svg`, res),
-        bigstar: await LoadSvg(`${base}bigstar.svg`, res),
-        ellipse: await LoadSvg(`${base}ellipse.svg`, res),
-        heart: await LoadSvg(`${base}heart.svg`, res),
-        middleball: await LoadSvg(`${base}middleball.svg`, res),
-        lightball: await LoadSvg(`${base}lightball.svg`, res),
-        bubble: await LoadSvg(`${base}bubble.svg`, res),
-        nuclear: await LoadSvg(`${base}nuclear.svg`, res),
-        crystal: await LoadSvg(`${base}crystal.svg`, res),
-        particle: await LoadSvg(`${base}particle.svg`, res),
-        nova: await LoadSvg(`${base}nova.svg`, res),
-        needle: await LoadSvg(`${base}needle.svg`, res),
-        coin: await LoadSvg(`${base}coin.svg`, res),
-        knife: await LoadSvg(`${base}knife.svg`, res),
-        sword: await LoadSvg(`${base}sword.svg`, res),
+        danmaku: {
+            smallball: await LoadSvg(`${base}danmaku/danmaku/smallball.svg`, res),
+            ringball: await LoadSvg(`${base}danmaku/danmaku/ringball.svg`, res),
+            glowball: await LoadSvg(`${base}danmaku/danmaku/glowball.svg`, res),
+            fireball: await LoadSvg(`${base}danmaku/danmaku/fireball.svg`, res),
+            dot: await LoadSvg(`${base}danmaku/danmaku/dot.svg`, res),
+            grain: await LoadSvg(`${base}danmaku/danmaku/grain.svg`, res),
+            chain: await LoadSvg(`${base}danmaku/danmaku/chain.svg`, res),
+            seed: await LoadSvg(`${base}danmaku/danmaku/seed.svg`, res),
+            scale: await LoadSvg(`${base}danmaku/danmaku/scale.svg`, res),
+            bullet: await LoadSvg(`${base}danmaku/danmaku/bullet.svg`, res),
+            drip: await LoadSvg(`${base}danmaku/danmaku/drip.svg`, res),
+            card: await LoadSvg(`${base}danmaku/danmaku/card.svg`, res),
+            note: await LoadSvg(`${base}danmaku/danmaku/note.svg`, res),
+            arrow: await LoadSvg(`${base}danmaku/danmaku/arrow.svg`, res),
+            butterfly: await LoadSvg(`${base}danmaku/danmaku/butterfly.svg`, res),
+            smallstar: await LoadSvg(`${base}danmaku/danmaku/smallstar.svg`, res),
+            bigstar: await LoadSvg(`${base}danmaku/danmaku/bigstar.svg`, res),
+            ellipse: await LoadSvg(`${base}danmaku/danmaku/ellipse.svg`, res),
+            heart: await LoadSvg(`${base}danmaku/danmaku/heart.svg`, res),
+            middleball: await LoadSvg(`${base}danmaku/danmaku/middleball.svg`, res),
+            lightball: await LoadSvg(`${base}danmaku/danmaku/lightball.svg`, res),
+            bubble: await LoadSvg(`${base}danmaku/danmaku/bubble.svg`, res),
+            nuclear: await LoadSvg(`${base}danmaku/danmaku/nuclear.svg`, res),
+            crystal: await LoadSvg(`${base}danmaku/danmaku/crystal.svg`, res),
+            particle: await LoadSvg(`${base}danmaku/danmaku/particle.svg`, res),
+            nova: await LoadSvg(`${base}danmaku/danmaku/nova.svg`, res),
+            needle: await LoadSvg(`${base}danmaku/danmaku/needle.svg`, res),
+            coin: await LoadSvg(`${base}danmaku/danmaku/coin.svg`, res),
+            knife: await LoadSvg(`${base}danmaku/danmaku/knife.svg`, res),
+            sword: await LoadSvg(`${base}danmaku/danmaku/sword.svg`, res),
+        },
+        particle: {
+            fog: await LoadSvg(`${base}danmaku/particle/fog.svg`, res),
+        },
+        ingameUI: {
+            window: await LoadSvg(`${base}ingameUI/window.svg`, res),
+        },
+        player: {
+            Simple: await LoadSvg(`${base}player/Simple.svg`, res),
+            hitbox: await LoadSvg(`${base}player/hitbox.svg`, res),
+            invincible_ring: await LoadSvg(`${base}player/invincible_ring.svg`, res),
+            slow_mode: await LoadSvg(`${base}player/slow_mode.svg`, res),
+        },
     }
 }
 
-type ExtractPromiseType<U> = U extends Promise<infer T> ? T : never
+type ExtractPromiseType<U> = U extends Promise<infer T> ? T : never;
 
-export type PrefabDanmakuNames = keyof ExtractPromiseType<ReturnType<typeof LoadPrefabDanmakuTextures>>
+export type PrefabTextures = ExtractPromiseType<ReturnType<typeof LoadPrefabTextures>>;
+
+export type PrefabDanmakuNames = keyof ExtractPromiseType<ReturnType<typeof LoadPrefabTextures>>["danmaku"];

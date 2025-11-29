@@ -56,9 +56,7 @@ import * as pixi from "pixi";
     });*/
 
     /** 自机 */
-    const pl = await jstg.prefabPlayers.makeSimpleOn(board);
-
-    const danTextures = await jstg.LoadPrefabDanmakuTextures();
+    const pl = await game.prefabPlayers.makeSimple();
 
     forever(loop => {
         pl.update({input, timeScale: game.ts, keyMap: {

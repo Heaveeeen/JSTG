@@ -1,8 +1,8 @@
 import * as pixi from "pixi";
-import { LoadAsset, LoadPrefabDanmakuTextures, LoadSvg, loadSvgDefaultResolution } from "./assets.js";
+import { LoadAsset, LoadPrefabTextures, LoadPrefabTexturesOptions, LoadSvg, loadSvgDefaultResolution } from "./assets.js";
 import { Key, makeInput } from "./Input.js";
 import { Player } from "./player/player.js";
-import { makeSimpleOn } from "./player/simple.js";
+import { makeSimple } from "./player/simple.js";
 
 /**
  * 循环的控制器对象，用于控制该循环
@@ -19,10 +19,7 @@ export type CoDoGenerator = Generator<void, void, LoopController>;
 type ExtractPromiseType<U> = U extends Promise<infer T> ? T : never
 export type Game = ExtractPromiseType<ReturnType<typeof LaunchGame>>;
 
-export interface Board {
-    root: pixi.Sprite,
-    width: number, height: number
-};
+export type Board = Game["board"];
 
 /** @async 启动 JSTG 游戏 */
 export async function LaunchGame(/** 不建议填参数，想干啥自己去改源码吧 */options: {
@@ -38,6 +35,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
     autoUpdateInput?: boolean,
     pixiApplicationOptions?: Partial<pixi.ApplicationOptions>,
     onResizeWindow?: (app: pixi.Application) => any,
+    loadPrefabTexturesOptions?: LoadPrefabTexturesOptions,
 } = {}) {
 
     const app = new pixi.Application();
@@ -239,15 +237,32 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         }
     }
 
-    const board: Board = await (async () => {
+    const prefabTextures = await LoadPrefabTextures(options.loadPrefabTexturesOptions);
+
+    const mainBoard = await (async () => {
         const root = new pixi.Sprite({
             parent: app.stage,
             x: (240 - 70) * stageWidth / 480, // (sc舞台半宽 - CameraX) * jstg相比sc的放大倍数
             y: stageHeight / 2,
         });
+
+        const commonDanmakuSprites = new pixi.Sprite({
+            parent: root,
+            zIndex: 0, // 在 -100 到 100 中间
+        });
+
+        const danmakuEraseSprites = new pixi.Sprite({
+            parent: root,
+            zIndex: -10,
+        });
+
         return {
             /** 根节点 */
             root,
+            /** 装有所有普通弹幕节点的根节点 */
+            commonDanmakuSprites,
+            /** 装有所有消弹特效的根节点 */
+            danmakuEraseSprites,
             /** 场地宽度的一半 */
             width: 200,
             /** 场地高度的一半 */
@@ -255,22 +270,46 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         }
     })();
 
-    const ingameUI = new pixi.Sprite({parent: app.stage});
-    const ingameUI_windowFrame
-        = new pixi.Sprite({parent: ingameUI, texture: await LoadSvg("assets/images/ingameUI/window.svg")});
+    type Board = typeof mainBoard;
+
+    const ingameUI = (async () => {
+        const root = new pixi.Sprite({parent: app.stage});
+        const windowFrame = new pixi.Sprite({
+            parent: root, texture: prefabTextures.ingameUI.window
+        });
+        return {
+            /** 根节点 */
+            root,
+            /** 游戏内 UI 的那个像窗口框架的大背景 */
+            windowFrame,
+        }
+    })();
+
+    const prefabPlayers = {
+        /** @async 创建预置自机：Simple */
+        makeSimple: (board = mainBoard) => makeSimple(board, prefabTextures),
+    };
 
     //#endregion
 
     return {
-        /** pixi.Application 实例 */
-        app,
-        /** 游戏内 UI ，版面上盖着的那一层 UI ，包括血条啥的以及那个像窗口框架的东西 */
-        ingameUI,
-        /** 游戏内 UI 的那个像窗口框架的大背景 */
-        ingameUI_windowFrame,
-        /** 版面，就是自机和弹幕所处的那个主要场地 */
-        board,
         /**
+         * @readonly
+         * pixi.Application 实例
+         */
+        app,
+        /**
+         * @readonly
+         * 游戏内 UI ，版面上盖着的那一层 UI ，包括血条啥的以及那个像窗口框架的东西
+         */
+        ingameUI,
+        /**
+         * @readonly
+         * 版面，就是自机和弹幕所处的那个主要场地
+         */
+        board: mainBoard,
+        /**
+         * @readonly
          * 每帧执行一次给定的回调函数。  
          * @example
          * let t = 0;
@@ -286,6 +325,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          */
         forever,
         /**
+         * @readonly
          * 启动一个生成器函数，可以简单理解为启动一个协程，可以编写 Scratch 风格的代码
          * @example 
          * coDo((function*() {
@@ -301,6 +341,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          */
         coDo,
         /**
+         * @readonly
          * 用来获取用户输入，例如检测键盘上的某个键是否按下  
          * 按键名称为实体建码，即 HTML 按键事件的 code 属性
          * @see {@link [MDN KeyboardEvent.code](https://developer.mozilla.org/zh-CN/docs/Web/API/KeyboardEvent/code)}
@@ -339,31 +380,28 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
             timeScale = v;
         },
         //#endregion
-        /** @generator 等待 timeFrame 帧 */
+        /** @readonly @generator 等待 timeFrame 帧 */
         Sleep,
+        /**
+         * @readonly
+         * JSTG 预置的自机
+         * @example
+         * const player = game.prefabPlayers.makeSimpleOn(game.board);
+         * game.forever(loop => {
+         *     player.update({input: game.input, timeScale: game.ts});
+         * });
+         */
+        prefabPlayers,
         //Entity,
     };
 
 };
 
-/**
- * JSTG 预置的自机
- * @example
- * const player = jstg.prefabPlayers.makeSimpleOn(game.board);
- * game.forever(loop => {
- *     player.update({input: game.input, timeScale: game.ts});
- * });
- */
-export const prefabPlayers = {
-    /** @async 创建预置自机：Simple */
-    makeSimpleOn,
-}
-
 export {
     LoadAsset,
     LoadSvg,
     loadSvgDefaultResolution,
-    LoadPrefabDanmakuTextures,
+    //LoadPrefabTextures,
     Key,
     Player,
 }

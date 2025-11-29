@@ -237,10 +237,3 @@ export class Player {
     }
 
 }
-
-/** @internal */
-export const _playerTextures: Record<string, pixi.Texture | undefined> = {};
-
-/** @internal @async */
-export const _getOrLoadPlayerTexture = async (name: string) =>
-    _playerTextures[name] ?? (_playerTextures[name] = await LoadSvg(`assets/images/player/${name}.svg`));
