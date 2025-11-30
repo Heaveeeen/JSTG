@@ -5,6 +5,7 @@ import { Player } from "./player/player.js";
 import { makeSimple } from "./player/simple.js";
 import { makeRng } from "./random.js";
 import * as utils from './utils.js';
+import { Danmaku } from "./danmaku.js";
 
 /**
  * 循环的控制器对象，用于控制该循环
@@ -261,6 +262,14 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
             zIndex: -10,
         });
 
+        let width = 200;
+        let height = 240;
+
+        const isInBoundary = (x: number, y: number) => Math.abs(x) <= width && Math.abs(y) <= height;
+        const isDanmakuInBoundary = (danmaku: Danmaku) =>
+            Math.abs(danmaku.x) <= width + 5 + danmaku.hitboxRadius * 1.5 &&
+            Math.abs(danmaku.y) <= height + 5 + danmaku.hitboxRadius * 1.5
+
         return {
             /** 根节点 */
             root,
@@ -269,10 +278,16 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
             /** 装有所有消弹特效的根节点 */
             danmakuEraseSprites,
             /** 场地宽度的一半 */
-            width: 200,
+            get width() { return width; },
+            set width(n: number) { width = n; },
             /** 场地高度的一半 */
-            height: 240,
-        }
+            get height() { return height; },
+            set height(n: number) { height = n; },
+            /** 检查一个点是否在版面内 */
+            isInBoundary,
+            /** 检查一个弹幕是否在版面内 */
+            isDanmakuInBoundary,
+        };
     })();
 
     type Board = typeof mainBoard;
@@ -363,27 +378,15 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          * // 可以引用 JSTG.Key ，如果愿意的话也可以直接写字符串字面量（不推荐）
          */
         input,
-        //#region game.timeScale
+        //#region timeScale
         /** 游戏的时间流速，可以用来做慢镜头啥的  
          * @alias ts */
-        get timeScale() {
-            return timeScale;
-        },
-        /** 游戏的时间流速，可以用来做慢镜头啥的  
-         * @alias ts */
-        set timeScale(v: number) {
-            timeScale = v;
-        },
+        get timeScale() { return timeScale; },
+        set timeScale(v: number) { timeScale = v; },
         /** 游戏的时间流速，可以用来做慢镜头啥的  
          * @alias timeScale */
-        get ts() {
-            return timeScale;
-        },
-        /** 游戏的时间流速，可以用来做慢镜头啥的  
-         * @alias timeScale */
-        set ts(v: number) {
-            timeScale = v;
-        },
+        get ts() { return timeScale; },
+        set ts(v: number) { timeScale = v; },
         //#endregion
         /** @readonly @generator 等待 timeFrame 帧 */
         Sleep,
