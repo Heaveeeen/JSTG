@@ -1,21 +1,7 @@
 import * as pixi from "pixi";
-import { LoadSvg } from "../assets.js";
 import { Input, Key } from "../Input.js";
 import { Board } from "../jstg.js";
-
-const clamp = (n: number, a: number, b: number) => Math.min(Math.max(a, n), b);
-
-const alphaTo = (spr: pixi.Sprite, dst: number, speed: number) => {
-    if (Math.abs(spr.alpha - dst) <= speed) {
-        spr.alpha = dst;
-    } else if (dst > spr.alpha) {
-        spr.alpha += speed;
-    } else {
-        spr.alpha -= speed;
-    }
-}
-
-const deg = (n: number) => n * Math.PI / 180;
+import { alphaTo, deg, clamp } from "../utils.js";
 
 interface PlayerKeyMapOptions {
     /** @default Key.ArrowUp */

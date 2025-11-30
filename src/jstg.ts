@@ -3,6 +3,8 @@ import { LoadAsset, LoadPrefabTextures, LoadPrefabTexturesOptions, LoadSvg, load
 import { Key, makeInput } from "./Input.js";
 import { Player } from "./player/player.js";
 import { makeSimple } from "./player/simple.js";
+import { makeRng } from "./random.js";
+import * as utils from './utils.js';
 
 /**
  * 循环的控制器对象，用于控制该循环
@@ -84,6 +86,8 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
     app.ticker.maxFPS = 60;
 
     //#region game
+
+    const rng = makeRng();
 
     let timeScale: number = 1;
 
@@ -394,6 +398,20 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          */
         prefabPlayers,
         //Entity,
+        /** JSTG 预置的一些贴图 */
+        prefabTextures,
+        /**
+         * 一个随机数发生器，你可以用它来生成随机数
+         * @example
+         * game.rng.int(1, 10); // 生成一个 [1, 10) 之间的随机整数
+         * game.rng.maybe(0.3); // 有 30% 的概率返回 true
+         * game.rng.select(
+         *     [1, "smallball"],
+         *     [3, "ringball"],
+         *     [6, "glowball"],
+         * ); // 根据权重，随机返回一个弹幕类型
+         */
+        rng,
     };
 
 };
@@ -405,4 +423,6 @@ export {
     //LoadPrefabTextures,
     Key,
     Player,
+    makeRng,
+    utils,
 }
