@@ -17,7 +17,7 @@ export interface LoopController {
     stop(): void,
 }
 
-export type CoDoGenerator = Generator<void, void, LoopController>;
+export type CoDoGenerator = Generator<void, void, void>;
 
 type ExtractPromiseType<U> = U extends Promise<infer T> ? T : never
 export type Game = ExtractPromiseType<ReturnType<typeof LaunchGame>>;
@@ -115,6 +115,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          * 注意：应为生成器实例，而非生成器函数！
          * @example
          * // 通过自调用的方式构造生成器
+         * 
          * (function*() {
          *     // 干啥干啥
          * })()
