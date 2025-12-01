@@ -1,6 +1,6 @@
 // @ts-check
 
-/// <reference path="./lib/pixi.d.ts" />
+/// <reference path="./lib/pixi/pixi.d.ts" />
 // ↑ 上面这行用来联动 pixi 的类型注释
 
 import * as jstg from "./dist/jstg.js";
