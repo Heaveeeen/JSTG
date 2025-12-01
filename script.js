@@ -1,13 +1,12 @@
 // @ts-check
 
 /// <reference path="./lib/pixi/pixi.d.ts" />
-// ↑ 上面这行用来联动 pixi 的类型注释
+/// <reference path="./lib/howler/howler.d.ts" />
+// ↑ 上面这两行用来联动 pixi 和 howler 的类型注释
 
 import * as jstg from "./dist/jstg.js";
-//import * as jstg from "./src/jstg.ts";
 import * as pixi from "pixi";
 
-//jstg.loadSvgDefaultResolution.set(3);
 
 // 启动游戏
 (async () => {
@@ -28,7 +27,8 @@ import * as pixi from "pixi";
 45\t67\t890
 这是小 simple，她很可爱，我借来用用，而且她很可爱
 按方向键让她移动，按G可以杀了她
-（别问我为什么是G，随便选的）`,
+（别问我为什么是G，随便选的）
+按B可以播放一个 biu 的音效`,
         x: 0,
         y: 0,
         anchor: 0.5,
@@ -44,19 +44,11 @@ import * as pixi from "pixi";
         },
     });
 
-    /*let fooFilter = new pixi.ColorMatrixFilter({resolution: "inherit"});
-    const fooSpr = new pixi.Sprite({
-        parent: board,
-        texture: await LoadSvg("assets/images/foo.svg", 3),
-        x: 0,
-        y: 0,
-        anchor: 0.5,
-        scale: 4/3,
-        filters: fooFilter,
-    });*/
-
     /** 自机 */
     const pl = await game.prefabPlayers.makeSimple();
+    const biu = new Howl({
+        src: "./assets/sounds/biu.mp3",
+    });
 
     forever(loop => {
         pl.update({input, timeScale: game.ts, keyMap: {
@@ -71,6 +63,9 @@ import * as pixi from "pixi";
         if (isDown(Key.KeyG)) {
             pl.destroy();
             loop.stop();
+        }
+        if (isDown(Key.KeyB)) {
+            biu.play();
         }
     });
 

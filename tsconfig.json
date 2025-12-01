@@ -14,5 +14,5 @@
             "pixi": ["./lib/pixi/pixi"],
         }
     },
-    "include": ["src/**/*"],
+    "include": ["src/**/*", "lib/**/*"],
 }
