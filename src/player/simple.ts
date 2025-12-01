@@ -1,9 +1,10 @@
 import { Player } from './player.js';
-import { Board } from "../jstg.js";
+import { Board, Game } from "../jstg.js";
 import { PrefabTextures } from '../assets.js';
 
-export const makeSimple = async (board: Board, prefabTextures: PrefabTextures) => new Player({
+export const makeSimple = async (game: Game, board: Board, prefabTextures: PrefabTextures) => new Player({
     name: "Simple",
+    game,
     board,
     mainTexture: prefabTextures.player.Simple,
     hitboxTexture: prefabTextures.player.hitbox,

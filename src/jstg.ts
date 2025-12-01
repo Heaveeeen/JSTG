@@ -305,14 +305,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         }
     })();
 
-    const prefabPlayers = {
-        /** @async 创建预置自机：Simple */
-        makeSimple: (board = mainBoard) => makeSimple(board, prefabTextures),
-    };
-
-    //#endregion
-
-    return {
+    const game = {
         /**
          * @readonly
          * pixi.Application 实例
@@ -399,7 +392,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          *     player.update({input: game.input, timeScale: game.ts});
          * });
          */
-        prefabPlayers,
+        prefabPlayers: null as unknown as typeof prefabPlayers, // 奇技淫巧
         //Entity,
         /** JSTG 预置的一些贴图 */
         prefabTextures,
@@ -416,6 +409,17 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          */
         rng,
     };
+
+    const prefabPlayers = {
+        /** @async 创建预置自机：Simple */
+        makeSimple: () => makeSimple(game, mainBoard, prefabTextures),
+    };
+
+    game.prefabPlayers = prefabPlayers
+
+    //#endregion
+
+    return game;
 
 };
 

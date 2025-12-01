@@ -37,6 +37,19 @@ const pushDanmaku = (danmaku: Danmaku) => {
 }
 
 export class Danmaku {
+    /**
+     * 弹幕的种类名称
+     * @example
+     * "smallball"
+     */
+    readonly type: string;
+    readonly game: Game;
+    readonly board: Board;
+    /** 弹幕判定圆的半径 */
+    readonly hitboxRadius: number;
+    /** 弹幕所对应的 Sprite */
+    readonly sprite: pixi.Sprite;
+
     /** @private 弹幕在上一次判定时的 x */
     private _lastX: number;
     /** @private 弹幕在上一次判定时的 y */
@@ -58,22 +71,28 @@ export class Danmaku {
      */
     canBeErase: boolean = true;
 
-    constructor(
-        readonly game: Game,
-        readonly board: Board,
+    constructor(options: {
         /**
          * 弹幕的种类名称
          * @example
          * "smallball"
          */
-        readonly type: string,
+        type: string,
+        game: Game,
+        board: Board,
         /** 弹幕判定圆的半径 */
-        readonly hitboxRadius: number,
+        hitboxRadius: number,
         /** 弹幕所对应的 Sprite */
-        readonly sprite: pixi.Sprite
-    ) {
-        this._lastX = sprite.x;
-        this._lastY = sprite.y;
+        sprite: pixi.Sprite,
+    }) {
+        this.type = options.type;
+        this.game = options.game;
+        this.board = options.board;
+        this.hitboxRadius = options.hitboxRadius;
+        this.sprite = options.sprite;
+        
+        this._lastX = this.sprite.x;
+        this._lastY = this.sprite.y;
         this._index = pushDanmaku(this);
     }
 

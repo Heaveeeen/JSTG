@@ -1,6 +1,6 @@
 import * as pixi from "pixi";
 import { Input, Key } from "../Input.js";
-import { Board } from "../jstg.js";
+import { Board, Game } from "../jstg.js";
 import { alphaTo, deg, clamp } from "../utils.js";
 
 interface PlayerKeyMapOptions {
@@ -45,6 +45,7 @@ interface PlayerUpdateOptions {
 export class Player {
 
     readonly name: string;
+    readonly game: Game;
     readonly board: Board;
 
     hue1: number;
@@ -84,6 +85,7 @@ export class Player {
 
     constructor(options: {
         name: string,
+        game: Game
         board: Board,
         mainTexture: pixi.Texture,
         hitboxTexture: pixi.Texture,
@@ -98,8 +100,8 @@ export class Player {
         slowSpeed?: number,
         updateFn: (this: Player, options: PlayerUpdateOptions) => any,
     }) {
-
         this.name = options.name;
+        this.game = options.game;
         this.board = options.board;
         this.hue1 = options.hue1 ?? 0;
         this.hitboxRadius = options.hitboxRadius ?? 3;
