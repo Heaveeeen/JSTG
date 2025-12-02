@@ -43,7 +43,7 @@ export function LoadSvg(
 export interface LoadPrefabTexturesOptions {
     /**
      * 如果路径错误，请填写此参数，改变预置贴图的根目录
-     * @default "assets/images/"
+     * @default "./assets/images/"
      */
     baseUrl?: string,
     /** 默认值为 {@linkcode loadSvgDefaultResolution} 的值 */
@@ -54,7 +54,7 @@ export interface LoadPrefabTexturesOptions {
  * @async 加载 JSTG 预置的各种贴图（主要来源于 Simple 的弹幕引擎250724）
  */
 export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions = {}) {
-    const base = options.baseUrl ?? "assets/images/";
+    const base = options.baseUrl ?? "./assets/images/";
     const res = options.resolution;
     return {
         danmaku: {
@@ -110,4 +110,105 @@ type ExtractPromiseType<U> = U extends Promise<infer T> ? T : never;
 
 export type PrefabTextures = ExtractPromiseType<ReturnType<typeof LoadPrefabTextures>>;
 
-export type PrefabDanmakuNames = keyof ExtractPromiseType<ReturnType<typeof LoadPrefabTextures>>["danmaku"];
+export type PrefabDanmakuNames = keyof ExtractPromiseType<ReturnType<typeof LoadPrefabTextures>>["danmaku"]["danmaku"];
+
+export interface LoadPrefabSoundsOptions {
+    /**
+     * 如果路径错误，请填写此参数，改变预置音效的根目录
+     * @default "./assets/sounds/"
+     */
+    baseUrl?: string,
+    /**
+     * @see {@linkcode Howler.HowlOptions.pool}
+     * @default 1
+     */
+    pool?: number
+    /**
+     * @see {@linkcode Howler.HowlOptions.volume}
+     * @default 0.8
+     */
+    volume?: number
+}
+
+export async function LoadPrefabSounds(options: LoadPrefabSoundsOptions = {}) {
+    const base = options.baseUrl ?? "./assets/sounds/";
+    const pool = options.pool ?? 1;
+    const volume = options.volume ?? 0.8;
+    return {
+        thse: {
+            big: new Howl({ src: `${base}thse/big.wav`, pool, volume, }),
+            bonus: new Howl({ src: `${base}thse/bonus.wav`, pool, volume, }),
+            bonus2: new Howl({ src: `${base}thse/bonus2.wav`, pool, volume, }),
+            bonus4: new Howl({ src: `${base}thse/bonus4.wav`, pool, volume, }),
+            boon00: new Howl({ src: `${base}thse/boon00.wav`, pool, volume, }),
+            boon01: new Howl({ src: `${base}thse/boon01.wav`, pool, volume, }),
+            cancel00: new Howl({ src: `${base}thse/cancel00.wav`, pool, volume, }),
+            cardget: new Howl({ src: `${base}thse/cardget.wav`, pool, volume, }),
+            cat00: new Howl({ src: `${base}thse/cat00.wav`, pool, volume, }),
+            ch00: new Howl({ src: `${base}thse/ch00.wav`, pool, volume, }),
+            ch01: new Howl({ src: `${base}thse/ch01.wav`, pool, volume, }),
+            ch02: new Howl({ src: `${base}thse/ch02.wav`, pool, volume, }),
+            ch03: new Howl({ src: `${base}thse/ch03.wav`, pool, volume, }),
+            changeitem: new Howl({ src: `${base}thse/changeitem.wav`, pool, volume, }),
+            damage00: new Howl({ src: `${base}thse/damage00.wav`, pool, volume, }),
+            damage01: new Howl({ src: `${base}thse/damage01.wav`, pool, volume, }),
+            don00: new Howl({ src: `${base}thse/don00.wav`, pool, volume, }),
+            enep00: new Howl({ src: `${base}thse/enep00.wav`, pool, volume, }),
+            enep01: new Howl({ src: `${base}thse/enep01.wav`, pool, volume, }),
+            enep02: new Howl({ src: `${base}thse/enep02.wav`, pool, volume, }),
+            etbreak: new Howl({ src: `${base}thse/etbreak.wav`, pool, volume, }),
+            extend: new Howl({ src: `${base}thse/extend.wav`, pool, volume, }),
+            extend2: new Howl({ src: `${base}thse/extend2.wav`, pool, volume, }),
+            fault: new Howl({ src: `${base}thse/fault.wav`, pool, volume, }),
+            graze: new Howl({ src: `${base}thse/graze.wav`, pool, volume, }),
+            gun00: new Howl({ src: `${base}thse/gun00.wav`, pool, volume, }),
+            heal: new Howl({ src: `${base}thse/heal.wav`, pool, volume, }),
+            invalid: new Howl({ src: `${base}thse/invalid.wav`, pool, volume, }),
+            item00: new Howl({ src: `${base}thse/item00.wav`, pool, volume, }),
+            item01: new Howl({ src: `${base}thse/item01.wav`, pool, volume, }),
+            kira00: new Howl({ src: `${base}thse/kira00.wav`, pool, volume, }),
+            kira01: new Howl({ src: `${base}thse/kira01.wav`, pool, volume, }),
+            kira02: new Howl({ src: `${base}thse/kira02.wav`, pool, volume, }),
+            lazer00: new Howl({ src: `${base}thse/lazer00.wav`, pool, volume, }),
+            lazer01: new Howl({ src: `${base}thse/lazer01.wav`, pool, volume, }),
+            lazer02: new Howl({ src: `${base}thse/lazer02.wav`, pool, volume, }),
+            lgods1: new Howl({ src: `${base}thse/lgods1.wav`, pool, volume, }),
+            lgods2: new Howl({ src: `${base}thse/lgods2.wav`, pool, volume, }),
+            lgods3: new Howl({ src: `${base}thse/lgods3.wav`, pool, volume, }),
+            lgods4: new Howl({ src: `${base}thse/lgods4.wav`, pool, volume, }),
+            lgodsget: new Howl({ src: `${base}thse/lgodsget.wav`, pool, volume, }),
+            msl: new Howl({ src: `${base}thse/msl.wav`, pool, volume, }),
+            msl2: new Howl({ src: `${base}thse/msl2.wav`, pool, volume, }),
+            msl3: new Howl({ src: `${base}thse/msl3.wav`, pool, volume, }),
+            nep00: new Howl({ src: `${base}thse/nep00.wav`, pool, volume, }),
+            nodamage: new Howl({ src: `${base}thse/nodamage.wav`, pool, volume, }),
+            noise: new Howl({ src: `${base}thse/noise.wav`, pool, volume, }),
+            notice: new Howl({ src: `${base}thse/notice.wav`, pool, volume, }),
+            ok00: new Howl({ src: `${base}thse/ok00.wav`, pool, volume, }),
+            pause: new Howl({ src: `${base}thse/pause.wav`, pool, volume, }),
+            pin00: new Howl({ src: `${base}thse/pin00.wav`, pool, volume, }),
+            pin01: new Howl({ src: `${base}thse/pin01.wav`, pool, volume, }),
+            pldead00: new Howl({ src: `${base}thse/pldead00.wav`, pool, volume, }),
+            pldead01: new Howl({ src: `${base}thse/pldead01.wav`, pool, volume, }),
+            plst00: new Howl({ src: `${base}thse/plst00.wav`, pool, volume, }),
+            power0: new Howl({ src: `${base}thse/power0.wav`, pool, volume, }),
+            power1: new Howl({ src: `${base}thse/power1.wav`, pool, volume, }),
+            powerup: new Howl({ src: `${base}thse/powerup.wav`, pool, volume, }),
+            release: new Howl({ src: `${base}thse/release.wav`, pool, volume, }),
+            select00: new Howl({ src: `${base}thse/select00.wav`, pool, volume, }),
+            slash: new Howl({ src: `${base}thse/slash.wav`, pool, volume, }),
+            tan00: new Howl({ src: `${base}thse/tan00.wav`, pool, volume, }),
+            tan01: new Howl({ src: `${base}thse/tan01.wav`, pool, volume, }),
+            tan02: new Howl({ src: `${base}thse/tan02.wav`, pool, volume, }),
+            tan03: new Howl({ src: `${base}thse/tan03.wav`, pool, volume, }),
+            timeout: new Howl({ src: `${base}thse/timeout.wav`, pool, volume, }),
+            timeout2: new Howl({ src: `${base}thse/timeout2.wav`, pool, volume, }),
+            trophy: new Howl({ src: `${base}thse/trophy.wav`, pool, volume, }),
+            ufo: new Howl({ src: `${base}thse/ufo.wav`, pool, volume, }),
+            ufoalert: new Howl({ src: `${base}thse/ufoalert.wav`, pool, volume, }),
+            warpl: new Howl({ src: `${base}thse/warpl.wav`, pool, volume, }),
+            warpr: new Howl({ src: `${base}thse/warpr.wav`, pool, volume, }),
+            wolf: new Howl({ src: `${base}thse/wolf.wav`, pool, volume, }),
+        }
+    }
+}

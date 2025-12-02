@@ -1,7 +1,8 @@
 import * as pixi from "pixi";
-import { Board, Game } from "./jstg.js";
+import { Board, Game, LoopController } from "./jstg.js";
 import { Player } from "./player/player.js";
 import { alphaTo } from "./utils.js";
+import { PrefabDanmakuNames } from "./assets.js";
 
 interface Point {
     x: number,
@@ -21,19 +22,6 @@ const getPointToSegmentDist2 = (AB: Point, AP: Point) => {
         return (AP.x - AB.x) ** 2 + (AP.y - AB.y) ** 2;
     }
     return (AB.y * AP.x - AB.x * AP.y) ** 2 / (AB.x ** 2 + AB.y ** 2);
-}
-
-/** @readonly 所有接受判定的弹幕，⚠️可能含有已经摧毁的无效弹幕 */
-export const danmakusToUpdate: Danmaku[] = [];
-const danmakusFreeIndexs: number[] = [];
-const pushDanmaku = (danmaku: Danmaku) => {
-    const newIndex = danmakusFreeIndexs.pop()
-    if (newIndex === undefined) {
-        return danmakusToUpdate.push(danmaku) - 1;
-    } else {
-        danmakusToUpdate[newIndex] = danmaku;
-        return newIndex;
-    }
 }
 
 export class Danmaku {
@@ -93,7 +81,7 @@ export class Danmaku {
         
         this._lastX = this.sprite.x;
         this._lastY = this.sprite.y;
-        this._index = pushDanmaku(this);
+        this._index = this.game.danmakuManager.push(this);
     }
 
     /** 更新该弹幕与玩家的交互逻辑（即伤害判定），如果 isHasDamage 属性为 true ，该函数什么也不会做 */
@@ -101,23 +89,24 @@ export class Danmaku {
         if (!this.isDamageToPlayer) return;
         const isHit = ( // 先粗判
             Math.abs(player.x - this.x) <= 30 && Math.abs(player.y - this.y) <= 30
-        ) || getPointToSegmentDist2(
+        ) && getPointToSegmentDist2(
             { // D'D - P'P
                 x: (this.x - this._lastX) - (player.x - player._lastX),
                 y: (this.y - this._lastY) - (player.y - player._lastY)
             },
-            { // P'
-                x: player._lastX, y: player._lastY
+            { // D'->P'
+                x: (player._lastX - this._lastX), y: (player._lastY - this._lastY)
             }
         ) < this.hitboxRadius ** 2 + player.hitboxRadius ** 2; // 牢 zun 的神秘正交圆判定
 
-        this._lastX = this.sprite.x;
-        this._lastY = this.sprite.y;
+        this._lastX = this.x;
+        this._lastY = this.y;
         player._lastX = player.x;
         player._lastY = player.y;
 
         if (isHit) {
-            // TODO: player.miss();
+            player.hitByDanmaku(this);
+            this.erase();
         }
     }
 
@@ -125,19 +114,41 @@ export class Danmaku {
     set x(n: number) { this.sprite.x = n; }
     get y() { return this.sprite.y; }
     set y(n: number) { this.sprite.y = n; }
+    get rotation() { return this.sprite.rotation; }
+    set rotation(n: number) { this.sprite.rotation = n; }
+    speed = 0;
 
-    destroy() {
-        if (this.destroyed) return;
-        this.sprite.destroy();
-        danmakusFreeIndexs.push(this._index);
+    /** 向着 this.sprite 的方向前进 d 步，若 d 留空则为 this.speed * game.timeScale */
+    move(/** @default this.speed * game.timeScale */d: number = this.speed * this.game.ts) {
+        this.x += Math.cos(this.rotation) * d;
+        this.y += Math.sin(this.rotation) * d;
+    }
+
+    /** 匀变速至目标速度 */
+    speedToA(/** 目标速度 */dst: number, /** 加速度 */a: number) {
+        if (Math.abs(dst - this.speed) < a * this.game.ts) {
+            this.speed = dst;
+        } else if (dst > this.speed) {
+            this.speed += a * this.game.ts;
+        } else {
+            this.speed -= a * this.game.ts;
+        }
+    }
+
+    /** 指数衰减地变速至目标速度 */
+    speedToK(/** 目标速度 */dst: number, /** 每次变速的比 */k: number) {
+        this.speed += (dst - this.speed * k * this.game.ts);
     }
 
     /**
-     * 返回该对象是否被摧毁，已被摧毁的对象不应该继续使用，应该丢弃  
-     * 例如：一个跟踪弹保留了一个敌人的引用，并且追踪敌人的位置；那么，该跟踪弹应该在每帧都检查目标敌人是否已被摧毁，如果已被摧毁则失去目标，寻找新的目标或者进入游荡状态或者怎么怎么样
+     * 如果该弹幕超出版面边界，摧毁该弹幕  
+     * 可以传入一个 loop ，在摧毁弹幕时自动终止循环
      */
-    get destroyed() {
-        return this.sprite.destroyed;
+    boundaryDelete(loop?: LoopController) {
+        if (!this.board.isDanmakuInBoundary(this)) {
+            this.destroy();
+            loop?.stop();
+        }
     }
 
     /**
@@ -147,8 +158,8 @@ export class Danmaku {
     erase(options: {
         /** 根据 this.type 自动决定。对于一般的弹幕，消弹特效为特定的消弹造型；对于大玉和核弹，缩小虚化至消失。 */
         eraseEffectType?: "common" | "bubble",
-    }) {
-        if (!this.canBeErase) return;
+    } = {}) {
+        if (!this.canBeErase || this.destroyed) return;
         if (this.board.isDanmakuInBoundary(this)) {
             options.eraseEffectType ??= this.type === "bubble" || this.type === "nuclear" ? "bubble" : "common";
             if (this.sprite.visible && this.sprite.alpha > 0) {
@@ -161,7 +172,6 @@ export class Danmaku {
                 }
             }
         }
-        this.destroy();
     }
 
     /** @internal @generator 普通消弹特效的行为，雾化消失 */
@@ -174,6 +184,7 @@ export class Danmaku {
             scale: this.sprite.scale.x,
             rotation: Math.random() * 2 * Math.PI,
         });
+        this.destroy();
         while (eraseEffectSprite.alpha > 0) {
             eraseEffectSprite.scale.x += 0.2 * this.game.ts;
             eraseEffectSprite.scale.y += 0.2 * this.game.ts;
@@ -193,6 +204,7 @@ export class Danmaku {
             scale: 0.5,
             //rotation: this.sprite.rotation,
         });
+        this.destroy();
         while (eraseEffectSprite.alpha > 0) {
             eraseEffectSprite.scale.x -= 0.1 * this.game.ts;
             eraseEffectSprite.scale.y -= 0.1 * this.game.ts;
@@ -201,4 +213,62 @@ export class Danmaku {
         }
         eraseEffectSprite.destroy();
     }
+
+    destroy() {
+        if (this.destroyed) return;
+        this.sprite.destroy();
+        this.game.danmakuManager.freeIndexs.push(this._index);
+    }
+
+    /**
+     * 返回该对象是否被摧毁，已被摧毁的对象不应该继续使用，应该丢弃  
+     * 例如：一个跟踪弹保留了一个敌人的引用，并且追踪敌人的位置；那么，该跟踪弹应该在每帧都检查目标敌人是否已被摧毁，如果已被摧毁则失去目标，寻找新的目标或者进入游荡状态或者怎么怎么样
+     */
+    get destroyed() {
+        return this.sprite.destroyed;
+    }
 }
+
+export const prefabDanmakuHitboxRadius = {
+    smallball: 4,
+    ringball: 4,
+    glowball: 4,
+    fireball: 4,
+    dot: 2.4,
+    grain: 3,
+    chain: 3,
+    seed: 3,
+    scale: 3,
+    bullet: 3,
+    drip: 3,
+    card: 3.2,
+    note: 4,
+    arrow: 4,
+    butterfly: 4,
+    smallstar: 4,
+    bigstar: 8,
+    ellipse: 5,
+    heart: 8,
+    middleball: 8,
+    lightball: 8,
+    bubble: 16,
+    crystal: 3,
+    particle: 3,
+    nova: 4,
+    needle: 2,
+    coin: 4,
+    knife: 4,
+    sword: 6,
+    /** 弹幕引擎里没填这个，我姑且这么填 */
+    nuclear: 48,
+};
+
+export const makePrefabDanmaku = (game: Game, board: Board, type: PrefabDanmakuNames) => new Danmaku({
+    type, game, board,
+    hitboxRadius: prefabDanmakuHitboxRadius[type],
+    sprite: new pixi.Sprite({
+        parent: board.commonDanmakuSprites,
+        texture: game.prefabTextures.danmaku.danmaku[type],
+        anchor: 0.5,
+    }),
+})

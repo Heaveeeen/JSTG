@@ -1,11 +1,11 @@
 import * as pixi from "pixi";
-import { LoadAsset, LoadPrefabTextures, LoadPrefabTexturesOptions, LoadSvg, loadSvgDefaultResolution } from "./assets.js";
+import { LoadAsset, LoadPrefabSounds, LoadPrefabSoundsOptions, LoadPrefabTextures, LoadPrefabTexturesOptions, LoadSvg, loadSvgDefaultResolution, PrefabDanmakuNames } from "./assets.js";
 import { Key, makeInput } from "./Input.js";
 import { Player } from "./player/player.js";
 import { makeSimple } from "./player/simple.js";
 import { makeRng } from "./random.js";
 import * as utils from './utils.js';
-import { Danmaku } from "./danmaku.js";
+import { Danmaku, makePrefabDanmaku as _makePrefabDanmaku } from "./danmaku.js";
 
 /**
  * 循环的控制器对象，用于控制该循环
@@ -40,6 +40,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
     pixiApplicationOptions?: Partial<pixi.ApplicationOptions>,
     onResizeWindow?: (app: pixi.Application) => any,
     loadPrefabTexturesOptions?: LoadPrefabTexturesOptions,
+    loadPrefabSoundsOptions?: LoadPrefabSoundsOptions,
 } = {}) {
 
     const app = new pixi.Application();
@@ -85,10 +86,11 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
     });
 
     app.ticker.maxFPS = 60;
+    app.ticker.minFPS = 60;
 
     //#region game
 
-    const rng = makeRng();
+    const rand = makeRng();
 
     let timeScale: number = 1;
 
@@ -135,6 +137,34 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
     const input = makeInput();
     if (options.autoUpdateInput ?? true) { forever(() => input._update(), 30000); }
 
+    const danmakuManager = (() => {
+        /** @readonly 所有接受判定的弹幕，⚠️可能含有已经摧毁的无效弹幕 */
+        const danmakus: Danmaku[] = [];
+        const freeIndexs: number[] = [];
+        const push = (danmaku: Danmaku) => {
+            const newIndex = freeIndexs.pop()
+            if (newIndex === undefined) {
+                return danmakus.push(danmaku) - 1;
+            } else {
+                danmakus[newIndex] = danmaku;
+                return newIndex;
+            }
+        }
+        /** 更新所有弹幕的攻击逻辑 */
+        const update = (player: Player) => {
+            danmakus.forEach(danmaku => {
+                if (!danmaku.destroyed) danmaku.updateDamageToPlayer(player);
+            });
+        }
+
+        return {
+            danmakus,
+            freeIndexs,
+            push,
+            update,
+        };
+    })();
+
     function* Sleep(
         /** 要等待的时间（帧） */
         timeFrame: number
@@ -146,6 +176,8 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
     }
 
     const prefabTextures = await LoadPrefabTextures(options.loadPrefabTexturesOptions);
+
+    const prefabSounds = await LoadPrefabSounds(options.loadPrefabSoundsOptions);
 
     const mainBoard = await (async () => {
         const root = new pixi.Sprite({
@@ -194,7 +226,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
 
     type Board = typeof mainBoard;
 
-    const ingameUI = (async () => {
+    const ingameUI = (() => {
         const root = new pixi.Sprite({parent: app.stage});
         const windowFrame = new pixi.Sprite({
             parent: root, texture: prefabTextures.ingameUI.window
@@ -229,7 +261,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          * @example
          * let t = 0;
          * forever(loop => {
-         *     myDanmaku.step(2);
+         *     myDanmaku.move(2);
          *     myDanmaku.boundaryDelete();
          *     t++;
          *     if (t >= 200) {
@@ -289,35 +321,70 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          * @readonly
          * JSTG 预置的自机
          * @example
-         * const player = game.prefabPlayers.makeSimpleOn(game.board);
+         * const player = game.prefabPlayers.makeSimple();
          * game.forever(loop => {
-         *     player.update({input: game.input, timeScale: game.ts});
+         *     player.update();
          * });
          */
         prefabPlayers: null as unknown as typeof prefabPlayers, // 奇技淫巧
-        //Entity,
+        /** 
+         * 创建一个 JSTG 预置的弹幕  
+         * @example
+         * const myPlayer = game.prefabPlayers.makeSimple();
+         * const myDanmaku = game.makePrefabDanmaku("smallball");
+         * myDanmaku.x = 0;
+         * myDanmaku.y = 0;
+         * game.forever(loop => {
+         *     myPlayer.update();
+         *     myDanmaku.move(2);
+         *     myDanmaku.boundaryDelete();
+         *     game.danmakuManager.update(myPlayer);
+         * });
+         */
+        makePrefabDanmaku: null as unknown as typeof makePrefabDanmaku, // 又是奇技淫巧
         /** JSTG 预置的一些贴图 */
         prefabTextures,
+        /** JSTG 预置的一些音效，部分音效解包自东方原作 */
+        prefabSounds,
         /**
          * 一个随机数发生器，你可以用它来生成随机数
          * @example
-         * game.rng.int(1, 10); // 生成一个 [1, 10) 之间的随机整数
-         * game.rng.maybe(0.3); // 有 30% 的概率返回 true
-         * game.rng.select(
+         * game.rand.int(0, 10); // 生成一个 [0, 10) 之间的随机整数
+         * game.rand.float(5, 8); // 生成一个 [5, 8) 之间的随机浮点数
+         * game.rand.maybe(0.3); // 有 30% 的概率返回 true
+         * game.rand.select(
          *     [1, "smallball"],
          *     [3, "ringball"],
          *     [6, "glowball"],
          * ); // 根据权重，随机返回一个弹幕类型
          */
-        rng,
+        rand,
+        /**
+         * @readonly
+         * 弹幕管理器，你每帧都需要利用这个东西来更新所有弹幕，这样弹幕才能攻击玩家  
+         * @example
+         * const myPlayer = game.prefabPlayers.makeSimple();
+         * const myDanmaku = game.makePrefabDanmaku("smallball");
+         * myDanmaku.x = 0;
+         * myDanmaku.y = 0;
+         * game.forever(loop => {
+         *     myPlayer.update();
+         *     myDanmaku.move(2);
+         *     myDanmaku.boundaryDelete();
+         *     game.danmakuManager.update(myPlayer);
+         * });
+         */
+        danmakuManager,
     };
 
     const prefabPlayers = {
         /** @async 创建预置自机：Simple */
         makeSimple: () => makeSimple(game, mainBoard, prefabTextures),
     };
+    game.prefabPlayers = prefabPlayers;
 
-    game.prefabPlayers = prefabPlayers
+    const makePrefabDanmaku = (type: PrefabDanmakuNames) => _makePrefabDanmaku(game, mainBoard, type);
+    game.makePrefabDanmaku = makePrefabDanmaku;
 
     //#endregion
 

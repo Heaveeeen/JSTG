@@ -127,7 +127,12 @@ declare namespace Howler {
         rate?: number;
         /** 是否预加载 */
         preload?: boolean | 'metadata';
-        /** 声音池大小 */
+        /**
+         * 声音池大小  
+         * 我曾经的理解是：最多允许 pool 个该音效同时播放  
+         * 例如：pool 为 1 ，只要播放第二次某音效就会立刻覆盖上一次播放的该音效  
+         * 现在已经证明没有这回事。。。
+         */
         pool?: number;
         /** 精灵图定义（声音片段） */
         sprite?: {[name: string]: [number, number, boolean?]};

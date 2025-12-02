@@ -6,6 +6,7 @@
 
 import * as jstg from "./dist/jstg.js";
 import * as pixi from "pixi";
+import { deg } from "./dist/utils.js";
 
 
 // 启动游戏
@@ -37,21 +38,76 @@ import * as pixi from "pixi";
             fill: "#000000",
             align: "center",
             stroke: {
-                color: "#ffffff",
+                color: "#888888",
+                width: 3,
+                join: "round",
+            }
+        },
+        zIndex: -200,
+    });
+
+    /** 自机 */
+    const pl = await game.prefabPlayers.makeSimple();
+    const { tan00 } = game.prefabSounds.thse;
+    
+    //@ts-expect-error
+    window.game=game
+    
+    coDo((function*(){
+        while (true) {
+            const sid = tan00.play();
+            tan00.volume(0.05);
+            for (let i = 0; i < 20; i++) {
+                const dan = game.makePrefabDanmaku("scale");
+                //const filter = new pixi.ColorMatrixFilter();
+                //filter.hue(Math.random() * 360, false);
+                //dan.sprite.filters = filter;
+                dan.rotation = deg(Math.random() * 360);
+                //dan.sprite.blendMode = "add";
+                game.forever(loop => {
+                    if (dan.destroyed) return loop.stop();
+                    dan.speedToA(1.5, 0.5);
+                    dan.move();
+                    dan.rotation += deg(0.5) * game.ts;
+                    dan.boundaryDelete(loop);
+                });
+            }
+            yield* game.Sleep(10);
+        }
+    })());
+
+    const fpsTxt = new pixi.Text({
+        parent: ingameUI.root,
+        text: `FPS:-`,
+        x: 440, y: 450,
+        anchor: 0,
+        style: {
+            fontSize: 20,
+            fill: "#000000",
+            align: "left",
+            stroke: {
+                color: "#888888",
                 width: 3,
                 join: "round",
             }
         },
     });
 
-    /** 自机 */
-    const pl = await game.prefabPlayers.makeSimple();
-    const biu = new Howl({
-        src: "./assets/sounds/biu.mp3",
+    let fps = 60;
+    let lastTime = performance.now();
+    coDo((function*() {
+        for (let i = 0; i < 30; i ++) yield;
+        let now = performance.now();
+        fps = Math.round(3000000 / (now - lastTime)) / 100;
+        lastTime = now;
+    })());
+
+    forever(()=>{
+        fpsTxt.text = `FPS:${Math.round(app.ticker.FPS * 100) / 100} ${fps}`;
     });
 
     forever(loop => {
-        pl.update({input, timeScale: game.ts, keyMap: {
+        pl.update({input, keyMap: {
             up: [Key.ArrowUp, Key.KeyW],
             down: [Key.ArrowDown, Key.KeyS],
             left: [Key.ArrowLeft, Key.KeyA],
@@ -65,8 +121,9 @@ import * as pixi from "pixi";
             loop.stop();
         }
         if (isDown(Key.KeyB)) {
-            biu.play();
+            game.prefabSounds.thse.pldead00.play();
         }
+        game.danmakuManager.update(pl);
     });
 
 })();

@@ -2,6 +2,7 @@ import * as pixi from "pixi";
 import { Input, Key } from "../Input.js";
 import { Board, Game } from "../jstg.js";
 import { alphaTo, deg, clamp } from "../utils.js";
+import { Danmaku } from "../danmaku.js";
 
 interface PlayerKeyMapOptions {
     /** @default Key.ArrowUp */
@@ -21,14 +22,8 @@ interface PlayerKeyMapOptions {
 }
 
 interface PlayerUpdateOptions {
-    /** @example game.input */
-    input: Input,
+    input?: Input,
 
-    /**
-     * @default 1
-     * @example game.timeScale
-     */
-    timeScale?: number,
     keyMap?: PlayerKeyMapOptions,
     /**
      * 高速时的移速
@@ -42,6 +37,10 @@ interface PlayerUpdateOptions {
     slowSpeed?: number,
 }
 
+interface PlayerHitByEnemyOptions {
+    danmaku?: Danmaku,
+}
+
 export class Player {
 
     readonly name: string;
@@ -52,8 +51,21 @@ export class Player {
     hitboxRadius: number;
     highSpeed: number;
     slowSpeed: number;
+    dyingBombTime: number;
 
     isSlow: boolean = false;
+    invincibleTime: number = 90;
+
+    state: {
+        type: "common",
+    } | {
+        type: "dying",
+        timeSinceDying: number,
+    } | {
+        type: "miss",
+    } = {
+        type: "common",
+    }
 
     /** 图层低于弹幕的节点们的父节点，这个节点里有像素绘、低速魔法阵 */
     backParts: pixi.Sprite;
@@ -98,7 +110,10 @@ export class Player {
         highSpeed?: number,
         /** @default 1.6 */
         slowSpeed?: number,
-        updateFn: (this: Player, options: PlayerUpdateOptions) => any,
+        /** @default 12 */
+        dyingBombTime?: number,
+        updateFn: (this: Player, options?: PlayerUpdateOptions) => any,
+        hitByEnemyFn: (this: Player, options?: PlayerHitByEnemyOptions) => any,
     }) {
         this.name = options.name;
         this.game = options.game;
@@ -107,7 +122,9 @@ export class Player {
         this.hitboxRadius = options.hitboxRadius ?? 3;
         this.highSpeed = options.highSpeed ?? 4;
         this.slowSpeed = options.slowSpeed ?? 1.6;
+        this.dyingBombTime = options.dyingBombTime ?? 12;
         this.update = options.updateFn;
+        this.hitByEnemy = options.hitByEnemyFn;
 
         this.backParts = new pixi.Sprite({
             parent: options.board.root,
@@ -157,25 +174,30 @@ export class Player {
      * @example
      * game.forever(loop => {
      *     // 基本的写法
-     *     player.update({input: game.input});
+     *     player.update();
      * 
-     *     // 更高级的写法
-     *     // 玩家移速可被 game.timeScale 影响
+     *     // 接受一个特定输入源，并重设键位和移速的写法
      *     // 将移动键位重设为 WASD ，并且按 Z 或者 K 都可以开火，按 Shift 或空格都可以低速
-     *     player.update({input: game.input, timescale: game.ts, keyMap: {
-     *         up: Key.KeyW, down: Key.KeyS, left: Key.KeyA, right: Key.KeyD,
-     *         attack: [Key.KeyZ, Key.KeyK],
-     *         slow: [Key.ShiftLeft, Key.Space],
-     *     });
+     *     player.update({
+     *         input: game.input,
+     *         highSpeed: 5, slowSpeed: 2,
+     *         keyMap: {
+     *             up: Key.KeyW, down: Key.KeyS, left: Key.KeyA, right: Key.KeyD,
+     *             attack: [Key.KeyZ, Key.KeyK],
+     *             slow: [Key.ShiftLeft, Key.Space],
+     *         },
+     *     );
      * });
      */
-    update: (this: Player, options: PlayerUpdateOptions) => any;
+    update: (this: Player, options?: PlayerUpdateOptions) => any;
+
+    hitByEnemy: (this: Player, options?: PlayerHitByEnemyOptions) => any;
 
     /** 移动自机 */
     move(options: PlayerUpdateOptions) {
-        const ts = options.timeScale ?? 1;
+        const ts = this.game.ts;
         const keyMap = options.keyMap ?? {};
-        const { isDown, isHold } = options.input;
+        const { isDown, isHold } = options.input ?? this.game.input;
         let dx = 0;
         let dy = 0;
 
@@ -208,6 +230,48 @@ export class Player {
             this.x = clamp(this.x + dx, -w, w);
             this.y = clamp(this.y + dy, -h, h);
         }
+    }
+
+    /** @internal */
+    _updateStateGen: Generator<void, void, void> = (function*(this: Player) {
+        while (true) {
+            while (this.state.type === "common") yield; // 平时
+            while (this.state.type === "dying") { // 决死期间
+                if (this.state.timeSinceDying >= this.dyingBombTime) {
+                    this.state = { type: "miss" }; // 似了
+                    // TODO: miss
+                } else {
+                    this.state.timeSinceDying += this.game.ts;
+                    if (this.invincibleTime > 0) { // 决死成功
+
+                    }
+                    yield;
+                }
+            }
+            while (this.state.type === "miss") { // 死后
+                this.state = { type: "common" };
+                // TODO: miss
+            }
+        }
+    }).call(this);
+
+
+    updateState() {
+        this._updateStateGen.next();
+        if (this.invincibleTime <= this.game.ts) {
+            this.invincibleTime = 0;
+        } else {
+            this.invincibleTime -= this.game.ts;
+        }
+    }
+
+    hitByDanmaku(danmaku: Danmaku) {
+        if (this.state.type !== "common" || this.invincibleTime > 0) return;
+        const { pldead00 } = this.game.prefabSounds.thse;
+        pldead00.stop();
+        pldead00.play();
+        this.state = { type: "dying", timeSinceDying: 0 };
+        this.updateState();
     }
 
     destroy() {
