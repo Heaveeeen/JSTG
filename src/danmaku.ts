@@ -1,8 +1,9 @@
 import * as pixi from "pixi";
-import { Board, Game, LoopController } from "./jstg.js";
+import { Board, Game } from "./jstg.js";
 import { Player } from "./player/player.js";
 import { alphaTo } from "./utils.js";
 import { PrefabDanmakuNames } from "./assets.js";
+import { LoopController } from "./looper.js";
 
 interface Point {
     x: number,

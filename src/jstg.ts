@@ -6,18 +6,8 @@ import { makeSimple } from "./player/simple.js";
 import { makeRng } from "./random.js";
 import * as utils from './utils.js';
 import { Danmaku, makePrefabDanmaku as _makePrefabDanmaku } from "./danmaku.js";
+import { CoDoGenerator, makeLooper } from "./looper.js";
 
-/**
- * 循环的控制器对象，用于控制该循环
- * @example
- * loop.stop(); // 从下一帧开始，停止该循环
- */
-export interface LoopController {
-    /** 从下一帧起，停止该循环 */
-    stop(): void,
-}
-
-export type CoDoGenerator = Generator<void, void, void>;
 
 type ExtractPromiseType<U> = U extends Promise<infer T> ? T : never
 export type Game = ExtractPromiseType<ReturnType<typeof LaunchGame>>;
@@ -85,57 +75,18 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         },
     });
 
-    app.ticker.maxFPS = 60;
-    app.ticker.minFPS = 60;
-
     //#region game
 
     const rand = makeRng();
 
     let timeScale: number = 1;
 
-    function forever(
-        /** 要循环执行的回调函数 */
-        fn: (loop: LoopController) => any,
-        /** 执行优先级，每帧都会先执行优先级较大的脚本 */
-        priority: number = 0
-    ): LoopController {
-        const loop: LoopController = {
-            stop,
-        };
-        const tickerFn = () => fn(loop);
-        function stop() {
-            app.ticker.remove(tickerFn);
-        }
-        app.ticker.add(tickerFn, undefined, priority);
-        return loop;
-    };
-
-    function coDo(
-        /**
-         * 要执行的生成器实例  
-         * 注意：应为生成器实例，而非生成器函数！
-         * @example
-         * // 通过自调用的方式构造生成器
-         * 
-         * (function*() {
-         *     // 干啥干啥
-         * })()
-         */
-        generator: CoDoGenerator,
-        /** 执行优先级，每帧都会先执行优先级较大的脚本 */
-        priority: number = 0
-    ): LoopController {
-        return forever(loop => {
-            const result = generator.next();
-            if (result.done) {
-                loop.stop();
-            }
-        });
-    }
+    const looper = makeLooper();
+    const { forever, coDo } = looper;
+    looper.start();
 
     const input = makeInput();
-    if (options.autoUpdateInput ?? true) { forever(() => input._update(), 30000); }
+    if (options.autoUpdateInput ?? true) { forever(() => input._update(), 0); }
 
     const danmakuManager = (() => {
         /** @readonly 所有接受判定的弹幕，⚠️可能含有已经摧毁的无效弹幕 */
@@ -255,6 +206,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          * 版面，就是自机和弹幕所处的那个主要场地
          */
         board: mainBoard,
+        looper,
         /**
          * @readonly
          * 每帧执行一次给定的回调函数。  

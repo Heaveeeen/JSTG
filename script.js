@@ -57,7 +57,7 @@ import { deg } from "./dist/utils.js";
         while (true) {
             const sid = tan00.play();
             tan00.volume(0.05);
-            for (let i = 0; i < 20; i++) {
+            for (let i = 0; i < 500; i++) {
                 const dan = game.makePrefabDanmaku("scale");
                 //const filter = new pixi.ColorMatrixFilter();
                 //filter.hue(Math.random() * 360, false);
@@ -65,7 +65,10 @@ import { deg } from "./dist/utils.js";
                 dan.rotation = deg(Math.random() * 360);
                 //dan.sprite.blendMode = "add";
                 game.forever(loop => {
-                    if (dan.destroyed) return loop.stop();
+                    if (dan.destroyed) {
+                        console.log("fuck");
+                        return loop.stop();
+                    }
                     dan.speedToA(1.5, 0.5);
                     dan.move();
                     dan.rotation += deg(0.5) * game.ts;
@@ -96,14 +99,16 @@ import { deg } from "./dist/utils.js";
     let fps = 60;
     let lastTime = performance.now();
     coDo((function*() {
-        for (let i = 0; i < 30; i ++) yield;
-        let now = performance.now();
-        fps = Math.round(3000000 / (now - lastTime)) / 100;
-        lastTime = now;
+        while (true) {
+            for (let i = 0; i < 30; i ++) yield;
+            let now = performance.now();
+            fps = Math.round(3000000 / (now - lastTime)) / 100;
+            lastTime = now;
+        }
     })());
 
     forever(()=>{
-        fpsTxt.text = `FPS:${Math.round(app.ticker.FPS * 100) / 100} ${fps}`;
+        fpsTxt.text = `FPS: ${fps}`;
     });
 
     forever(loop => {
