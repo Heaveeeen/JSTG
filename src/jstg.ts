@@ -86,7 +86,6 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
     });
 
     app.ticker.maxFPS = 60;
-    app.ticker.minFPS = 60;
 
     //#region game
 
@@ -231,13 +230,55 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         const windowFrame = new pixi.Sprite({
             parent: root, texture: prefabTextures.ingameUI.window
         });
+
+        const fpsMonitor = new pixi.Text({
+            parent: root,
+            text: `FPS:-`,
+            x: 530, y: 450,
+            anchor: 0,
+            style: {
+                fontSize: 18,
+                fill: "#000000",
+                align: "left",
+                stroke: {
+                    color: "#888888",
+                    width: 3,
+                    join: "round",
+                }
+            },
+        });
+
         return {
             /** 根节点 */
             root,
             /** 游戏内 UI 的那个像窗口框架的大背景 */
             windowFrame,
+            /** fps 指示器 */
+            fpsMonitor,
         }
     })();
+
+    let fps = 60;
+    let lastTime = performance.now();
+    coDo((function*() {
+        while (true) {
+            for (let i = 0; i < 20; i ++) yield;
+            let now = performance.now();
+            fps = Math.round(2000000 / (now - lastTime)) / 100;
+            lastTime = now;
+            ingameUI.fpsMonitor.text = `FPS:${fps}`;
+        }
+    })());
+
+    forever(() => {
+        if (app.ticker.deltaTime > 1.6 && fps < 60) {
+            const rawfps = app.ticker.maxFPS;
+            app.ticker.maxFPS = 0;
+            app.ticker.update();
+            app.ticker.maxFPS = rawfps;
+            //console.log("fuck");
+        }
+    }, -2e9);
 
     const game = {
         /**
@@ -315,6 +356,8 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         get ts() { return timeScale; },
         set ts(v: number) { timeScale = v; },
         //#endregion
+        /** 每秒帧数的估算值 */
+        get fps() { return fps; },
         /** @readonly @generator 等待 timeFrame 帧 */
         Sleep,
         /**
