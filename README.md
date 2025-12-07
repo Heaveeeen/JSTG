@@ -1,17 +1,16 @@
 <p align="center">
   <a href="https://github.com/Heaveeeen/JSTG">
-    <img style="height: 150px" alt="JSTG-logo" src="./assets/jstg-icon/jstg-logo-2.svg">
+    <img style="height: 120px" alt="JSTG-logo" src="./assets/jstg-icon/jstg-logo-2.svg">
   </a>
 </p>
 
-J-STG
-==
+# J-STG ⛩️
 
 JSTG 是一个用于制作类似《东方Project》的弹幕射击游戏的游戏框架。
 
----
+## 概述
 
-本框架的设计目标是成为 [simple 的弹幕引擎模板](https://www.ccw.site/detail/66b599236d94eb6335e33779) 的继任者，成为与其并列的另一种选择，提供更强大的功能、更好的性能、更舒适的编程体验。目前设想的目标包括但不限于：
+本框架的设计目标是成为与 [simple 的弹幕引擎模板](https://www.ccw.site/detail/66b599236d94eb6335e33779) 并列的另一种选择，提供更强大的功能、更好的性能、更舒适的编程体验。目前设想的目标包括但不限于：
 
 * 在同一个作品中，包含多个道中和 Boss 关卡。
 * 将不同的内容（例如不同关卡和不同符卡）分散在多个文件中，以便管理大型项目。
@@ -24,15 +23,15 @@ JSTG 是一个用于制作类似《东方Project》的弹幕射击游戏的游�
 
 ⚠️目前该项目仅处于早期探索阶段，接口随时可能发生更改⚠️
 
----
+## 版权声明
+
+本框架准备采用 MIT 开源协议，但我暂且不想管这个。
 
 本框架引用了 pixi.js 和 howler.js 。部分素材借用自 Simple 的弹幕引擎模板（以250724版为主）和《东方Project》系列作品。LOGO 中使用了思源黑体作为字体。
 
 如果您想要利用此框架制作自己的作品或者进行修改、分发等等，请务必注意不要侵犯我的上游版权方。请认真阅读 `./lib` 中的相关说明。
 
----
-
-相关链接：
+## 相关链接
 
 [JSTG - github](https://github.com/Heaveeeen/JSTG)  
 [pixi.js](https://pixijs.com)  
