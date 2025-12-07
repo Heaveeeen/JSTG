@@ -56,23 +56,26 @@ import { deg } from "./dist/utils.js";
     
     coDo((function*(){
         while (true) {
-            const sid = tan00.play();
-            tan00.volume(0.05);
-            for (let i = 0; i < 50; i++) {
-                const dan = game.makePrefabDanmaku("scale");
-                //const filter = new pixi.ColorMatrixFilter();
-                //filter.hue(Math.random() * 360, false);
-                //dan.sprite.filters = filter;
-                dan.rotation = deg(Math.random() * 360);
-                //dan.sprite.blendMode = "add";
-                game.forever(loop => {
-                    dan.speedToA(1.5, 0.5);
-                    dan.move();
-                    dan.rotation += deg(0.5) * game.ts;
-                    dan.boundaryDelete(loop);
-                }, { with: dan });
+            for (let i=0; i<15; i++) {
+                const sid = tan00.play();
+                tan00.volume(0.05);
+                for (let i = 0; i < 1000; i++) {
+                    const dan = game.makePrefabDanmaku("scale");
+                    //const filter = new pixi.ColorMatrixFilter();
+                    //filter.hue(Math.random() * 360, false);
+                    //dan.sprite.filters = filter;
+                    dan.rotation = deg(Math.random() * 360);
+                    //dan.sprite.blendMode = "add";
+                    game.forever(loop => {
+                        dan.speedToA(1.5, 0.5);
+                        dan.move();
+                        dan.rotation += deg(0.5) * game.ts;
+                        dan.boundaryDelete(loop);
+                    }, { with: dan });
+                }
+                yield* game.Sleep(10);
             }
-            yield* game.Sleep(10);
+            yield* game.Sleep(600);
         }
     })());
 

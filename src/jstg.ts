@@ -267,14 +267,14 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         const fpsMonitor = new pixi.Text({
             parent: root,
             text: `FPS:-`,
-            x: 530, y: 450,
+            x: 572, y: 458,
             anchor: 0,
             style: {
-                fontSize: 18,
+                fontSize: 12,
                 fill: "#000000",
                 align: "left",
                 stroke: {
-                    color: "#888888",
+                    color: "#4d4d4d",
                     width: 3,
                     join: "round",
                 }
@@ -293,24 +293,27 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
 
     // 粗测帧率
     let fps = 60;
-    let lastTime = performance.now();
-    coDo((function*() {
-        while (true) {
-            for (let i = 0; i < 20; i ++) yield;
-            let now = performance.now();
-            fps = Math.round(2000000 / (now - lastTime)) / 100;
-            lastTime = now;
-            ingameUI.fpsMonitor.text = `FPS:${fps}`;
+    let timeRecords: number[] = [];
+    forever(() => {
+        const now = performance.now();
+        timeRecords.push(now);
+        if (timeRecords.length > 10) {
+            fps = Math.round(1000000 / (now - (timeRecords.shift() as number))) / 100;
         }
-    })());
+        ingameUI.fpsMonitor.text = `FPS:${fps}`;
+    }, { priority: 1e9 });
 
+    let frameCompCount = 0;
     // 跳帧补偿
     forever(() => {
-        if (app.ticker.deltaTime > 1.6 && fps < 60) {
+        if (app.ticker.deltaMS > (frameCompCount + 1.5) * 16.66 && fps < 63) {
+            frameCompCount ++;
             const rawfps = app.ticker.maxFPS;
             app.ticker.maxFPS = 0;
             app.ticker.update();
             app.ticker.maxFPS = rawfps;
+        } else {
+            frameCompCount = 0;
         }
     }, { priority: -2e9 });
 
