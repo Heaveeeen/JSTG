@@ -60,7 +60,7 @@ import { deg } from "./dist/utils.js";
                 const sid = tan00.play();
                 tan00.volume(0.05);
                 for (let i = 0; i < 1000; i++) {
-                    const dan = game.makePrefabDanmaku("scale");
+                    const dan = game.makeDanmaku("scale");
                     //const filter = new pixi.ColorMatrixFilter();
                     //filter.hue(Math.random() * 360, false);
                     //dan.sprite.filters = filter;
@@ -71,7 +71,7 @@ import { deg } from "./dist/utils.js";
                         dan.move();
                         dan.rotation += deg(0.5) * game.ts;
                         dan.boundaryDelete(loop);
-                    }, { with: dan });
+                    }, { with: [pl, dan] });
                 }
                 yield* game.Sleep(10);
             }

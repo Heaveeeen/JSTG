@@ -170,30 +170,46 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
     if (options.autoUpdateInput ?? true) { forever(() => input._update(), { priority: 30000 }); }
 
     const danmakuManager = (() => {
-        /** @readonly 所有接受判定的弹幕，⚠️可能含有已经摧毁的无效弹幕 */
         const danmakus: Danmaku[] = [];
-        const freeIndexs: number[] = [];
+
         const push = (danmaku: Danmaku) => {
-            const newIndex = freeIndexs.pop()
-            if (newIndex === undefined) {
-                return danmakus.push(danmaku) - 1;
-            } else {
-                danmakus[newIndex] = danmaku;
-                return newIndex;
+            danmakus.push(danmaku);
+            if (++validCount > lastValidCount * 2) {
+                clean();
             }
         }
-        /** 更新所有弹幕的攻击逻辑 */
+
         const update = (player: Player) => {
-            danmakus.forEach(danmaku => {
-                if (!danmaku.destroyed) danmaku.updateDamageToPlayer(player);
-            });
+            for (let i = 0; i < danmakus.length; i++) {
+                if (!danmakus[i].destroyed) danmakus[i].updateDamageToPlayer(player);
+            }
+        }
+
+        let validCount = 0;
+        let lastValidCount = 60;
+
+        const clean = () => {
+            validCount = 0;
+            for (const danmaku of danmakus) {
+                if (!danmaku.destroyed) {
+                    danmakus[validCount++] = danmaku;
+                }
+            }
+            danmakus.length = validCount;
+            lastValidCount = Math.max(validCount, 60);
         }
 
         return {
+            /** @readonly 所有接受判定的弹幕，⚠️可能含有已经摧毁的无效弹幕 */
             danmakus,
-            freeIndexs,
+            /** 推入并开始更新一个弹幕，此函数会在合适的时机自动触发清理 */
             push,
+            /** 更新所有弹幕的攻击逻辑 */
             update,
+            /** 立即清理弹幕列表，一般不用管这个东西 */
+            clean,
+            /** @readonly @internal 当前场上的弹幕数量（⚠️包含无效弹幕） */
+            get _validCount() { return validCount; },
         };
     })();
 
@@ -423,7 +439,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          * 创建一个 JSTG 预置的弹幕  
          * @example
          * const myPlayer = game.prefabPlayers.makeSimple();
-         * const myDanmaku = game.makePrefabDanmaku("smallball");
+         * const myDanmaku = game.makeDanmaku("smallball");
          * myDanmaku.x = 0;
          * myDanmaku.y = 0;
          * game.forever(loop => {
@@ -431,9 +447,9 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          *     myDanmaku.move(2);
          *     myDanmaku.boundaryDelete();
          *     game.danmakuManager.update(myPlayer);
-         * });
+         * }, { with: [myPlayer, myDanmaku] });
          */
-        makePrefabDanmaku: null as unknown as typeof makePrefabDanmaku, // 又是奇技淫巧
+        makeDanmaku: null as unknown as typeof makeDanmaku, // 又是奇技淫巧
         /** JSTG 预置的一些贴图 */
         prefabTextures,
         /** JSTG 预置的一些音效，部分音效解包自东方原作 */
@@ -465,8 +481,10 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
     };
     game.prefabPlayers = prefabPlayers;
 
-    const makePrefabDanmaku = (type: PrefabDanmakuNames) => _makePrefabDanmaku(game, mainBoard, type);
-    game.makePrefabDanmaku = makePrefabDanmaku;
+    const makeDanmaku = (type: PrefabDanmakuNames, parent?: pixi.Container) =>
+        _makePrefabDanmaku(game, mainBoard, type, parent);
+
+    game.makeDanmaku = makeDanmaku;
 
     //#endregion
 

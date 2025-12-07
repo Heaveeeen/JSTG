@@ -42,8 +42,6 @@ export class Danmaku {
     private _lastX: number;
     /** @private 弹幕在上一次判定时的 y */
     private _lastY: number;
-    /** @private 弹幕在 danmakusToUpdate 中的索引 */
-    private _index: number;
     /**
      * 该弹幕是否会与玩家交互并造成伤害
      * @example
@@ -81,7 +79,7 @@ export class Danmaku {
         
         this._lastX = this.sprite.x;
         this._lastY = this.sprite.y;
-        this._index = this.game.danmakuManager.push(this);
+        this.game.danmakuManager.push(this);
     }
 
     /** 更新该弹幕与玩家的交互逻辑（即伤害判定），如果 isHasDamage 属性为 true ，该函数什么也不会做 */
@@ -217,7 +215,6 @@ export class Danmaku {
     destroy() {
         if (this.destroyed) return;
         this.sprite.destroy();
-        this.game.danmakuManager.freeIndexs.push(this._index);
     }
 
     /**
@@ -263,11 +260,11 @@ export const prefabDanmakuHitboxRadius = {
     nuclear: 48,
 };
 
-export const makePrefabDanmaku = (game: Game, board: Board, type: PrefabDanmakuNames) => new Danmaku({
+export const makePrefabDanmaku = (game: Game, board: Board, type: PrefabDanmakuNames, parent?: pixi.Container) => new Danmaku({
     type, game, board,
     hitboxRadius: prefabDanmakuHitboxRadius[type],
     sprite: new pixi.Sprite({
-        parent: board.commonDanmakuSprites,
+        parent: parent ?? board.commonDanmakuSprites,
         texture: game.prefabTextures.danmaku.danmaku[type],
         anchor: 0.5,
     }),
