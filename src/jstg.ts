@@ -1,7 +1,7 @@
 import * as pixi from "pixi";
 import { LoadAsset, LoadPrefabSounds, LoadPrefabSoundsOptions, LoadPrefabTextures, LoadPrefabTexturesOptions, LoadSvg, loadSvgDefaultResolution, PrefabDanmakuNames } from "./assets.js";
 import { Key, makeInput } from "./Input.js";
-import { Player } from "./player/player.js";
+import { MakePlayerOptions, Player } from "./player/player.js";
 import { makeSimple } from "./player/simple.js";
 import { makeRng } from "./random.js";
 import * as utils from './utils.js';
@@ -15,6 +15,29 @@ import { Danmaku, makePrefabDanmaku as _makePrefabDanmaku } from "./danmaku.js";
 export interface LoopController {
     /** 从下一帧起，停止该循环 */
     stop(): void,
+}
+
+interface Destroyable {
+    destroy(): any;
+    get destroyed(): boolean;
+}
+
+interface LoopOptions {
+    /**
+     * 执行优先级，每帧都会先执行优先级较大的脚本
+     * @default 0
+     */
+    priority?: number,
+    /** 依赖的对象，这些对象只要死了任意一个，该脚本就会停止 */
+    rely?: Destroyable | Destroyable[],
+    /** 该脚本停止时，自动摧毁这些对象 */
+    dieWith?: Destroyable | Destroyable[],
+    /**
+     * 绑定的对象。  
+     * 这些对象只要死了任意一个，该脚本就会停止；  
+     * 该脚本停止时，自动摧毁这些对象。
+     */
+    with?: Destroyable | Destroyable[],
 }
 
 export type CoDoGenerator = Generator<void, void, void>;
@@ -96,17 +119,28 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
     function forever(
         /** 要循环执行的回调函数 */
         fn: (loop: LoopController) => any,
-        /** 执行优先级，每帧都会先执行优先级较大的脚本 */
-        priority: number = 0
+        options: LoopOptions = {}
     ): LoopController {
+        const withs = utils.makeElements(options.with);
+
+        const rely = [...new Set([...utils.makeElements(options.rely), ...withs])];
+        const dieWith = [...new Set([...utils.makeElements(options.dieWith), ...withs])];
+
         const loop: LoopController = {
             stop,
         };
-        const tickerFn = () => fn(loop);
+        const tickerFn = (rely.length === 0) ? () => fn(loop) : () => {
+            if (rely.some(r => r.destroyed)) {
+                stop();
+            } else {
+                fn(loop);
+            }
+        };
         function stop() {
             app.ticker.remove(tickerFn);
+            dieWith.forEach(d => d.destroy());
         }
-        app.ticker.add(tickerFn, undefined, priority);
+        app.ticker.add(tickerFn, undefined, options.priority);
         return loop;
     };
 
@@ -122,19 +156,18 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          * })()
          */
         generator: CoDoGenerator,
-        /** 执行优先级，每帧都会先执行优先级较大的脚本 */
-        priority: number = 0
+        options: LoopOptions = {}
     ): LoopController {
         return forever(loop => {
             const result = generator.next();
             if (result.done) {
                 loop.stop();
             }
-        });
+        }, options);
     }
 
     const input = makeInput();
-    if (options.autoUpdateInput ?? true) { forever(() => input._update(), 30000); }
+    if (options.autoUpdateInput ?? true) { forever(() => input._update(), { priority: 30000 }); }
 
     const danmakuManager = (() => {
         /** @readonly 所有接受判定的弹幕，⚠️可能含有已经摧毁的无效弹幕 */
@@ -258,6 +291,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         }
     })();
 
+    // 粗测帧率
     let fps = 60;
     let lastTime = performance.now();
     coDo((function*() {
@@ -270,15 +304,15 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         }
     })());
 
+    // 跳帧补偿
     forever(() => {
         if (app.ticker.deltaTime > 1.6 && fps < 60) {
             const rawfps = app.ticker.maxFPS;
             app.ticker.maxFPS = 0;
             app.ticker.update();
             app.ticker.maxFPS = rawfps;
-            //console.log("fuck");
         }
-    }, -2e9);
+    }, { priority: -2e9 });
 
     const game = {
         /**
@@ -364,9 +398,21 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          * @readonly
          * JSTG 预置的自机
          * @example
+         * // 简单的例子
          * const player = game.prefabPlayers.makeSimple();
+         * 
+         * // 一个手动更新以设置键位的例子
+         * const player = game.prefabPlayers.makeSimple({ autoUpdateSelf: false });
          * game.forever(loop => {
-         *     player.update();
+         *     player.update({
+         *         highSpeed: 5, slowSpeed: 2,
+         *         keyMap: {
+         *             up: Key.KeyW,
+         *             down: Key.KeyS,
+         *             left: Key.KeyA,
+         *             right: Key.KeyD,
+         *         },
+         *     });
          * });
          */
         prefabPlayers: null as unknown as typeof prefabPlayers, // 奇技淫巧
@@ -404,25 +450,15 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         rand,
         /**
          * @readonly
-         * 弹幕管理器，你每帧都需要利用这个东西来更新所有弹幕，这样弹幕才能攻击玩家  
-         * @example
-         * const myPlayer = game.prefabPlayers.makeSimple();
-         * const myDanmaku = game.makePrefabDanmaku("smallball");
-         * myDanmaku.x = 0;
-         * myDanmaku.y = 0;
-         * game.forever(loop => {
-         *     myPlayer.update();
-         *     myDanmaku.move(2);
-         *     myDanmaku.boundaryDelete();
-         *     game.danmakuManager.update(myPlayer);
-         * });
+         * 弹幕管理器，可以利用这个东西来每帧更新所有弹幕，这样弹幕才能攻击玩家  
+         * 正常情况下不用管这个东西，因为自机会自动帮你调用它的 update 方法
          */
         danmakuManager,
     };
 
     const prefabPlayers = {
         /** @async 创建预置自机：Simple */
-        makeSimple: () => makeSimple(game, mainBoard, prefabTextures),
+        makeSimple: (options: MakePlayerOptions = {}) => makeSimple(game, mainBoard, prefabTextures, options),
     };
     game.prefabPlayers = prefabPlayers;
 

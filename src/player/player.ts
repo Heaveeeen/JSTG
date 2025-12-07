@@ -41,6 +41,13 @@ interface PlayerHitByEnemyOptions {
     danmaku?: Danmaku,
 }
 
+export interface MakePlayerOptions {
+    /** @default true */
+    autoUpdateSelf?: boolean,
+    /** @default true */
+    autoUpdateDanmakuManager?: boolean,
+}
+
 export class Player {
 
     readonly name: string;
@@ -112,6 +119,10 @@ export class Player {
         slowSpeed?: number,
         /** @default 12 */
         dyingBombTime?: number,
+        /** @default true */
+        autoUpdateDanmakuManager?: boolean,
+        /** @default true */
+        autoUpdateSelf?: boolean,
         updateFn: (this: Player, options?: PlayerUpdateOptions) => any,
         hitByEnemyFn: (this: Player, options?: PlayerHitByEnemyOptions) => any,
     }) {
@@ -167,6 +178,14 @@ export class Player {
 
         this.x = this._lastX = 0;
         this.y = this._lastY = 185;
+
+        if (options.autoUpdateSelf ?? true) {
+            this.game.forever(() => this.update(), { priority: 29900, with: this });
+        }
+
+        if (options.autoUpdateDanmakuManager ?? true) {
+            this.game.forever(() => this.game.danmakuManager.update(this), { priority: -30000, with: this });
+        }
     }
 
     /**

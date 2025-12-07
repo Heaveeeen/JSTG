@@ -1,8 +1,10 @@
-import { Player } from './player.js';
+import { MakePlayerOptions, Player } from './player.js';
 import { Board, Game } from "../jstg.js";
 import { PrefabTextures } from '../assets.js';
 
-export const makeSimple = async (game: Game, board: Board, prefabTextures: PrefabTextures) => new Player({
+export const makeSimple = async (
+    game: Game, board: Board, prefabTextures: PrefabTextures, options: MakePlayerOptions = {}
+) => new Player({
     name: "Simple",
     game,
     board,
@@ -20,5 +22,6 @@ export const makeSimple = async (game: Game, board: Board, prefabTextures: Prefa
             this.hitByDanmaku(options.danmaku);
         }
     },
+    ...options,
 });
 
