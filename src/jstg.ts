@@ -29,16 +29,16 @@ interface LoopOptions {
      * @default 0
      */
     priority?: number,
-    /** 依赖的对象，这些对象只要死了任意一个，该脚本就会停止 */
-    rely?: Destroyable | Destroyable[],
-    /** 该脚本停止时，自动摧毁这些对象 */
-    dieWith?: Destroyable | Destroyable[],
+    /** 借用，或者说依赖的对象，这些对象只要死了任意一个，该脚本就会停止。 */
+    ref?: Destroyable | Destroyable[],
+    /** 该脚本停止时，自动摧毁这些对象。 */
+    kill?: Destroyable | Destroyable[],
     /**
-     * 绑定的对象。  
+     * 绑定所有权的对象。  
      * 这些对象只要死了任意一个，该脚本就会停止；  
      * 该脚本停止时，自动摧毁这些对象。
      */
-    with?: Destroyable | Destroyable[],
+    own?: Destroyable | Destroyable[],
 }
 
 export type CoDoGenerator = Generator<void, void, void>;
@@ -122,16 +122,16 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         fn: (loop: LoopController) => any,
         options: LoopOptions = {}
     ): LoopController {
-        const withs = utils.makeElements(options.with);
+        const own = utils.makeElements(options.own);
 
-        const rely = [...new Set([...utils.makeElements(options.rely), ...withs])];
-        const dieWith = [...new Set([...utils.makeElements(options.dieWith), ...withs])];
+        const ref = [...new Set([...utils.makeElements(options.ref), ...own])];
+        const kill = [...new Set([...utils.makeElements(options.kill), ...own])];
 
         const loop: LoopController = {
             stop,
         };
-        const tickerFn = (rely.length === 0) ? () => fn(loop) : () => {
-            if (rely.some(r => r.destroyed)) {
+        const tickerFn = (ref.length === 0) ? () => fn(loop) : () => {
+            if (ref.some(r => r.destroyed)) {
                 stop();
             } else {
                 fn(loop);
@@ -139,7 +139,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         };
         function stop() {
             app.ticker.remove(tickerFn);
-            dieWith.forEach(d => d.destroy());
+            kill.forEach(d => d.destroy());
         }
         app.ticker.add(tickerFn, undefined, options.priority);
         return loop;
