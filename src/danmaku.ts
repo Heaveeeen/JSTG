@@ -163,10 +163,10 @@ export class Danmaku {
             if (this.sprite.visible && this.sprite.alpha > 0) {
                 if (options.eraseEffectType === "common") {
                     // 常规消弹
-                    this.game.coDo(this._EraseEffectBehaviorCommon());
+                    this.game.coDo(this._EraseEffectBehaviorCommon);
                 } else {
                     // 大玉消弹
-                    this.game.coDo(this._EraseEffectBehaviorBubble());
+                    this.game.coDo(this._EraseEffectBehaviorBubble);
                 }
             }
         }

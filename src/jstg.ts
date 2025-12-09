@@ -146,24 +146,27 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
 
     function coDo(
         /**
-         * 要执行的生成器实例  
-         * 注意：应为生成器实例，而非生成器函数！
+         * 要执行的生成器函数  
+         * 注意：应为生成器函数，而非生成器实例！
          * @example
-         * // 通过自调用的方式构造生成器
-         * 
-         * (function*() {
+         * // 现场构造一个生成器函数
+         * function*(loop) {
          *     // 干啥干啥
-         * })()
+         *     loop.stop();
+         *     return; // return 和 loop.stop() 都能停止该协程
+         * }
          */
-        generator: CoDoGenerator,
+        generatorFn: (loop: LoopController) => CoDoGenerator,
         options: LoopOptions = {}
     ): LoopController {
-        return forever(loop => {
+        const loop = forever(loop => {
             const result = generator.next();
             if (result.done) {
                 loop.stop();
             }
         }, options);
+        const generator = generatorFn(loop);
+        return loop;
     }
 
     const input = makeInput();
@@ -369,7 +372,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          * @readonly
          * 启动一个生成器函数，可以简单理解为启动一个协程，可以编写 Scratch 风格的代码
          * @example 
-         * coDo((function*() {
+         * coDo(function*() {
          *     console.log("准备……"); // 这行代码立刻执行
          *     yield* Sleep(60); // 这行代码让该脚本暂停 1 秒（60帧）
          *     console.log("计时开始"); // 然后，执行这行代码
@@ -378,7 +381,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          *         yield; // 这行代码让脚本暂停并等待下一帧
          *     }
          *     console.log("结束"); // 上述循环总共执行了 120 帧之后，才会执行这行代码
-         * })());
+         * });
          */
         coDo,
         /**

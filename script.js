@@ -54,7 +54,7 @@ import { deg } from "./dist/utils.js";
     //@ts-expect-error
     window.game=game
     
-    coDo((function*(){
+    coDo(function*(){
         while (true) {
             for (let i=0; i<15; i++) {
                 const sid = tan00.play();
@@ -77,7 +77,7 @@ import { deg } from "./dist/utils.js";
             }
             yield* game.Sleep(600);
         }
-    })());
+    });
 
     forever(loop => {
         pl.update({input, keyMap: {
