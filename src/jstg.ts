@@ -6,6 +6,7 @@ import { makeSimple } from "./player/simple.js";
 import { makeRng } from "./random.js";
 import * as utils from './utils.js';
 import { Danmaku, makePrefabDanmaku as _makePrefabDanmaku } from "./danmaku.js";
+import { makeObjPool } from "./objPool.js";
 
 /**
  * 循环的控制器对象，用于控制该循环
@@ -17,7 +18,7 @@ export interface LoopController {
     stop(): void,
 }
 
-interface Destroyable {
+export interface Destroyable {
     destroy(): any;
     get destroyed(): boolean;
 }
@@ -172,35 +173,14 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
     const input = makeInput();
     if (options.autoUpdateInput ?? true) { forever(() => input._update(), { priority: 30000 }); }
 
-    const danmakuManager = (() => {
-        const danmakus: Danmaku[] = [];
-
-        const push = (danmaku: Danmaku) => {
-            danmakus.push(danmaku);
-            if (++validCount > lastValidCount * 2) {
-                clean();
-            }
-        }
+    const danmakuPool = (() => {
+        const { objects: danmakus, push, clean, _validCount } = makeObjPool<Danmaku>();
 
         const update = (player: Player) => {
             for (let i = 0; i < danmakus.length; i++) {
                 if (!danmakus[i].destroyed) danmakus[i].updateDamageToPlayer(player);
             }
-        }
-
-        let validCount = 0;
-        let lastValidCount = 60;
-
-        const clean = () => {
-            validCount = 0;
-            for (const danmaku of danmakus) {
-                if (!danmaku.destroyed) {
-                    danmakus[validCount++] = danmaku;
-                }
-            }
-            danmakus.length = validCount;
-            lastValidCount = Math.max(validCount, 60);
-        }
+        };
 
         return {
             /** @readonly 所有接受判定的弹幕，⚠️可能含有已经摧毁的无效弹幕 */
@@ -212,7 +192,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
             /** 立即清理弹幕列表，一般不用管这个东西 */
             clean,
             /** @readonly @internal 当前场上的弹幕数量（⚠️包含无效弹幕） */
-            get _validCount() { return validCount; },
+            get _validCount() { return _validCount; },
         };
     })();
 
@@ -449,8 +429,8 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          *     myPlayer.update();
          *     myDanmaku.move(2);
          *     myDanmaku.boundaryDelete();
-         *     game.danmakuManager.update(myPlayer);
-         * }, { with: [myPlayer, myDanmaku] });
+         *     game.danmakuPool.update(myPlayer);
+         * }, { with: myDanmaku, rely: myPlayer });
          */
         makeDanmaku: null as unknown as typeof makeDanmaku, // 又是奇技淫巧
         /** JSTG 预置的一些贴图 */
@@ -475,7 +455,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          * 弹幕管理器，可以利用这个东西来每帧更新所有弹幕，这样弹幕才能攻击玩家  
          * 正常情况下不用管这个东西，因为自机会自动帮你调用它的 update 方法
          */
-        danmakuManager,
+        danmakuPool,
     };
 
     const prefabPlayers = {

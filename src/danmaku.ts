@@ -79,7 +79,7 @@ export class Danmaku {
         
         this._lastX = this.sprite.x;
         this._lastY = this.sprite.y;
-        this.game.danmakuManager.push(this);
+        this.game.danmakuPool.push(this);
     }
 
     /** 更新该弹幕与玩家的交互逻辑（即伤害判定），如果 isHasDamage 属性为 true ，该函数什么也不会做 */
@@ -163,10 +163,10 @@ export class Danmaku {
             if (this.sprite.visible && this.sprite.alpha > 0) {
                 if (options.eraseEffectType === "common") {
                     // 常规消弹
-                    this.game.coDo(this._EraseEffectBehaviorCommon);
+                    this.game.coDo(this._EraseEffectBehaviorCommon.bind(this));
                 } else {
                     // 大玉消弹
-                    this.game.coDo(this._EraseEffectBehaviorBubble);
+                    this.game.coDo(this._EraseEffectBehaviorBubble.bind(this));
                 }
             }
         }

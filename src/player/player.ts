@@ -45,7 +45,7 @@ export interface MakePlayerOptions {
     /** @default true */
     autoUpdateSelf?: boolean,
     /** @default true */
-    autoUpdateDanmakuManager?: boolean,
+    autoUpdateDanmakuPool?: boolean,
 }
 
 export class Player {
@@ -120,7 +120,7 @@ export class Player {
         /** @default 12 */
         dyingBombTime?: number,
         /** @default true */
-        autoUpdateDanmakuManager?: boolean,
+        autoUpdateDanmakuPool?: boolean,
         /** @default true */
         autoUpdateSelf?: boolean,
         updateFn: (this: Player, options?: PlayerUpdateOptions) => any,
@@ -183,8 +183,8 @@ export class Player {
             this.game.forever(() => this.update(), { priority: 29900, with: this });
         }
 
-        if (options.autoUpdateDanmakuManager ?? true) {
-            this.game.forever(() => this.game.danmakuManager.update(this), { priority: -30000, with: this });
+        if (options.autoUpdateDanmakuPool ?? true) {
+            this.game.forever(() => this.game.danmakuPool.update(this), { priority: -30000, with: this });
         }
     }
 
@@ -252,7 +252,7 @@ export class Player {
     }
 
     /** @internal */
-    _updateStateGen: Generator<void, void, void> = (function*(this: Player) {
+    _updateStateGen = function*(this: Player) {
         while (true) {
             while (this.state.type === "common") yield; // 平时
             while (this.state.type === "dying") { // 决死期间
@@ -272,7 +272,7 @@ export class Player {
                 // TODO: miss
             }
         }
-    }).call(this);
+    }.call(this);
 
 
     updateState() {

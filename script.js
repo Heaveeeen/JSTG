@@ -71,7 +71,7 @@ import { deg } from "./dist/utils.js";
                         dan.move();
                         dan.rotation += deg(0.5) * game.ts;
                         dan.boundaryDelete(loop);
-                    }, { with: [pl, dan] });
+                    }, { with: dan, rely: pl });
                 }
                 yield* game.Sleep(10);
             }
