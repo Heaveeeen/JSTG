@@ -180,11 +180,11 @@ export class Player {
         this.y = this._lastY = 185;
 
         if (options.autoUpdateSelf ?? true) {
-            this.game.forever(() => this.update(), { priority: 29900, own: this });
+            this.game.forever(() => this.update(), { priority: 29900, ref: this });
         }
 
         if (options.autoUpdateDanmakuPool ?? true) {
-            this.game.forever(() => this.game.danmakuPool.update(this), { priority: -30000, own: this });
+            this.game.forever(() => this.game.danmakuPool.update(this), { priority: -30000, ref: this });
         }
     }
 

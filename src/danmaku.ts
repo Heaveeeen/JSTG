@@ -16,7 +16,7 @@ const getPointToSegmentDist2 = (AB: Point, AP: Point) => {
     if (dot <= 0) {
         return AP.x ** 2 + AP.y ** 2;
     }
-    /** |AB| */
+    /** AB^2 */
     const len2 = AB.x ** 2 + AB.y ** 2;
     if (dot >= len2) {
         return (AP.x - AB.x) ** 2 + (AP.y - AB.y) ** 2;
