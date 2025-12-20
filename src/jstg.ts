@@ -30,15 +30,15 @@ interface LoopOptions {
      */
     priority?: number,
     /** 借用，或者说依赖的对象，这些对象只要死了任意一个，该脚本就会停止。 */
-    ref?: Destroyable | Destroyable[],
+    refs?: Destroyable | Destroyable[],
     /** 该脚本停止时，自动摧毁这些对象。 */
-    kill?: Destroyable | Destroyable[],
+    kills?: Destroyable | Destroyable[],
     /**
      * 绑定所有权的对象。  
      * 这些对象只要死了任意一个，该脚本就会停止；  
      * 该脚本停止时，自动摧毁这些对象。
      */
-    own?: Destroyable | Destroyable[],
+    owns?: Destroyable | Destroyable[],
 }
 
 export type CoDoGenerator = Generator<void, void, void>;
@@ -122,10 +122,10 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         fn: (loop: LoopController) => any,
         options: LoopOptions = {}
     ): LoopController {
-        const own = utils.makeElements(options.own);
+        const own = utils.makeElements(options.owns);
 
-        const ref = [...new Set([...utils.makeElements(options.ref), ...own])];
-        const kill = [...new Set([...utils.makeElements(options.kill), ...own])];
+        const ref = [...new Set([...utils.makeElements(options.refs), ...own])];
+        const kill = [...new Set([...utils.makeElements(options.kills), ...own])];
 
         const loop: LoopController = {
             stop,
