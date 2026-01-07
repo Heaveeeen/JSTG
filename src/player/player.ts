@@ -1,7 +1,7 @@
 import * as pixi from "pixi";
 import { Input, Key } from "../Input.js";
 import { Board, Game } from "../jstg.js";
-import { alphaTo, deg, clamp } from "../utils.js";
+import { alphaTo, deg, clamp, staticAssert } from "../utils.js";
 import { Danmaku } from "../danmaku.js";
 
 interface PlayerKeyMapOptions {
@@ -48,6 +48,11 @@ export interface MakePlayerOptions {
     autoUpdateDanmakuPool?: boolean,
 }
 
+const MissInvincibleTime = 180;
+
+/** 玩家处于 Miss 状态或其他非法状态时，尝试给予玩家无敌帧，该如何处理 */
+export let _HandleApplyInvincibleButBadPlayerStateError: "throw" | "warn" | "ignore" = "throw";
+
 export class Player {
 
     readonly name: string;
@@ -61,10 +66,11 @@ export class Player {
     dyingBombTime: number;
 
     isSlow: boolean = false;
-    invincibleTime: number = 90;
+    isExist: boolean = true;
 
     state: {
         type: "common",
+        invincibleTime: number,
     } | {
         type: "dying",
         timeSinceDying: number,
@@ -72,6 +78,7 @@ export class Player {
         type: "miss",
     } = {
         type: "common",
+        invincibleTime: MissInvincibleTime,
     }
 
     /** 图层低于弹幕的节点们的父节点，这个节点里有像素绘、低速魔法阵 */
@@ -82,6 +89,7 @@ export class Player {
     avatar: pixi.Sprite;
     /** 判定点 */
     hitboxPoint: pixi.Sprite;
+    invincibleRing: pixi.Sprite;
     /** 减速时那个半透明转转转的魔法阵 */
     slowModeRing: pixi.Sprite;
 
@@ -102,6 +110,12 @@ export class Player {
         this.frontParts.y = n;
     }
 
+    get alpha() { return this.frontParts.alpha; }
+    set alpha(n: number) {
+        this.backParts.alpha = n;
+        this.frontParts.alpha = n;
+    }
+
     constructor(options: {
         name: string,
         game: Game
@@ -109,6 +123,7 @@ export class Player {
         mainTexture: pixi.Texture,
         hitboxTexture: pixi.Texture,
         slowModeRingTexture: pixi.Texture,
+        invincibleRingTexture: pixi.Texture,
         /** @default 0 */
         hue1?: number,
         /** @default 3 */
@@ -167,6 +182,15 @@ export class Player {
             alpha: 0,
         });
 
+        this.invincibleRing = new pixi.Sprite({
+            parent: this.frontParts,
+            texture: options.invincibleRingTexture,
+            scale: 0, anchor: 0.5,
+            filters: plColorFilter,
+            alpha: 0,
+            blendMode: "add",
+        });
+
         this.slowModeRing = new pixi.Sprite({
             parent: this.backParts,
             texture: options.slowModeRingTexture,
@@ -213,8 +237,9 @@ export class Player {
     hitByEnemy: (this: Player, options?: PlayerHitByEnemyOptions) => any;
 
     /** 移动自机 */
-    move(options: PlayerUpdateOptions) {
-        const ts = this.game.ts;
+    _updateMove(options: PlayerUpdateOptions) {
+        if (!(this.state.type === "common")) { return; }
+        const ts = this.game.timeScale;
         const keyMap = options.keyMap ?? {};
         const { isDown, isHold } = options.input ?? this.game.input;
         let dx = 0;
@@ -227,15 +252,6 @@ export class Player {
         dy = kh(keyMap.down ?? Key.ArrowDown) - kh(keyMap.up ?? Key.ArrowUp);
         this.isSlow = kh(keyMap.slow ?? Key.ShiftLeft);
 
-        if (this.isSlow) {
-            alphaTo(this.avatar, 0.5, 0.1 * ts);
-            alphaTo(this.hitboxPoint, 1, 0.1 * ts);
-            alphaTo(this.slowModeRing, 1, 0.1 * ts);
-        } else {
-            alphaTo(this.avatar, 1, 0.1 * ts);
-            alphaTo(this.hitboxPoint, 0, 0.1 * ts);
-            alphaTo(this.slowModeRing, 0, 0.1 * ts);
-        }
         this.slowModeRing.rotation += deg(2 * ts);
         if (dx !== 0 || dy !== 0) {
             let v = this.isSlow ? options.slowSpeed ?? this.slowSpeed : options.highSpeed ?? this.highSpeed;
@@ -251,46 +267,121 @@ export class Player {
         }
     }
 
-    /** @internal */
-    _updateStateGen = function*(this: Player) {
-        while (true) {
-            while (this.state.type === "common") yield; // 平时
-            while (this.state.type === "dying") { // 决死期间
-                if (this.state.timeSinceDying >= this.dyingBombTime) {
-                    this.state = { type: "miss" }; // 似了
-                    // TODO: miss
-                } else {
-                    this.state.timeSinceDying += this.game.ts;
-                    if (this.invincibleTime > 0) { // 决死成功
+    _defaultUpdate(options: PlayerUpdateOptions) {
+        if (this.state.type === "common") { this._updateMove(options) } // 这玩意不写在生成器里，是因为 options 传不进去。。。傻逼 js 没法获得第一次 next 传进去的东西
+        this._updateStateGen.next();
+    }
 
-                    }
-                    yield;
-                }
+    /** @internal */
+    _updateStateGen = function*(this: Player) { while (true) {
+        while (this.state.type === "common") { // 平时
+            const ts = this.game.timeScale;
+
+            if (this.state.invincibleTime <= ts) {
+                this.state.invincibleTime = 0;
+            } else {
+                this.state.invincibleTime -= ts;
             }
-            while (this.state.type === "miss") { // 死后
-                this.state = { type: "common" };
-                // TODO: miss
+
+            // 更新各组件的外观，如透明度
+            this.invincibleRing.scale = 0.00036 * this.state.invincibleTime * Math.sqrt(this.state.invincibleTime);
+            if (this.state.invincibleTime > 30) {
+                this.invincibleRing.alpha = Math.min(this.state.invincibleTime / 180, 1); // 这里我总感觉让它超过 1 有点不稳当
+            } else {
+                alphaTo(this.invincibleRing, 0, 0.025 * ts);
+            }
+
+            let avatarAlpha = 1;
+            if (this.state.invincibleTime > 30) {
+                avatarAlpha -= (Math.floor(this.state.invincibleTime / 3) % 2) * 0.4 // 括号不是必要的，但不套括号多少有点不明确，因为我是试了一下才确定取模优先级大于乘法的
+            }
+
+            if (this.isSlow) {
+                alphaTo(this.avatar, avatarAlpha / 2, 0.1 * ts);
+                alphaTo(this.hitboxPoint, 1, 0.1 * ts);
+                alphaTo(this.slowModeRing, 1, 0.1 * ts);
+            } else {
+                alphaTo(this.avatar, avatarAlpha, 0.1 * ts);
+                alphaTo(this.hitboxPoint, 0, 0.1 * ts);
+                alphaTo(this.slowModeRing, 0, 0.1 * ts);
+            }
+            alphaTo(this, 1, 0.1 * ts);
+            yield;
+        };
+        if (this.state.type === "dying") {
+            this.avatar.alpha = 1;
+            this.hitboxPoint.alpha = 1;
+            this.slowModeRing.alpha = 0;
+        }
+        while (this.state.type === "dying") { // 决死期间
+            const ts = this.game.timeScale;
+            alphaTo(this, 0, 0.1 * ts)
+            if (this.state.timeSinceDying >= this.dyingBombTime) {
+                this.state = { type: "miss" }; // 似了
+            } else {
+                this.state.timeSinceDying += this.game.timeScale;
+                yield;
             }
         }
-    }.call(this);
+        while (this.state.type === "miss") { // 死后
+            if (this.game.debug.godMode.isOn) {
+                this.game.debug.godMode.dieCount ++;
+                this.state = { type: "common", invincibleTime: 30, };
+            } else {
+                // TODO: 扣血 & 那四个圈的特效
+                yield* this.game.Sleep(40);
+                // TODO: 消弹
+                yield* this.game.Sleep(20);
+                // 重生动画
+                this.alpha = 1;
+                this.avatar.alpha = 1;
+                this.hitboxPoint.alpha = 0;
+                this.slowModeRing.alpha = 0;
+                this.x = 0;
+                this.y = 224;
+                // TODO: 重置 Bomb 的数量
+                while (this.y > 185) {
+                    this.y -= 2 * this.game.timeScale;
+                    yield;
+                }
+                this.y = 185;
+                this.state = { type: "common", invincibleTime: MissInvincibleTime };
+                break;
+            }
+        }
+    }}.call(this);
 
-
-    updateState() {
-        this._updateStateGen.next();
-        if (this.invincibleTime <= this.game.ts) {
-            this.invincibleTime = 0;
-        } else {
-            this.invincibleTime -= this.game.ts;
+    hitByDanmaku(danmaku: Danmaku) {
+        if (this.state.type === "common") {
+            if (this.state.invincibleTime === 0) {
+                const { pldead00 } = this.game.prefabSounds.thse;
+                pldead00.stop();
+                pldead00.play();
+                if (this.game.debug.godMode.isOn) {
+                    this.game.debug.godMode.dieCount += 1;
+                    this.applyInvincible(20);
+                } else {
+                    this.state = { type: "dying", timeSinceDying: 0 };
+                }
+            }
+            danmaku.erase();
         }
     }
 
-    hitByDanmaku(danmaku: Danmaku) {
-        if (this.state.type !== "common" || this.invincibleTime > 0) return;
-        const { pldead00 } = this.game.prefabSounds.thse;
-        pldead00.stop();
-        pldead00.play();
-        this.state = { type: "dying", timeSinceDying: 0 };
-        this.updateState();
+    /** 给予玩家无敌效果，如果玩家处于 Miss 状态则不会生效，且会报错。 */
+    applyInvincible(time: number) {
+        if (this.state.type === "common") {
+            if (this.state.invincibleTime < time) { this.state.invincibleTime = time; }
+        } else if (this.state.type === "dying") {
+            this.state = { type: "common", invincibleTime: time };
+        } else {
+            if (_HandleApplyInvincibleButBadPlayerStateError === "ignore") {
+            } else if (_HandleApplyInvincibleButBadPlayerStateError === "warn") {
+                console.warn(new Error(`警告：尝试给予玩家无敌效果时，玩家正处于 ${this.state.type} 状态，无敌效果未生效。`));
+            } else {
+                throw new Error(`错误：尝试给予玩家无敌效果时，玩家正处于 ${this.state.type} 状态。`);
+            }
+        }
     }
 
     destroy() {
@@ -299,7 +390,7 @@ export class Player {
         this.frontParts.destroy();
     }
 
-    /** 
+    /**
      * 返回该对象是否被摧毁，已被摧毁的对象不应该继续使用，应该丢弃  
      * 例如：一个跟踪弹保留了一个玩家的引用，并且追踪玩家的位置；那么，该跟踪弹应该在每帧都检查玩家是否已被摧毁，如果已被摧毁则失去目标，寻找新的目标或者进入游荡状态或者怎么怎么样
      */

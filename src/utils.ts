@@ -13,7 +13,7 @@ export const clamp = (n: number, a: number, b: number) => Math.min(Math.max(a, n
  * 弹幕引擎 ghost to 同款
  * ⚠️这玩意必须自己填 game.ts
  */
-export const alphaTo = (spr: pixi.Sprite, dst: number, speed: number) => {
+export const alphaTo = (spr: { alpha: number }, dst: number, speed: number) => {
     if (Math.abs(spr.alpha - dst) <= speed) {
         spr.alpha = dst;
     } else if (dst > spr.alpha) {
@@ -38,3 +38,11 @@ export const deg = (n: number) => n * Math.PI / 180;
  */
 export const makeElements = <T>(input?: T | T[]): T[] =>
     input === undefined ? [] : (Array.isArray(input) ? input : [input]);
+
+
+
+/** 如果给定参数不属于 T，让 ts 报错 */
+export const staticAssert = <T>(x: T) => x;
+
+/** 仅限向下转换的 as 断言 */
+export const cast = <T, U extends T>(x: T) => x as U;

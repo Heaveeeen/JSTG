@@ -5,7 +5,7 @@ import { MakePlayerOptions, Player } from "./player/player.js";
 import { makeSimple } from "./player/simple.js";
 import { makeRng } from "./random.js";
 import * as utils from './utils.js';
-import { Danmaku, makePrefabDanmaku as _makePrefabDanmaku } from "./danmaku.js";
+import { Danmaku, makePrefabDanmaku } from "./danmaku.js";
 import { makeObjPool } from "./objPool.js";
 
 /**
@@ -16,6 +16,13 @@ import { makeObjPool } from "./objPool.js";
 export interface LoopController {
     /** 从下一帧起，停止该循环 */
     stop(): void,
+    /**
+     * @readonly
+     * 该循环进行到了第几帧。  
+     * 会考虑 timeScale，并且尽可能根据 timeScale 向下取整。（取整机制与弹幕引擎略有不同，我感觉我写的这个应该稍微好点）
+     */
+    get clock(): number,
+    // TODO: then(): void,
 }
 
 export interface Destroyable {
@@ -93,11 +100,12 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
     await app.init(options.pixiApplicationOptions ?? {
         backgroundColor: "#000000",
         preference: "webgpu",
+        useBackBuffer: true,
+        hello: true,
     });
     // 重设画面尺寸，填充整个窗口
     app.renderer.resize(stageWidth, stageHeight, rendererResolution);
     //app.renderer.resize(stageWidth, stageHeight, 1);
-    pixi.sayHello(app.renderer.name); // 仪式感这块，别的我不知道但我就知道在控制台输出这么一条五彩斑斓的信息实在太酷了
     app.canvas.style.display = "flex";
     document.body.appendChild(app.canvas);
 
@@ -122,24 +130,30 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         fn: (loop: LoopController) => any,
         options: LoopOptions = {}
     ): LoopController {
-        const own = utils.makeElements(options.owns);
+        const owns = utils.makeElements(options.owns);
 
-        const ref = [...new Set([...utils.makeElements(options.refs), ...own])];
-        const kill = [...new Set([...utils.makeElements(options.kills), ...own])];
+        const refs = [...new Set([...utils.makeElements(options.refs), ...owns])];
+        const kills = [...new Set([...utils.makeElements(options.kills), ...owns])];
 
+        let clock = 0;
         const loop: LoopController = {
             stop,
+            get clock() { return clock },
         };
-        const tickerFn = (ref.length === 0) ? () => fn(loop) : () => {
-            if (ref.some(r => r.destroyed)) {
+        const tickerFn = () => {
+            if (refs.some(r => r.destroyed)) {
                 stop();
             } else {
                 fn(loop);
+                if (clock % timeScale > 0) {
+                    clock = Math.floor(clock / timeScale)
+                }
+                clock += timeScale;
             }
         };
         function stop() {
             app.ticker.remove(tickerFn);
-            kill.forEach(d => d.destroy());
+            kills.forEach(d => d.destroy());
         }
         app.ticker.add(tickerFn, undefined, options.priority);
         return loop;
@@ -316,6 +330,17 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         }
     }, { priority: -2e9 });
 
+    const debug = (()=>{
+        const godMode = {
+            isOn: false,
+            dieCount: 0,
+        };
+
+        return {
+            godMode,
+        }
+    })();
+
     const game = {
         /**
          * @readonly
@@ -382,16 +407,9 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          * // 可以引用 JSTG.Key ，如果愿意的话也可以直接写字符串字面量（不推荐）
          */
         input,
-        //#region timeScale
-        /** 游戏的时间流速，可以用来做慢镜头啥的  
-         * @alias ts */
+        /** 游戏的时间流速，可以用来做慢镜头啥的 */
         get timeScale() { return timeScale; },
         set timeScale(v: number) { timeScale = v; },
-        /** 游戏的时间流速，可以用来做慢镜头啥的  
-         * @alias timeScale */
-        get ts() { return timeScale; },
-        set ts(v: number) { timeScale = v; },
-        //#endregion
         /** 每秒帧数的估算值 */
         get fps() { return fps; },
         /** @readonly @generator 等待 timeFrame 帧 */
@@ -456,16 +474,35 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          * 正常情况下不用管这个东西，因为自机会自动帮你调用它的 update 方法
          */
         danmakuPool,
+        /** 调试模式工具，如上帝模式 */
+        debug,
     };
 
-    const prefabPlayers = {
+    const prefabPlayers = {// TODO: 重命名为 make 开头的风格
         /** @async 创建预置自机：Simple */
         makeSimple: (options: MakePlayerOptions = {}) => makeSimple(game, mainBoard, prefabTextures, options),
     };
     game.prefabPlayers = prefabPlayers;
 
-    const makeDanmaku = (type: PrefabDanmakuNames, parent?: pixi.Container) =>
-        _makePrefabDanmaku(game, mainBoard, type, parent);
+    type MakeDanmakuOptions<T = PrefabDanmakuNames> = {
+        type: T,
+        /** @default game.commonDanmakuSprites */
+        parent?: pixi.Container,
+        /** @default 1 */
+        scale?: number,
+    };
+
+    function makeDanmaku(type: PrefabDanmakuNames): Danmaku
+    function makeDanmaku(options: MakeDanmakuOptions): Danmaku
+    function makeDanmaku(type: string): unknown
+    function makeDanmaku(options: MakeDanmakuOptions<string>): unknown
+    function makeDanmaku(options: PrefabDanmakuNames | MakeDanmakuOptions | string | MakeDanmakuOptions<string>) {
+        if (typeof options === "string") {
+            options = { type: options }
+        };
+        // @ts-expect-error 这里如果输入 string 会引发未定义行为，忽略错误
+        return makePrefabDanmaku(game, mainBoard, options.type, options.parent, options.scale);
+    }
 
     game.makeDanmaku = makeDanmaku;
 

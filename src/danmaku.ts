@@ -70,12 +70,16 @@ export class Danmaku {
         hitboxRadius: number,
         /** 弹幕所对应的 Sprite */
         sprite: pixi.Sprite,
+        /** 弹幕的缩放倍数，弹幕在构造时会自动把 sprite 的尺寸和弹幕的碰撞半径都乘此值 */
+        scale: number,
     }) {
         this.type = options.type;
         this.game = options.game;
         this.board = options.board;
-        this.hitboxRadius = options.hitboxRadius;
+        this.hitboxRadius = options.hitboxRadius * options.scale;
         this.sprite = options.sprite;
+        this.sprite.scale.x *= options.scale;
+        this.sprite.scale.y *= options.scale;
         
         this._lastX = this.sprite.x;
         this._lastY = this.sprite.y;
@@ -94,7 +98,7 @@ export class Danmaku {
             },
             { // D'->P'
                 x: (player._lastX - this._lastX), y: (player._lastY - this._lastY)
-            }
+            }// TODO: 改成相交圆判定
         ) < this.hitboxRadius ** 2 + player.hitboxRadius ** 2; // 牢 zun 的神秘正交圆判定
 
         this._lastX = this.x;
@@ -104,7 +108,6 @@ export class Danmaku {
 
         if (isHit) {
             player.hitByDanmaku(this);
-            this.erase();
         }
     }
 
@@ -117,25 +120,25 @@ export class Danmaku {
     speed = 0;
 
     /** 向着 this.sprite 的方向前进 d 步，若 d 留空则为 this.speed * game.timeScale */
-    move(/** @default this.speed * game.timeScale */d: number = this.speed * this.game.ts) {
+    move(/** @default this.speed * game.timeScale */d: number = this.speed * this.game.timeScale) {
         this.x += Math.cos(this.rotation) * d;
         this.y += Math.sin(this.rotation) * d;
     }
 
     /** 匀变速至目标速度 */
     speedToA(/** 目标速度 */dst: number, /** 加速度 */a: number) {
-        if (Math.abs(dst - this.speed) < a * this.game.ts) {
+        if (Math.abs(dst - this.speed) < a * this.game.timeScale) {
             this.speed = dst;
         } else if (dst > this.speed) {
-            this.speed += a * this.game.ts;
+            this.speed += a * this.game.timeScale;
         } else {
-            this.speed -= a * this.game.ts;
+            this.speed -= a * this.game.timeScale;
         }
     }
 
     /** 指数衰减地变速至目标速度 */
     speedToK(/** 目标速度 */dst: number, /** 每次变速的比 */k: number) {
-        this.speed += (dst - this.speed * k * this.game.ts);
+        this.speed += (dst - this.speed * k * this.game.timeScale);
     }
 
     /**
@@ -179,14 +182,15 @@ export class Danmaku {
             texture: this.game.prefabTextures.danmaku.particle.fog,
             anchor: 0.5,
             x: this.x, y: this.y, 
-            scale: this.sprite.scale.x,
+            scale: this.sprite.scale,
             rotation: Math.random() * 2 * Math.PI,
+            filters: this.sprite.filters,
         });
         this.destroy();
         while (eraseEffectSprite.alpha > 0) {
-            eraseEffectSprite.scale.x += 0.2 * this.game.ts;
-            eraseEffectSprite.scale.y += 0.2 * this.game.ts;
-            alphaTo(eraseEffectSprite, 0, 0.1 * this.game.ts);
+            eraseEffectSprite.scale.x += 0.1 * this.game.timeScale;
+            eraseEffectSprite.scale.y += 0.1 * this.game.timeScale;
+            alphaTo(eraseEffectSprite, 0, 0.05 * this.game.timeScale);
             yield;
         }
         eraseEffectSprite.destroy();
@@ -201,12 +205,13 @@ export class Danmaku {
             x: this.x, y: this.y, 
             scale: 0.5,
             //rotation: this.sprite.rotation,
+            filters: this.sprite.filters,
         });
         this.destroy();
         while (eraseEffectSprite.alpha > 0) {
-            eraseEffectSprite.scale.x -= 0.1 * this.game.ts;
-            eraseEffectSprite.scale.y -= 0.1 * this.game.ts;
-            alphaTo(eraseEffectSprite, 0, 0.1 * this.game.ts);
+            eraseEffectSprite.scale.x -= 0.05 * this.game.timeScale;
+            eraseEffectSprite.scale.y -= 0.05 * this.game.timeScale;
+            alphaTo(eraseEffectSprite, 0, 0.05 * this.game.timeScale);
             yield;
         }
         eraseEffectSprite.destroy();
@@ -226,6 +231,7 @@ export class Danmaku {
     }
 }
 
+/** 此处的数值与弹幕引擎有所不同 */ //TODO: 改成圆相交判定
 export const prefabDanmakuHitboxRadius = {
     smallball: 4,
     ringball: 4,
@@ -260,7 +266,7 @@ export const prefabDanmakuHitboxRadius = {
     nuclear: 48,
 };
 
-export const makePrefabDanmaku = (game: Game, board: Board, type: PrefabDanmakuNames, parent?: pixi.Container) => new Danmaku({
+export const makePrefabDanmaku = (game: Game, board: Board, type: PrefabDanmakuNames, parent?: pixi.Container, scale: number = 1) => new Danmaku({
     type, game, board,
     hitboxRadius: prefabDanmakuHitboxRadius[type],
     sprite: new pixi.Sprite({
@@ -268,4 +274,5 @@ export const makePrefabDanmaku = (game: Game, board: Board, type: PrefabDanmakuN
         texture: game.prefabTextures.danmaku.danmaku[type],
         anchor: 0.5,
     }),
+    scale
 })

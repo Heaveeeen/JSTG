@@ -2038,6 +2038,300 @@ export declare class ObservablePoint implements PointLike {
 	set y(value: number);
 }
 /**
+ * Collection of valid extension types.
+ * @category extensions
+ * @advanced
+ */
+export declare enum ExtensionType {
+	/** extensions that are registered as Application plugins */
+	Application = "application",
+	/** extensions that are registered as WebGL render pipes */
+	WebGLPipes = "webgl-pipes",
+	/** extensions that are registered as WebGL render pipes adaptors */
+	WebGLPipesAdaptor = "webgl-pipes-adaptor",
+	/** extensions that are registered as WebGL render systems */
+	WebGLSystem = "webgl-system",
+	/** extensions that are registered as WebGPU render pipes */
+	WebGPUPipes = "webgpu-pipes",
+	/** extensions that are registered as WebGPU render pipes adaptors */
+	WebGPUPipesAdaptor = "webgpu-pipes-adaptor",
+	/** extensions that are registered as WebGPU render systems */
+	WebGPUSystem = "webgpu-system",
+	/** extensions that are registered as Canvas render pipes */
+	CanvasSystem = "canvas-system",
+	/** extensions that are registered as Canvas render pipes adaptors */
+	CanvasPipesAdaptor = "canvas-pipes-adaptor",
+	/** extensions that are registered as Canvas render systems */
+	CanvasPipes = "canvas-pipes",
+	/** extensions that combine the other Asset extensions */
+	Asset = "asset",
+	/** extensions that are used to load assets through Assets */
+	LoadParser = "load-parser",
+	/** extensions that are used to resolve asset urls through Assets */
+	ResolveParser = "resolve-parser",
+	/** extensions that are used to handle how urls are cached by Assets */
+	CacheParser = "cache-parser",
+	/** extensions that are used to add/remove available resources from Assets */
+	DetectionParser = "detection-parser",
+	/** extensions that are registered with the MaskEffectManager */
+	MaskEffect = "mask-effect",
+	/** A type of extension for creating a new advanced blend mode */
+	BlendMode = "blend-mode",
+	/** A type of extension that will be used to auto detect a resource type */
+	TextureSource = "texture-source",
+	/** A type of extension that will be used to auto detect an environment */
+	Environment = "environment",
+	/** A type of extension for building and triangulating custom shapes used in graphics. */
+	ShapeBuilder = "shape-builder",
+	/** A type of extension for creating custom batchers used in rendering. */
+	Batcher = "batcher"
+}
+/**
+ * The metadata for an extension.
+ * @category extensions
+ * @ignore
+ */
+export interface ExtensionMetadataDetails {
+	/** The extension type, can be multiple types */
+	type: ExtensionType | ExtensionType[];
+	/** Optional. Some plugins provide an API name/property, to make them more easily accessible */
+	name?: string;
+	/** Optional, used for sorting the plugins in a particular order */
+	priority?: number;
+}
+/**
+ * The metadata for an extension.
+ * @category extensions
+ * @advanced
+ */
+export type ExtensionMetadata = ExtensionType | ExtensionMetadataDetails;
+/**
+ * Format when registering an extension. Generally, the extension
+ * should have these values as `extension` static property,
+ * but you can override name or type by providing an object.
+ * @category extensions
+ * @advanced
+ */
+interface ExtensionFormat {
+	/** The extension type, can be multiple types */
+	type: ExtensionType | ExtensionType[];
+	/** Optional. Some plugins provide an API name/property, such as Renderer plugins */
+	name?: string;
+	/** Optional, used for sorting the plugins in a particular order */
+	priority?: number;
+	/** Reference to the plugin object/class */
+	ref: any;
+}
+/**
+ * Extension format that is used internally for registrations.
+ * @category extensions
+ * @ignore
+ */
+interface StrictExtensionFormat extends ExtensionFormat {
+	/** The extension type, always expressed as multiple, even if a single */
+	type: ExtensionType[];
+}
+/**
+ * The function that is called when an extension is added or removed.
+ * @category extensions
+ * @ignore
+ */
+export type ExtensionHandler = (extension: StrictExtensionFormat) => void;
+/**
+ * Get the priority for an extension.
+ * @ignore
+ * @param ext - Any extension
+ * @param defaultPriority - Fallback priority if none is defined.
+ * @returns The priority for the extension.
+ * @category extensions
+ */
+export declare const normalizeExtensionPriority: (ext: ExtensionFormat | any, defaultPriority: number) => number;
+/**
+ * Global registration system for all PixiJS extensions. Provides a centralized way to add, remove,
+ * and manage functionality across the engine.
+ *
+ * Features:
+ * - Register custom extensions and plugins
+ * - Handle multiple extension types
+ * - Priority-based ordering
+ * @example
+ * ```ts
+ * import { extensions, ExtensionType } from 'pixi.js';
+ *
+ * // Register a simple object extension
+ * extensions.add({
+ *   extension: {
+ *       type: ExtensionType.LoadParser,
+ *       name: 'my-loader',
+ *       priority: 100, // Optional priority for ordering
+ *   },
+ *   // add load parser functions
+ * });
+ *
+ * // Register a class-based extension
+ * class MyRendererPlugin {
+ *     static extension = {
+ *         type: [ExtensionType.WebGLSystem, ExtensionType.WebGPUSystem],
+ *         name: 'myRendererPlugin'
+ *     };
+ *
+ *    // add renderer plugin methods
+ * }
+ * extensions.add(MyRendererPlugin);
+ *
+ * // Remove extensions
+ * extensions.remove(MyRendererPlugin);
+ * ```
+ * @remarks
+ * - Extensions must have a type from {@link ExtensionType}
+ * - Can be registered before or after their handlers
+ * - Supports priority-based ordering
+ * - Automatically normalizes extension formats
+ * @see {@link ExtensionType} For all available extension types
+ * @see {@link ExtensionFormat} For extension registration format
+ * @see {@link Application} For application plugin system
+ * @see {@link LoaderParser} For asset loading extensions
+ * @category extensions
+ * @standard
+ * @class
+ */
+export declare const extensions: {
+	/** @ignore */
+	_addHandlers: Partial<Record<ExtensionType, ExtensionHandler>>;
+	/** @ignore */
+	_removeHandlers: Partial<Record<ExtensionType, ExtensionHandler>>;
+	/** @ignore */
+	_queue: Partial<Record<ExtensionType, StrictExtensionFormat[]>>;
+	/**
+	 * Remove extensions from PixiJS.
+	 * @param extensions - Extensions to be removed. Can be:
+	 * - Extension class with static `extension` property
+	 * - Extension format object with `type` and `ref`
+	 * - Multiple extensions as separate arguments
+	 * @returns {extensions} this for chaining
+	 * @example
+	 * ```ts
+	 * // Remove a single extension
+	 * extensions.remove(MyRendererPlugin);
+	 *
+	 * // Remove multiple extensions
+	 * extensions.remove(
+	 *     MyRendererPlugin,
+	 *     MySystemPlugin
+	 * );
+	 * ```
+	 * @see {@link ExtensionType} For available extension types
+	 * @see {@link ExtensionFormat} For extension format details
+	 */
+	remove(...extensions: Array<ExtensionFormat | any>): any;
+	/**
+	 * Register new extensions with PixiJS. Extensions can be registered in multiple formats:
+	 * - As a class with a static `extension` property
+	 * - As an extension format object
+	 * - As multiple extensions passed as separate arguments
+	 * @param extensions - Extensions to add to PixiJS. Each can be:
+	 * - A class with static `extension` property
+	 * - An extension format object with `type` and `ref`
+	 * - Multiple extensions as separate arguments
+	 * @returns This extensions instance for chaining
+	 * @example
+	 * ```ts
+	 * // Register a simple extension
+	 * extensions.add(MyRendererPlugin);
+	 *
+	 * // Register multiple extensions
+	 * extensions.add(
+	 *     MyRendererPlugin,
+	 *     MySystemPlugin,
+	 * });
+	 * ```
+	 * @see {@link ExtensionType} For available extension types
+	 * @see {@link ExtensionFormat} For extension format details
+	 * @see {@link extensions.remove} For removing registered extensions
+	 */
+	add(...extensions: Array<ExtensionFormat | any>): any;
+	/**
+	 * Internal method to handle extensions by name.
+	 * @param type - The extension type.
+	 * @param onAdd  - Function handler when extensions are added/registered {@link StrictExtensionFormat}.
+	 * @param onRemove  - Function handler when extensions are removed/unregistered {@link StrictExtensionFormat}.
+	 * @returns this for chaining.
+	 * @internal
+	 * @ignore
+	 */
+	handle(type: ExtensionType, onAdd: ExtensionHandler, onRemove: ExtensionHandler): any;
+	/**
+	 * Handle a type, but using a map by `name` property.
+	 * @param type - Type of extension to handle.
+	 * @param map - The object map of named extensions.
+	 * @returns this for chaining.
+	 * @ignore
+	 */
+	handleByMap(type: ExtensionType, map: Record<string, any>): any;
+	/**
+	 * Handle a type, but using a list of extensions with a `name` property.
+	 * @param type - Type of extension to handle.
+	 * @param map - The array of named extensions.
+	 * @param defaultPriority - Fallback priority if none is defined.
+	 * @returns this for chaining.
+	 * @ignore
+	 */
+	handleByNamedList(type: ExtensionType, map: {
+		name: string;
+		value: any;
+	}[], defaultPriority?: number): any;
+	/**
+	 * Handle a type, but using a list of extensions.
+	 * @param type - Type of extension to handle.
+	 * @param list - The list of extensions.
+	 * @param defaultPriority - The default priority to use if none is specified.
+	 * @returns this for chaining.
+	 * @ignore
+	 */
+	handleByList(type: ExtensionType, list: any[], defaultPriority?: number): any;
+	/**
+	 * Mixin the source object(s) properties into the target class's prototype.
+	 * Copies all property descriptors from source objects to the target's prototype.
+	 * @param Target - The target class to mix properties into
+	 * @param sources - One or more source objects containing properties to mix in
+	 * @example
+	 * ```ts
+	 * // Create a mixin with shared properties
+	 * const moveable = {
+	 *     x: 0,
+	 *     y: 0,
+	 *     move(x: number, y: number) {
+	 *         this.x += x;
+	 *         this.y += y;
+	 *     }
+	 * };
+	 *
+	 * // Create a mixin with computed properties
+	 * const scalable = {
+	 *     scale: 1,
+	 *     get scaled() {
+	 *         return this.scale > 1;
+	 *     }
+	 * };
+	 *
+	 * // Apply mixins to a class
+	 * extensions.mixin(Sprite, moveable, scalable);
+	 *
+	 * // Use mixed-in properties
+	 * const sprite = new Sprite();
+	 * sprite.move(10, 20);
+	 * console.log(sprite.x, sprite.y); // 10, 20
+	 * ```
+	 * @remarks
+	 * - Copies all properties including getters/setters
+	 * - Does not modify source objects
+	 * - Preserves property descriptors
+	 * @see {@link Object.defineProperties} For details on property descriptors
+	 * @see {@link Object.getOwnPropertyDescriptors} For details on property copying
+	 */
+	mixin(Target: any, ...sources: Parameters<typeof Object.getOwnPropertyDescriptors>[0][]): void;
+};
+/**
  * Interface for HTMLImageElement.
  * @category environment
  * @advanced
@@ -3858,300 +4152,6 @@ export declare enum CLEAR {
  */
 export type CLEAR_OR_BOOL = CLEAR | boolean;
 /**
- * Collection of valid extension types.
- * @category extensions
- * @advanced
- */
-export declare enum ExtensionType {
-	/** extensions that are registered as Application plugins */
-	Application = "application",
-	/** extensions that are registered as WebGL render pipes */
-	WebGLPipes = "webgl-pipes",
-	/** extensions that are registered as WebGL render pipes adaptors */
-	WebGLPipesAdaptor = "webgl-pipes-adaptor",
-	/** extensions that are registered as WebGL render systems */
-	WebGLSystem = "webgl-system",
-	/** extensions that are registered as WebGPU render pipes */
-	WebGPUPipes = "webgpu-pipes",
-	/** extensions that are registered as WebGPU render pipes adaptors */
-	WebGPUPipesAdaptor = "webgpu-pipes-adaptor",
-	/** extensions that are registered as WebGPU render systems */
-	WebGPUSystem = "webgpu-system",
-	/** extensions that are registered as Canvas render pipes */
-	CanvasSystem = "canvas-system",
-	/** extensions that are registered as Canvas render pipes adaptors */
-	CanvasPipesAdaptor = "canvas-pipes-adaptor",
-	/** extensions that are registered as Canvas render systems */
-	CanvasPipes = "canvas-pipes",
-	/** extensions that combine the other Asset extensions */
-	Asset = "asset",
-	/** extensions that are used to load assets through Assets */
-	LoadParser = "load-parser",
-	/** extensions that are used to resolve asset urls through Assets */
-	ResolveParser = "resolve-parser",
-	/** extensions that are used to handle how urls are cached by Assets */
-	CacheParser = "cache-parser",
-	/** extensions that are used to add/remove available resources from Assets */
-	DetectionParser = "detection-parser",
-	/** extensions that are registered with the MaskEffectManager */
-	MaskEffect = "mask-effect",
-	/** A type of extension for creating a new advanced blend mode */
-	BlendMode = "blend-mode",
-	/** A type of extension that will be used to auto detect a resource type */
-	TextureSource = "texture-source",
-	/** A type of extension that will be used to auto detect an environment */
-	Environment = "environment",
-	/** A type of extension for building and triangulating custom shapes used in graphics. */
-	ShapeBuilder = "shape-builder",
-	/** A type of extension for creating custom batchers used in rendering. */
-	Batcher = "batcher"
-}
-/**
- * The metadata for an extension.
- * @category extensions
- * @ignore
- */
-export interface ExtensionMetadataDetails {
-	/** The extension type, can be multiple types */
-	type: ExtensionType | ExtensionType[];
-	/** Optional. Some plugins provide an API name/property, to make them more easily accessible */
-	name?: string;
-	/** Optional, used for sorting the plugins in a particular order */
-	priority?: number;
-}
-/**
- * The metadata for an extension.
- * @category extensions
- * @advanced
- */
-export type ExtensionMetadata = ExtensionType | ExtensionMetadataDetails;
-/**
- * Format when registering an extension. Generally, the extension
- * should have these values as `extension` static property,
- * but you can override name or type by providing an object.
- * @category extensions
- * @advanced
- */
-interface ExtensionFormat {
-	/** The extension type, can be multiple types */
-	type: ExtensionType | ExtensionType[];
-	/** Optional. Some plugins provide an API name/property, such as Renderer plugins */
-	name?: string;
-	/** Optional, used for sorting the plugins in a particular order */
-	priority?: number;
-	/** Reference to the plugin object/class */
-	ref: any;
-}
-/**
- * Extension format that is used internally for registrations.
- * @category extensions
- * @ignore
- */
-interface StrictExtensionFormat extends ExtensionFormat {
-	/** The extension type, always expressed as multiple, even if a single */
-	type: ExtensionType[];
-}
-/**
- * The function that is called when an extension is added or removed.
- * @category extensions
- * @ignore
- */
-export type ExtensionHandler = (extension: StrictExtensionFormat) => void;
-/**
- * Get the priority for an extension.
- * @ignore
- * @param ext - Any extension
- * @param defaultPriority - Fallback priority if none is defined.
- * @returns The priority for the extension.
- * @category extensions
- */
-export declare const normalizeExtensionPriority: (ext: ExtensionFormat | any, defaultPriority: number) => number;
-/**
- * Global registration system for all PixiJS extensions. Provides a centralized way to add, remove,
- * and manage functionality across the engine.
- *
- * Features:
- * - Register custom extensions and plugins
- * - Handle multiple extension types
- * - Priority-based ordering
- * @example
- * ```ts
- * import { extensions, ExtensionType } from 'pixi.js';
- *
- * // Register a simple object extension
- * extensions.add({
- *   extension: {
- *       type: ExtensionType.LoadParser,
- *       name: 'my-loader',
- *       priority: 100, // Optional priority for ordering
- *   },
- *   // add load parser functions
- * });
- *
- * // Register a class-based extension
- * class MyRendererPlugin {
- *     static extension = {
- *         type: [ExtensionType.WebGLSystem, ExtensionType.WebGPUSystem],
- *         name: 'myRendererPlugin'
- *     };
- *
- *    // add renderer plugin methods
- * }
- * extensions.add(MyRendererPlugin);
- *
- * // Remove extensions
- * extensions.remove(MyRendererPlugin);
- * ```
- * @remarks
- * - Extensions must have a type from {@link ExtensionType}
- * - Can be registered before or after their handlers
- * - Supports priority-based ordering
- * - Automatically normalizes extension formats
- * @see {@link ExtensionType} For all available extension types
- * @see {@link ExtensionFormat} For extension registration format
- * @see {@link Application} For application plugin system
- * @see {@link LoaderParser} For asset loading extensions
- * @category extensions
- * @standard
- * @class
- */
-export declare const extensions: {
-	/** @ignore */
-	_addHandlers: Partial<Record<ExtensionType, ExtensionHandler>>;
-	/** @ignore */
-	_removeHandlers: Partial<Record<ExtensionType, ExtensionHandler>>;
-	/** @ignore */
-	_queue: Partial<Record<ExtensionType, StrictExtensionFormat[]>>;
-	/**
-	 * Remove extensions from PixiJS.
-	 * @param extensions - Extensions to be removed. Can be:
-	 * - Extension class with static `extension` property
-	 * - Extension format object with `type` and `ref`
-	 * - Multiple extensions as separate arguments
-	 * @returns {extensions} this for chaining
-	 * @example
-	 * ```ts
-	 * // Remove a single extension
-	 * extensions.remove(MyRendererPlugin);
-	 *
-	 * // Remove multiple extensions
-	 * extensions.remove(
-	 *     MyRendererPlugin,
-	 *     MySystemPlugin
-	 * );
-	 * ```
-	 * @see {@link ExtensionType} For available extension types
-	 * @see {@link ExtensionFormat} For extension format details
-	 */
-	remove(...extensions: Array<ExtensionFormat | any>): any;
-	/**
-	 * Register new extensions with PixiJS. Extensions can be registered in multiple formats:
-	 * - As a class with a static `extension` property
-	 * - As an extension format object
-	 * - As multiple extensions passed as separate arguments
-	 * @param extensions - Extensions to add to PixiJS. Each can be:
-	 * - A class with static `extension` property
-	 * - An extension format object with `type` and `ref`
-	 * - Multiple extensions as separate arguments
-	 * @returns This extensions instance for chaining
-	 * @example
-	 * ```ts
-	 * // Register a simple extension
-	 * extensions.add(MyRendererPlugin);
-	 *
-	 * // Register multiple extensions
-	 * extensions.add(
-	 *     MyRendererPlugin,
-	 *     MySystemPlugin,
-	 * });
-	 * ```
-	 * @see {@link ExtensionType} For available extension types
-	 * @see {@link ExtensionFormat} For extension format details
-	 * @see {@link extensions.remove} For removing registered extensions
-	 */
-	add(...extensions: Array<ExtensionFormat | any>): any;
-	/**
-	 * Internal method to handle extensions by name.
-	 * @param type - The extension type.
-	 * @param onAdd  - Function handler when extensions are added/registered {@link StrictExtensionFormat}.
-	 * @param onRemove  - Function handler when extensions are removed/unregistered {@link StrictExtensionFormat}.
-	 * @returns this for chaining.
-	 * @internal
-	 * @ignore
-	 */
-	handle(type: ExtensionType, onAdd: ExtensionHandler, onRemove: ExtensionHandler): any;
-	/**
-	 * Handle a type, but using a map by `name` property.
-	 * @param type - Type of extension to handle.
-	 * @param map - The object map of named extensions.
-	 * @returns this for chaining.
-	 * @ignore
-	 */
-	handleByMap(type: ExtensionType, map: Record<string, any>): any;
-	/**
-	 * Handle a type, but using a list of extensions with a `name` property.
-	 * @param type - Type of extension to handle.
-	 * @param map - The array of named extensions.
-	 * @param defaultPriority - Fallback priority if none is defined.
-	 * @returns this for chaining.
-	 * @ignore
-	 */
-	handleByNamedList(type: ExtensionType, map: {
-		name: string;
-		value: any;
-	}[], defaultPriority?: number): any;
-	/**
-	 * Handle a type, but using a list of extensions.
-	 * @param type - Type of extension to handle.
-	 * @param list - The list of extensions.
-	 * @param defaultPriority - The default priority to use if none is specified.
-	 * @returns this for chaining.
-	 * @ignore
-	 */
-	handleByList(type: ExtensionType, list: any[], defaultPriority?: number): any;
-	/**
-	 * Mixin the source object(s) properties into the target class's prototype.
-	 * Copies all property descriptors from source objects to the target's prototype.
-	 * @param Target - The target class to mix properties into
-	 * @param sources - One or more source objects containing properties to mix in
-	 * @example
-	 * ```ts
-	 * // Create a mixin with shared properties
-	 * const moveable = {
-	 *     x: 0,
-	 *     y: 0,
-	 *     move(x: number, y: number) {
-	 *         this.x += x;
-	 *         this.y += y;
-	 *     }
-	 * };
-	 *
-	 * // Create a mixin with computed properties
-	 * const scalable = {
-	 *     scale: 1,
-	 *     get scaled() {
-	 *         return this.scale > 1;
-	 *     }
-	 * };
-	 *
-	 * // Apply mixins to a class
-	 * extensions.mixin(Sprite, moveable, scalable);
-	 *
-	 * // Use mixed-in properties
-	 * const sprite = new Sprite();
-	 * sprite.move(10, 20);
-	 * console.log(sprite.x, sprite.y); // 10, 20
-	 * ```
-	 * @remarks
-	 * - Copies all properties including getters/setters
-	 * - Does not modify source objects
-	 * - Preserves property descriptors
-	 * @see {@link Object.defineProperties} For details on property descriptors
-	 * @see {@link Object.getOwnPropertyDescriptors} For details on property copying
-	 */
-	mixin(Target: any, ...sources: Parameters<typeof Object.getOwnPropertyDescriptors>[0][]): void;
-};
-/**
  * A system is a generic interface for a renderer system.
  * It is used to define the methods that a system should implement.
  * @category rendering
@@ -4246,6 +4246,176 @@ export declare class BackgroundSystem implements System<BackgroundSystemOptions>
 	destroy(): void;
 }
 /**
+ * Various GL texture/resources formats.
+ * @category rendering
+ * @advanced
+ */
+export declare enum GL_FORMATS {
+	RGBA = 6408,
+	RGB = 6407,
+	RG = 33319,
+	RED = 6403,
+	RGBA_INTEGER = 36249,
+	RGB_INTEGER = 36248,
+	RG_INTEGER = 33320,
+	RED_INTEGER = 36244,
+	ALPHA = 6406,
+	LUMINANCE = 6409,
+	LUMINANCE_ALPHA = 6410,
+	DEPTH_COMPONENT = 6402,
+	DEPTH_STENCIL = 34041
+}
+/**
+ * Various GL target types.
+ * @category rendering
+ * @advanced
+ */
+export declare enum GL_TARGETS {
+	TEXTURE_2D = 3553,
+	TEXTURE_CUBE_MAP = 34067,
+	TEXTURE_2D_ARRAY = 35866,
+	TEXTURE_CUBE_MAP_POSITIVE_X = 34069,
+	TEXTURE_CUBE_MAP_NEGATIVE_X = 34070,
+	TEXTURE_CUBE_MAP_POSITIVE_Y = 34071,
+	TEXTURE_CUBE_MAP_NEGATIVE_Y = 34072,
+	TEXTURE_CUBE_MAP_POSITIVE_Z = 34073,
+	TEXTURE_CUBE_MAP_NEGATIVE_Z = 34074
+}
+/**
+ * The wrap modes that are supported by pixi.
+ *
+ * The {@link WRAP_MODE} wrap mode affects the default wrapping mode of future operations.
+ * It can be re-assigned to either CLAMP or REPEAT, depending upon suitability.
+ * If the texture is non power of two then clamp will be used regardless as WebGL can
+ * only use REPEAT if the texture is po2.
+ *
+ * This property only affects WebGL.
+ * @category rendering
+ * @advanced
+ */
+export declare enum GL_WRAP_MODES {
+	/**
+	 * The textures uvs are clamped
+	 * @default 33071
+	 */
+	CLAMP = 33071,
+	/**
+	 * The texture uvs tile and repeat
+	 * @default 10497
+	 */
+	REPEAT = 10497,
+	/**
+	 * The texture uvs tile and repeat with mirroring
+	 * @default 33648
+	 */
+	MIRRORED_REPEAT = 33648
+}
+/** @internal */
+export declare enum GL_TYPES {
+	/**
+	 * 8 bits per channel for gl.RGBA
+	 * @default 5121
+	 */
+	UNSIGNED_BYTE = 5121,
+	/** @default 5123 */
+	UNSIGNED_SHORT = 5123,
+	/**
+	 * 5 red bits, 6 green bits, 5 blue bits.
+	 * @default 33635
+	 */
+	UNSIGNED_SHORT_5_6_5 = 33635,
+	/**
+	 * 4 red bits, 4 green bits, 4 blue bits, 4 alpha bits.
+	 * @default 32819
+	 */
+	UNSIGNED_SHORT_4_4_4_4 = 32819,
+	/**
+	 * 5 red bits, 5 green bits, 5 blue bits, 1 alpha bit.
+	 * @default 32820
+	 */
+	UNSIGNED_SHORT_5_5_5_1 = 32820,
+	/** @default 5125 */
+	UNSIGNED_INT = 5125,
+	/** @default 35899 */
+	UNSIGNED_INT_10F_11F_11F_REV = 35899,
+	/** @default 33640 */
+	UNSIGNED_INT_2_10_10_10_REV = 33640,
+	/** @default 34042 */
+	UNSIGNED_INT_24_8 = 34042,
+	/** @default 35902 */
+	UNSIGNED_INT_5_9_9_9_REV = 35902,
+	/** @default 5120 */
+	BYTE = 5120,
+	/** @default 5122 */
+	SHORT = 5122,
+	/** @default 5124 */
+	INT = 5124,
+	/** @default 5126 */
+	FLOAT = 5126,
+	/** @default 36269 */
+	FLOAT_32_UNSIGNED_INT_24_8_REV = 36269,
+	/** @default 36193 */
+	HALF_FLOAT = 36193
+}
+/**
+ * Internal texture for WebGL context
+ * @category rendering
+ * @ignore
+ */
+export declare class GlTexture implements GPUData {
+	target: GL_TARGETS;
+	/** The WebGL texture. */
+	texture: WebGLTexture;
+	/** Width of texture that was used in texImage2D. */
+	width: number;
+	/** Height of texture that was used in texImage2D. */
+	height: number;
+	/** Whether mip levels has to be generated. */
+	mipmap: boolean;
+	/** Type copied from texture source. */
+	type: number;
+	/** Type copied from texture source. */
+	internalFormat: number;
+	/** Type of sampler corresponding to this texture. See {@link SAMPLER_TYPES} */
+	samplerType: number;
+	format: GL_FORMATS;
+	constructor(texture: WebGLTexture);
+	destroy(): void;
+}
+/**
+ * an interface that allows a resource to be bound to the gpu in a bind group
+ * @category rendering
+ * @advanced
+ */
+export interface BindResource {
+	/**
+	 * The type of resource this is
+	 * @ignore
+	 */
+	_resourceType: string;
+	/**
+	 * Unique id for this resource this can change and is used to link the gpu
+	 * @ignore
+	 */
+	_resourceId: number;
+	_touched: number;
+	/**
+	 * a boolean that indicates if the resource has been destroyed.
+	 * If true, the resource should not be used and any bind groups
+	 * that will release any references to this resource.
+	 * @ignore
+	 */
+	destroyed: boolean;
+	/**
+	 * event dispatch whenever the underlying resource needs to change
+	 * this could be a texture or buffer that has been resized.
+	 * This is important as it allows the renderer to know that it needs to rebind the resource
+	 */
+	on?(event: "change", listenerFunction: (resource: BindResource) => void, listener: BindGroup): void;
+	/** todo */
+	off?(event: "change", listenerFunction: (resource: BindResource) => void, listener: BindGroup): void;
+}
+/**
  * A bind group is a collection of resources that are bound together for use by a shader.
  * They are essentially a wrapper for the WebGPU BindGroup class. But with the added bonus
  * that WebGL can also work with them.
@@ -4309,46 +4479,30 @@ export declare class BindGroup {
 	/**
 	 * Used internally to 'touch' each resource, to ensure that the GC
 	 * knows that all resources in this bind group are still being used.
+	 * @param now - The current time in milliseconds.
 	 * @param tick - The current tick.
 	 * @internal
 	 */
-	_touch(tick: number): void;
+	_touch(now: number, tick: number): void;
 	/** Destroys this bind group and removes all listeners. */
 	destroy(): void;
 	protected onResourceChange(resource: BindResource): void;
 }
 /**
- * an interface that allows a resource to be bound to the gpu in a bind group
+ * Data about the pixels of a texture.
+ * This includes the pixel data as a Uint8ClampedArray, and the width and height of the texture.
  * @category rendering
  * @advanced
  */
-export interface BindResource {
-	/**
-	 * The type of resource this is
-	 * @ignore
-	 */
-	_resourceType: string;
-	/**
-	 * Unique id for this resource this can change and is used to link the gpu
-	 * @ignore
-	 */
-	_resourceId: number;
-	_touched: number;
-	/**
-	 * a boolean that indicates if the resource has been destroyed.
-	 * If true, the resource should not be used and any bind groups
-	 * that will release any references to this resource.
-	 * @ignore
-	 */
-	destroyed: boolean;
-	/**
-	 * event dispatch whenever the underlying resource needs to change
-	 * this could be a texture or buffer that has been resized.
-	 * This is important as it allows the renderer to know that it needs to rebind the resource
-	 */
-	on?(event: "change", listenerFunction: (resource: BindResource) => void, listener: BindGroup): void;
-	/** todo */
-	off?(event: "change", listenerFunction: (resource: BindResource) => void, listener: BindGroup): void;
+export type GetPixelsOutput = {
+	pixels: Uint8ClampedArray;
+	width: number;
+	height: number;
+};
+/** @internal */
+export interface CanvasGenerator {
+	generateCanvas(texture: Texture): ICanvas;
+	getPixels(texture: Texture): GetPixelsOutput;
 }
 /**
  * Specifies the alpha composition mode for textures.
@@ -4552,367 +4706,129 @@ export declare class TextureStyle extends EventEmitter<{
 	destroy(): void;
 }
 /**
- * Options for creating a CanvasSource.
- * @category rendering
- * @advanced
- */
-export interface CanvasSourceOptions extends TextureSourceOptions<ICanvas> {
-	/**
-	 * Should the canvas be resized to preserve its screen width and height regardless
-	 * of the resolution of the renderer, this is only supported for HTMLCanvasElement
-	 * and will be ignored if the canvas is an OffscreenCanvas.
-	 */
-	autoDensity?: boolean;
-	/** if true, this canvas will be set up to be transparent where possible */
-	transparent?: boolean;
-}
-/**
- * A texture source that uses a canvas as its resource.
- * It automatically resizes the canvas based on the width, height, and resolution.
- * It also provides a 2D rendering context for drawing.
- * @category rendering
- * @advanced
- */
-export declare class CanvasSource extends TextureSource<ICanvas> {
-	static extension: ExtensionMetadata;
-	uploadMethodId: string;
-	autoDensity: boolean;
-	transparent: boolean;
-	private _context2D;
-	constructor(options: CanvasSourceOptions);
-	resizeCanvas(): void;
-	resize(width?: number, height?: number, resolution?: number): boolean;
-	static test(resource: any): resource is ICanvas;
-	/**
-	 * Returns the 2D rendering context for the canvas.
-	 * Caches the context after creating it.
-	 * @returns The 2D rendering context of the canvas.
-	 */
-	get context2D(): CanvasRenderingContext2D;
-}
-/**
- * The type of image-like resource that can be used as a texture source.
- *
- * - `ImageBitmap` is used for bitmap images.
- * - `HTMLCanvasElement` and `OffscreenCanvas` are used for canvas elements.
- * - `ICanvas` is an interface for canvas-like objects.
- * - `VideoFrame` is used for video frames.
- * - `HTMLImageElement` is used for HTML image elements.
- * - `HTMLVideoElement` is used for HTML video elements.
- * @category rendering
- * @advanced
- */
-export type ImageResource = ImageBitmap | HTMLCanvasElement | OffscreenCanvas | ICanvas | VideoFrame | HTMLImageElement | HTMLVideoElement;
-/**
- * A texture source that uses an image-like resource as its resource.
- * It can handle HTMLImageElement, ImageBitmap, VideoFrame, and HTMLVideoElement.
- * It is used for textures that can be uploaded to the GPU.
- * @category rendering
- * @advanced
- */
-export declare class ImageSource extends TextureSource<ImageResource> {
-	static extension: ExtensionMetadata;
-	uploadMethodId: string;
-	constructor(options: TextureSourceOptions<ImageResource>);
-	static test(resource: any): resource is ImageResource;
-}
-/**
- * The type of resource or options that can be used to create a texture source.
- * This includes ImageResource, TextureSourceOptions, BufferSourceOptions, and CanvasSourceOptions.
- * @category rendering
- * @advanced
- */
-export type TextureResourceOrOptions = ImageResource | TextureSourceOptions<ImageResource> | BufferSourceOptions | CanvasSourceOptions;
-/**
- * @param options
- * @deprecated since v8.2.0
- * @see TextureSource.from
- * @category rendering
+ * Options for the {@link GCManagedHash}.
  * @internal
  */
-export declare function autoDetectSource(options?: TextureResourceOrOptions): TextureSource;
-/**
- * @param options
- * @param skipCache
- * @internal
- */
-export declare function resourceToTexture(options?: TextureResourceOrOptions, skipCache?: boolean): Texture;
-/**
- * Helper function that creates a returns Texture based on the source you provide.
- * The source should be loaded and ready to go. If not its best to grab the asset using Assets.
- * @param id - String or Source to create texture from
- * @param skipCache - Skip adding the texture to the cache
- * @returns The texture based on the Id provided
- * @category utils
- * @internal
- */
-export declare function textureFrom(id: TextureSourceLike, skipCache?: boolean): Texture;
-/**
- * options for creating a new TextureSource
- * @category rendering
- * @advanced
- */
-export interface TextureSourceOptions<T extends Record<string, any> = any> extends TextureStyleOptions {
-	/**
-	 * the resource that will be uploaded to the GPU. This is where we get our pixels from
-	 * eg an ImageBimt / Canvas / Video etc
-	 */
-	resource?: T;
-	/** the pixel width of this texture source. This is the REAL pure number, not accounting resolution */
-	width?: number;
-	/** the pixel height of this texture source. This is the REAL pure number, not accounting resolution */
-	height?: number;
-	/** the resolution of the texture. */
-	resolution?: number;
-	/** the format that the texture data has */
-	format?: TEXTURE_FORMATS;
-	/**
-	 * Used by internal textures
-	 * @ignore
-	 */
-	sampleCount?: number;
-	/**
-	 * Only really affects RenderTextures.
-	 * Should we use antialiasing for this texture. It will look better, but may impact performance as a
-	 * Blit operation will be required to resolve the texture.
-	 */
-	antialias?: boolean;
-	/** how many dimensions does this texture have? currently v8 only supports 2d */
-	dimensions?: TEXTURE_DIMENSIONS;
-	/** The number of mip levels to generate for this texture. this is  overridden if autoGenerateMipmaps is true */
-	mipLevelCount?: number;
-	/**
-	 * Should we auto generate mipmaps for this texture? This will automatically generate mipmaps
-	 * for this texture when uploading to the GPU. Mipmapped textures take up more memory, but
-	 * can look better when scaled down.
-	 *
-	 * For performance reasons, it is recommended to NOT use this with RenderTextures, as they are often updated every frame.
-	 * If you do, make sure to call `updateMipmaps` after you update the texture.
-	 */
-	autoGenerateMipmaps?: boolean;
-	/** the alpha mode of the texture */
-	alphaMode?: ALPHA_MODES;
-	/** optional label, can be used for debugging */
-	label?: string;
-	/** If true, the Garbage Collector will unload this texture if it is not used after a period of time */
-	autoGarbageCollect?: boolean;
+export interface GCManagedHashOptions<T extends GCable & {
+	uid: number;
+} & Pick<EventEmitter, "once" | "off">> {
+	renderer: Renderer;
+	type: GCData["type"];
+	onUnload?: (item: T, ...args: any[]) => void;
+	priority?: number;
+	name: string;
 }
 /**
- * A TextureSource stores the information that represents an image.
- * All textures have require TextureSource, which contains information about the source.
- * Therefore you can have many textures all using a single TextureSource (eg a sprite sheet)
- *
- * This is an class is extended depending on the source of the texture.
- * Eg if you are using an an image as your resource, then an ImageSource is used.
+ * A hash for managing renderable and resource resources with GC integration.
+ * @internal
+ */
+export declare class GCManagedHash<T extends GCable & {
+	uid: number;
+} & Pick<EventEmitter, "once" | "off">> {
+	items: Record<number, T>;
+	private _renderer;
+	private _onUnload?;
+	readonly name: string;
+	constructor(options: GCManagedHashOptions<T>);
+	/**
+	 * Add an item to the hash. No-op if already added.
+	 * @param item
+	 * @returns true if the item was added, false if it was already in the hash
+	 */
+	add(item: T): boolean;
+	remove(item: T, ...args: unknown[]): void;
+	removeAll(...args: unknown[]): void;
+	destroy(...args: unknown[]): void;
+}
+/**
+ * The different topology types supported by the renderer used to describe how the geometry should be renderer
  * @category rendering
  * @advanced
  */
-export declare class TextureSource<T extends Record<string, any> = any> extends EventEmitter<{
-	change: BindResource;
-	update: TextureSource;
-	unload: TextureSource;
-	destroy: TextureSource;
-	resize: TextureSource;
-	styleChange: TextureSource;
-	updateMipmaps: TextureSource;
-	error: Error;
-}> implements BindResource {
-	protected readonly options: TextureSourceOptions<T>;
-	/** The default options used when creating a new TextureSource. override these to add your own defaults */
-	static defaultOptions: TextureSourceOptions;
-	/** unique id for this Texture source */
-	readonly uid: number;
-	/** optional label, can be used for debugging */
-	label: string;
-	/**
-	 * The resource type used by this TextureSource. This is used by the bind groups to determine
-	 * how to handle this resource.
-	 * @internal
-	 */
-	readonly _resourceType = "textureSource";
-	/**
-	 * i unique resource id, used by the bind group systems.
-	 * This can change if the texture is resized or its resource changes
-	 * @internal
-	 */
-	_resourceId: number;
-	/**
-	 * this is how the backends know how to upload this texture to the GPU
-	 * It changes depending on the resource type. Classes that extend TextureSource
-	 * should override this property.
-	 * @internal
-	 */
-	uploadMethodId: string;
-	/** @internal */
-	_resolution: number;
-	/** the pixel width of this texture source. This is the REAL pure number, not accounting resolution */
-	pixelWidth: number;
-	/** the pixel height of this texture source. This is the REAL pure number, not accounting resolution */
-	pixelHeight: number;
-	/**
-	 * the width of this texture source, accounting for resolution
-	 * eg pixelWidth 200, resolution 2, then width will be 100
-	 */
-	width: number;
-	/**
-	 * the height of this texture source, accounting for resolution
-	 * eg pixelHeight 200, resolution 2, then height will be 100
-	 */
-	height: number;
-	/**
-	 * the resource that will be uploaded to the GPU. This is where we get our pixels from
-	 * eg an ImageBimt / Canvas / Video etc
-	 */
-	resource: T;
-	/**
-	 * The number of samples of a multisample texture. This is always 1 for non-multisample textures.
-	 * To enable multisample for a texture, set antialias to true
-	 * @internal
-	 */
-	sampleCount: number;
-	/** The number of mip levels to generate for this texture. this is  overridden if autoGenerateMipmaps is true */
-	mipLevelCount: number;
-	/**
-	 * Should we auto generate mipmaps for this texture? This will automatically generate mipmaps
-	 * for this texture when uploading to the GPU. Mipmapped textures take up more memory, but
-	 * can look better when scaled down.
-	 *
-	 * For performance reasons, it is recommended to NOT use this with RenderTextures, as they are often updated every frame.
-	 * If you do, make sure to call `updateMipmaps` after you update the texture.
-	 */
-	autoGenerateMipmaps: boolean;
-	/** the format that the texture data has */
-	format: TEXTURE_FORMATS;
-	/** how many dimensions does this texture have? currently v8 only supports 2d */
-	dimension: TEXTURE_DIMENSIONS;
-	/** the alpha mode of the texture */
-	alphaMode: ALPHA_MODES;
-	private _style;
-	/**
-	 * Only really affects RenderTextures.
-	 * Should we use antialiasing for this texture. It will look better, but may impact performance as a
-	 * Blit operation will be required to resolve the texture.
-	 */
-	antialias: boolean;
-	/**
-	 * Has the source been destroyed?
-	 * @readonly
-	 */
-	destroyed: boolean;
-	/**
-	 * Used by automatic texture Garbage Collection, stores last GC tick when it was bound
-	 * @protected
-	 */
-	_touched: number;
-	/**
-	 * Used by the batcher to build texture batches. faster to have the variable here!
-	 * @protected
-	 */
-	_batchTick: number;
-	/**
-	 * A temporary batch location for the texture batching. Here for performance reasons only!
-	 * @protected
-	 */
-	_textureBindLocation: number;
-	isPowerOfTwo: boolean;
-	/** If true, the Garbage Collector will unload this texture if it is not used after a period of time */
-	autoGarbageCollect: boolean;
-	/**
-	 * used internally to know where a texture came from. Usually assigned by the asset loader!
-	 * @ignore
-	 */
-	_sourceOrigin: string;
-	/**
-	 * @param options - options for creating a new TextureSource
-	 */
-	constructor(options?: TextureSourceOptions<T>);
-	/** returns itself */
-	get source(): TextureSource;
-	/** the style of the texture */
-	get style(): TextureStyle;
-	set style(value: TextureStyle);
-	/** Specifies the maximum anisotropy value clamp used by the sampler. */
-	set maxAnisotropy(value: number);
-	get maxAnisotropy(): number;
-	/** setting this will set wrapModeU, wrapModeV and wrapModeW all at once! */
-	get addressMode(): WRAP_MODE;
-	set addressMode(value: WRAP_MODE);
-	/** setting this will set wrapModeU, wrapModeV and wrapModeW all at once! */
-	get repeatMode(): WRAP_MODE;
-	set repeatMode(value: WRAP_MODE);
-	/** Specifies the sampling behavior when the sample footprint is smaller than or equal to one texel. */
-	get magFilter(): SCALE_MODE;
-	set magFilter(value: SCALE_MODE);
-	/** Specifies the sampling behavior when the sample footprint is larger than one texel. */
-	get minFilter(): SCALE_MODE;
-	set minFilter(value: SCALE_MODE);
-	/** Specifies behavior for sampling between mipmap levels. */
-	get mipmapFilter(): SCALE_MODE;
-	set mipmapFilter(value: SCALE_MODE);
-	/** Specifies the minimum and maximum levels of detail, respectively, used internally when sampling a texture. */
-	get lodMinClamp(): number;
-	set lodMinClamp(value: number);
-	/** Specifies the minimum and maximum levels of detail, respectively, used internally when sampling a texture. */
-	get lodMaxClamp(): number;
-	set lodMaxClamp(value: number);
-	private _onStyleChange;
-	/** call this if you have modified the texture outside of the constructor */
-	update(): void;
-	/** Destroys this texture source */
+export type Topology = "point-list" | "line-list" | "line-strip" | "triangle-list" | "triangle-strip";
+/**
+ * @deprecated since 8.0.0
+ * @category rendering
+ * @advanced
+ */
+export declare const DRAW_MODES: {
+	POINTS: string;
+	LINES: string;
+	LINE_STRIP: string;
+	TRIANGLES: string;
+	TRIANGLE_STRIP: string;
+};
+/**
+ * The different types of vertex formats supported by the renderer
+ * @category rendering
+ * @advanced
+ */
+export type VertexFormat = "uint8x2" | "uint8x4" | "sint8x2" | "sint8x4" | "unorm8x2" | "unorm8x4" | "snorm8x2" | "snorm8x4" | "uint16x2" | "uint16x4" | "sint16x2" | "sint16x4" | "unorm16x2" | "unorm16x4" | "snorm16x2" | "snorm16x4" | "float16x2" | "float16x4" | "float32" | "float32x2" | "float32x3" | "float32x4" | "uint32" | "uint32x2" | "uint32x3" | "uint32x4" | "sint32" | "sint32x2" | "sint32x3" | "sint32x4";
+/**
+ * The WebGL rendering context type used by the PixiJS WebGL renderer.
+ * This is typically a `WebGL2RenderingContext`, which is the default for PixiJS.
+ * It is used to ensure that the renderer operates with the correct context type.
+ * @category rendering
+ * @advanced
+ */
+export type GlRenderingContext = WebGL2RenderingContext;
+/**
+ * Constants for various buffer types in Pixi
+ * @category rendering
+ * @advanced
+ */
+export declare enum BUFFER_TYPE {
+	/** buffer type for using as an index buffer */
+	ELEMENT_ARRAY_BUFFER = 34963,
+	/** buffer type for using attribute data */
+	ARRAY_BUFFER = 34962,
+	/** the buffer type is for uniform buffer objects */
+	UNIFORM_BUFFER = 35345
+}
+/** @internal */
+export declare class GlBuffer implements GPUData {
+	buffer: WebGLBuffer;
+	updateID: number;
+	byteLength: number;
+	type: number;
+	_lastBindBaseLocation: number;
+	_lastBindCallId: number;
+	constructor(buffer: WebGLBuffer, type: BUFFER_TYPE);
 	destroy(): void;
-	/**
-	 * This will unload the Texture source from the GPU. This will free up the GPU memory
-	 * As soon as it is required fore rendering, it will be re-uploaded.
-	 */
-	unload(): void;
-	/** the width of the resource. This is the REAL pure number, not accounting resolution   */
-	get resourceWidth(): number;
-	/** the height of the resource. This is the REAL pure number, not accounting resolution */
-	get resourceHeight(): number;
-	/**
-	 * the resolution of the texture. Changing this number, will not change the number of pixels in the actual texture
-	 * but will the size of the texture when rendered.
-	 *
-	 * changing the resolution of this texture to 2 for example will make it appear twice as small when rendered (as pixel
-	 * density will have increased)
-	 */
-	get resolution(): number;
-	set resolution(resolution: number);
-	/**
-	 * Resize the texture, this is handy if you want to use the texture as a render texture
-	 * @param width - the new width of the texture
-	 * @param height - the new height of the texture
-	 * @param resolution - the new resolution of the texture
-	 * @returns - if the texture was resized
-	 */
-	resize(width?: number, height?: number, resolution?: number): boolean;
-	/**
-	 * Lets the renderer know that this texture has been updated and its mipmaps should be re-generated.
-	 * This is only important for RenderTexture instances, as standard Texture instances will have their
-	 * mipmaps generated on upload. You should call this method after you make any change to the texture
-	 *
-	 * The reason for this is is can be quite expensive to update mipmaps for a texture. So by default,
-	 * We want you, the developer to specify when this action should happen.
-	 *
-	 * Generally you don't want to have mipmaps generated on Render targets that are changed every frame,
-	 */
-	updateMipmaps(): void;
-	set wrapMode(value: WRAP_MODE);
-	get wrapMode(): WRAP_MODE;
-	set scaleMode(value: SCALE_MODE);
-	/** setting this will set magFilter,minFilter and mipmapFilter all at once!  */
-	get scaleMode(): SCALE_MODE;
-	/**
-	 * Refresh check for isPowerOfTwo texture based on size
-	 * @private
-	 */
-	protected _refreshPOT(): void;
-	static test(_resource: any): any;
-	/**
-	 * A helper function that creates a new TextureSource based on the resource you provide.
-	 * @param resource - The resource to create the texture source from.
-	 */
-	static from: (resource: TextureResourceOrOptions) => TextureSource;
+}
+/** @internal */
+export declare class GpuBufferData implements GPUData {
+	gpuBuffer: GPUBuffer;
+	constructor(gpuBuffer: GPUBuffer);
+	destroy(): void;
+}
+/**
+ * System plugin to the renderer to manage buffers.
+ * @category rendering
+ * @advanced
+ */
+export declare class GpuBufferSystem implements System {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGPUSystem
+		];
+		readonly name: "buffer";
+	};
+	protected CONTEXT_UID: number;
+	private readonly _renderer;
+	private readonly _managedBuffers;
+	private _gpu;
+	constructor(renderer: WebGPURenderer);
+	protected contextChange(gpu: GPU$1): void;
+	getGPUBuffer(buffer: Buffer$1): GPUBuffer;
+	updateBuffer(buffer: Buffer$1): GPUBuffer;
+	/** dispose all WebGL resources of all managed buffers */
+	destroyAll(): void;
+	protected onBufferUnload(buffer: Buffer$1): void;
+	createGPUBuffer(buffer: Buffer$1): GPUBuffer;
+	protected onBufferChange(buffer: Buffer$1): void;
+	destroy(): void;
 }
 /**
  * Buffer usage flags. they can be combined using the bitwise OR operator
@@ -5050,7 +4966,8 @@ declare class Buffer$1 extends EventEmitter<{
 	change: BindResource;
 	update: Buffer$1;
 	destroy: Buffer$1;
-}> implements BindResource {
+	unload: Buffer$1;
+}> implements BindResource, GPUDataOwner, GCable {
 	/**
 	 * emits when the underlying buffer has changed shape (i.e. resized)
 	 * letting the renderer know that it needs to discard the old buffer on the GPU and create a new one
@@ -5065,6 +4982,14 @@ declare class Buffer$1 extends EventEmitter<{
 	 * emits when the buffer is destroyed. letting the renderer know that it needs to destroy the buffer on the GPU
 	 * @event destroy
 	 */
+	/** @internal */
+	_gpuData: Record<number, GlBuffer | GpuBufferData>;
+	/** @internal */
+	_gcData?: GCData;
+	/** @internal */
+	_gcLastUsed: number;
+	/** If set to true, the buffer will be garbage collected automatically when it is not used. */
+	autoGarbageCollect: boolean;
 	/** a unique id for this uniform group used through the renderer */
 	readonly uid: number;
 	/**
@@ -5134,973 +5059,11 @@ declare class Buffer$1 extends EventEmitter<{
 	 * @param sizeInBytes - the new size of the buffer in bytes
 	 */
 	update(sizeInBytes?: number): void;
+	/** Unloads the buffer from the GPU */
+	unload(): void;
 	/** Destroys the buffer */
 	destroy(): void;
 }
-/**
- * Options for creating a BufferImageSource.
- * @category rendering
- * @advanced
- */
-export interface BufferSourceOptions extends TextureSourceOptions<TypedArray | ArrayBuffer> {
-	width: number;
-	height: number;
-}
-/**
- * A texture source that uses a TypedArray or ArrayBuffer as its resource.
- * It automatically determines the format based on the type of TypedArray provided.
- * @category rendering
- * @advanced
- */
-export declare class BufferImageSource extends TextureSource<TypedArray | ArrayBuffer> {
-	static extension: ExtensionMetadata;
-	uploadMethodId: string;
-	constructor(options: BufferSourceOptions);
-	static test(resource: any): resource is TypedArray | ArrayBuffer;
-}
-/**
- * Class controls uv mapping from Texture normal space to BaseTexture normal space.
- *
- * Takes `trim` and `rotate` into account. May contain clamp settings for Meshes and TilingSprite.
- *
- * Can be used in Texture `uvMatrix` field, or separately, you can use different clamp settings on the same texture.
- * If you want to add support for texture region of certain feature or filter, that's what you're looking for.
- *
- * Takes track of Texture changes through `_lastTextureID` private field.
- * Use `update()` method call to track it from outside.
- * @see Texture
- * @see Mesh
- * @see TilingSprite
- * @category rendering
- * @advanced
- */
-export declare class TextureMatrix {
-	/**
-	 * Matrix operation that converts texture region coords to texture coords
-	 * @readonly
-	 */
-	mapCoord: Matrix;
-	/**
-	 * Changes frame clamping
-	 * Works with TilingSprite and Mesh
-	 * Change to 1.5 if you texture has repeated right and bottom lines, that leads to smoother borders
-	 * @default 0
-	 */
-	clampOffset: number;
-	/**
-	 * Changes frame clamping
-	 * Works with TilingSprite and Mesh
-	 * Change to -0.5 to add a pixel to the edge, recommended for transparent trimmed textures in atlas
-	 * @default 0.5
-	 */
-	clampMargin: number;
-	/**
-	 * Clamp region for normalized coords, left-top pixel center in xy , bottom-right in zw.
-	 * Calculated based on clampOffset.
-	 */
-	readonly uClampFrame: Float32Array;
-	/** Normalized clamp offset. Calculated based on clampOffset. */
-	readonly uClampOffset: Float32Array;
-	/**
-	 * Tracks Texture frame changes.
-	 * @ignore
-	 */
-	_updateID: number;
-	/**
-	 * Tracks Texture frame changes.
-	 * @protected
-	 */
-	protected _textureID: number;
-	protected _texture: Texture;
-	/**
-	 * If texture size is the same as baseTexture.
-	 * @default false
-	 * @readonly
-	 */
-	isSimple: boolean;
-	/**
-	 * @param texture - observed texture
-	 * @param clampMargin - Changes frame clamping, 0.5 by default. Use -0.5 for extra border.
-	 */
-	constructor(texture: Texture, clampMargin?: number);
-	/** Texture property. */
-	get texture(): Texture;
-	set texture(value: Texture);
-	/**
-	 * Multiplies uvs array to transform
-	 * @param uvs - mesh uvs
-	 * @param [out=uvs] - output
-	 * @returns - output
-	 */
-	multiplyUvs(uvs: Float32Array, out?: Float32Array): Float32Array;
-	/**
-	 * Updates matrices if texture was changed
-	 * @returns - whether or not it was updated
-	 */
-	update(): boolean;
-}
-/**
- * Stores the width of the non-scalable borders, for example when used with {@link NineSlicePlane} texture.
- * @category rendering
- * @advanced
- */
-export interface TextureBorders {
-	/** left border in pixels */
-	left: number;
-	/** top border in pixels */
-	top: number;
-	/** right border in pixels */
-	right: number;
-	/** bottom border in pixels */
-	bottom: number;
-}
-/**
- * The UVs data structure for a texture.
- * @category rendering
- * @advanced
- */
-export type UVs = {
-	x0: number;
-	y0: number;
-	x1: number;
-	y1: number;
-	x2: number;
-	y2: number;
-	x3: number;
-	y3: number;
-};
-/**
- * The options that can be passed to a new Texture
- * @category rendering
- * @standard
- */
-export interface TextureOptions<TextureSourceType extends TextureSource = TextureSource> {
-	/** the underlying texture data that this texture will use  */
-	source?: TextureSourceType;
-	/** optional label, for debugging */
-	label?: string;
-	/** The rectangle frame of the texture to show */
-	frame?: Rectangle;
-	/** The area of original texture */
-	orig?: Rectangle;
-	/** Trimmed rectangle of original texture */
-	trim?: Rectangle;
-	/** Default anchor point used for sprite placement / rotation */
-	defaultAnchor?: {
-		x: number;
-		y: number;
-	};
-	/** Default borders used for 9-slice scaling {@link NineSlicePlane}*/
-	defaultBorders?: TextureBorders;
-	/** indicates how the texture was rotated by texture packer. See {@link groupD8} */
-	rotate?: number;
-	/**
-	 * Set to true if you plan on modifying this texture's frame, UVs, or swapping its source at runtime.
-	 * This is false by default as it improves performance. Generally, it's recommended to create new
-	 * textures and swap those rather than modifying an existing texture's properties unless you are
-	 * working with a dynamic frames.
-	 * Not setting this to true when modifying the texture can lead to visual artifacts.
-	 *
-	 * If this is false and you modify the texture, you can manually update the sprite's texture by calling
-	 * `sprite.onViewUpdate()`.
-	 */
-	dynamic?: boolean;
-}
-/**
- * A texture that can be bound to a shader as it has a texture source.
- * @category rendering
- * @advanced
- */
-export interface BindableTexture {
-	source: TextureSource;
-}
-/**
- * A texture source can be a string, an image, a video, a canvas, or a texture resource.
- * @category rendering
- * @advanced
- * @see {@link TextureSource}
- * @see {@link TextureResourceOrOptions}
- * @see {@link Texture.from}
- */
-export type TextureSourceLike = TextureSource | TextureResourceOrOptions | string;
-/**
- * A texture stores the information that represents an image or part of an image.
- *
- * A texture must have a loaded resource passed to it to work. It does not contain any
- * loading mechanisms.
- *
- * The Assets class can be used to load a texture from a file. This is the recommended
- * way as it will handle the loading and caching for you.
- *
- * ```js
- *
- * const texture = await Assets.load('assets/image.png');
- *
- * // once Assets has loaded the image it will be available via the from method
- * const sameTexture = Texture.from('assets/image.png');
- * // another way to access the texture once loaded
- * const sameAgainTexture = Assets.get('assets/image.png');
- *
- * const sprite1 = new Sprite(texture);
- *
- * ```
- *
- * It cannot be added to the display list directly; instead use it as the texture for a Sprite.
- * If no frame is provided for a texture, then the whole image is used.
- *
- * You can directly create a texture from an image and then reuse it multiple times like this :
- *
- * ```js
- * import { Sprite, Texture } from 'pixi.js';
- *
- * const texture = await Assets.load('assets/image.png');
- * const sprite1 = new Sprite(texture);
- * const sprite2 = new Sprite(texture);
- * ```
- *
- * If you didn't pass the texture frame to constructor, it enables `noFrame` mode:
- * it subscribes on baseTexture events, it automatically resizes at the same time as baseTexture.
- * @category rendering
- * @class
- * @standard
- */
-export declare class Texture<TextureSourceType extends TextureSource = TextureSource> extends EventEmitter<{
-	update: Texture;
-	destroy: Texture;
-}> implements BindableTexture {
-	/**
-	 * Helper function that creates a returns Texture based on the source you provide.
-	 * The source should be loaded and ready to go. If not its best to grab the asset using Assets.
-	 * @param id - String or Source to create texture from
-	 * @param skipCache - Skip adding the texture to the cache
-	 * @returns The texture based on the Id provided
-	 */
-	static from: (id: TextureSourceLike, skipCache?: boolean) => Texture;
-	/** label used for debugging */
-	label?: string;
-	/** unique id for this texture */
-	readonly uid: number;
-	/**
-	 * Has the texture been destroyed?
-	 * @readonly
-	 */
-	destroyed: boolean;
-	/** @internal */
-	_source: TextureSourceType;
-	/**
-	 * Indicates whether the texture is rotated inside the atlas
-	 * set to 2 to compensate for texture packer rotation
-	 * set to 6 to compensate for spine packer rotation
-	 * can be used to rotate or mirror sprites
-	 * See {@link groupD8} for explanation
-	 */
-	readonly rotate: number;
-	/** A uvs object based on the given frame and the texture source */
-	readonly uvs: UVs;
-	/**
-	 * Anchor point that is used as default if sprite is created with this texture.
-	 * Changing the `defaultAnchor` at a later point of time will not update Sprite's anchor point.
-	 * @default{0,0}
-	 */
-	readonly defaultAnchor?: {
-		x: number;
-		y: number;
-	};
-	/**
-	 * Default width of the non-scalable border that is used if 9-slice plane is created with this texture.
-	 * @since 7.2.0
-	 * @see NineSliceSprite
-	 */
-	readonly defaultBorders?: TextureBorders;
-	/**
-	 * This is the area of the BaseTexture image to actually copy to the Canvas / WebGL when rendering,
-	 * irrespective of the actual frame size or placement (which can be influenced by trimmed texture atlases)
-	 */
-	readonly frame: Rectangle;
-	/** This is the area of original texture, before it was put in atlas. */
-	readonly orig: Rectangle;
-	/**
-	 * This is the trimmed area of original texture, before it was put in atlas
-	 * Please call `updateUvs()` after you change coordinates of `trim` manually.
-	 */
-	readonly trim: Rectangle;
-	/**
-	 * Does this Texture have any frame data assigned to it?
-	 *
-	 * This mode is enabled automatically if no frame was passed inside constructor.
-	 *
-	 * In this mode texture is subscribed to baseTexture events, and fires `update` on any change.
-	 *
-	 * Beware, after loading or resize of baseTexture event can fired two times!
-	 * If you want more control, subscribe on baseTexture itself.
-	 * @example
-	 * texture.on('update', () => {});
-	 */
-	noFrame: boolean;
-	/**
-	 * Set to true if you plan on modifying the uvs of this texture.
-	 * When this is the case, sprites and other objects using the texture will
-	 * make sure to listen for changes to the uvs and update their vertices accordingly.
-	 */
-	dynamic: boolean;
-	private _textureMatrix;
-	/** is it a texture? yes! used for type checking */
-	readonly isTexture = true;
-	/**
-	 * @param {TextureOptions} options - Options for the texture
-	 */
-	constructor({ source, label, frame, orig, trim, defaultAnchor, defaultBorders, rotate, dynamic }?: TextureOptions<TextureSourceType>);
-	set source(value: TextureSourceType);
-	/** the underlying source of the texture (equivalent of baseTexture in v7) */
-	get source(): TextureSourceType;
-	/** returns a TextureMatrix instance for this texture. By default, that object is not created because its heavy. */
-	get textureMatrix(): TextureMatrix;
-	/** The width of the Texture in pixels. */
-	get width(): number;
-	/** The height of the Texture in pixels. */
-	get height(): number;
-	/** Call this function when you have modified the frame of this texture. */
-	updateUvs(): void;
-	/**
-	 * Destroys this texture
-	 * @param destroySource - Destroy the source when the texture is destroyed.
-	 */
-	destroy(destroySource?: boolean): void;
-	/**
-	 * Call this if you have modified the `texture outside` of the constructor.
-	 *
-	 * If you have modified this texture's source, you must separately call `texture.source.update()` to see those changes.
-	 */
-	update(): void;
-	/** @deprecated since 8.0.0 */
-	get baseTexture(): TextureSource;
-	/** an Empty Texture used internally by the engine */
-	static EMPTY: Texture;
-	/** a White texture used internally by the engine */
-	static WHITE: Texture<BufferImageSource>;
-}
-/**
- * A render texture, extends `Texture`.
- * @see {@link Texture}
- * @category rendering
- * @advanced
- */
-export declare class RenderTexture extends Texture {
-	static create(options: TextureSourceOptions): RenderTexture;
-	/**
-	 * Resizes the render texture.
-	 * @param width - The new width of the render texture.
-	 * @param height - The new height of the render texture.
-	 * @param resolution - The new resolution of the render texture.
-	 * @returns This texture.
-	 */
-	resize(width: number, height: number, resolution?: number): this;
-}
-/**
- * Options for generating a texture source.
- * @category rendering
- * @advanced
- * @interface
- */
-export type GenerateTextureSourceOptions = Omit<TextureSourceOptions, "resource" | "width" | "height" | "resolution">;
-/**
- * Options for generating a texture from a container.
- * Used to create reusable textures from display objects, which can improve performance
- * when the same content needs to be rendered multiple times.
- * @example
- * ```ts
- * // Basic texture generation
- * const sprite = new Sprite(texture);
- * const generatedTexture = renderer.generateTexture({
- *     target: sprite
- * });
- *
- * // Generate with custom region and resolution
- * const texture = renderer.generateTexture({
- *     target: container,
- *     frame: new Rectangle(0, 0, 100, 100),
- *     resolution: 2
- * });
- *
- * // Generate with background color and anti-aliasing
- * const highQualityTexture = renderer.generateTexture({
- *     target: graphics,
- *     clearColor: '#ff0000',
- *     antialias: true,
- *     textureSourceOptions: {
- *         scaleMode: 'linear'
- *     }
- * });
- * ```
- * @category rendering
- * @advanced
- */
-export type GenerateTextureOptions = {
-	/**
-	 * The container to generate the texture from.
-	 * This can be any display object like Sprite, Container, or Graphics.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics()
-	 *     .circle(0, 0, 50)
-	 *     .fill('red');
-	 *
-	 * const texture = renderer.generateTexture({
-	 *     target: graphics
-	 * });
-	 * ```
-	 */
-	target: Container;
-	/**
-	 * The region of the container that should be rendered.
-	 * If not specified, defaults to the local bounds of the container.
-	 * @example
-	 * ```ts
-	 * // Extract only a portion of the container
-	 * const texture = renderer.generateTexture({
-	 *     target: container,
-	 *     frame: new Rectangle(10, 10, 100, 100)
-	 * });
-	 * ```
-	 */
-	frame?: Rectangle;
-	/**
-	 * The resolution of the texture being generated.
-	 * Higher values create sharper textures at the cost of memory.
-	 * @default renderer.resolution
-	 * @example
-	 * ```ts
-	 * // Generate a high-resolution texture
-	 * const hiResTexture = renderer.generateTexture({
-	 *     target: sprite,
-	 *     resolution: 2 // 2x resolution
-	 * });
-	 * ```
-	 */
-	resolution?: number;
-	/**
-	 * The color used to clear the texture before rendering.
-	 * Can be a hex number, string, or array of numbers.
-	 * @example
-	 * ```ts
-	 * // Clear with red background
-	 * const texture = renderer.generateTexture({
-	 *     target: sprite,
-	 *     clearColor: '#ff0000'
-	 * });
-	 *
-	 * // Clear with semi-transparent black
-	 * const texture = renderer.generateTexture({
-	 *     target: sprite,
-	 *     clearColor: [0, 0, 0, 0.5]
-	 * });
-	 * ```
-	 */
-	clearColor?: ColorSource;
-	/**
-	 * Whether to enable anti-aliasing. This may affect performance.
-	 * @default false
-	 * @example
-	 * ```ts
-	 * // Generate a smooth texture
-	 * const texture = renderer.generateTexture({
-	 *     target: graphics,
-	 *     antialias: true
-	 * });
-	 * ```
-	 */
-	antialias?: boolean;
-	/**
-	 * Advanced options for configuring the texture source.
-	 * Controls texture properties like scale mode and filtering.
-	 * @advanced
-	 * @example
-	 * ```ts
-	 * const texture = renderer.generateTexture({
-	 *     target: sprite,
-	 *     textureSourceOptions: {
-	 *         scaleMode: 'linear',
-	 *     }
-	 * });
-	 * ```
-	 */
-	textureSourceOptions?: GenerateTextureSourceOptions;
-};
-/**
- * System that manages the generation of textures from display objects in the renderer.
- * This system is responsible for creating reusable textures from containers, sprites, and other display objects.
- * Available through `renderer.textureGenerator`.
- * @example
- * ```ts
- * import { Application, Sprite, Graphics } from 'pixi.js';
- *
- * const app = new Application();
- * await app.init();
- *
- * // Create a complex display object
- * const container = new Container();
- *
- * const graphics = new Graphics()
- *     .circle(0, 0, 50)
- *     .fill('red');
- *
- * const sprite = new Sprite(texture);
- * sprite.x = 100;
- *
- * container.addChild(graphics, sprite);
- *
- * // Generate a texture from the container
- * const generatedTexture = app.renderer.textureGenerator.generateTexture({
- *     target: container,
- *     resolution: 2,
- *     antialias: true
- * });
- *
- * // Use the generated texture
- * const newSprite = new Sprite(generatedTexture);
- * app.stage.addChild(newSprite);
- *
- * // Clean up when done
- * generatedTexture.destroy(true);
- * ```
- *
- * Features:
- * - Convert any display object to a texture
- * - Support for custom regions and resolutions
- * - Anti-aliasing support
- * - Background color configuration
- * - Texture source options customization
- *
- * Common Use Cases:
- * - Creating texture atlases dynamically
- * - Caching complex container content
- * - Generating thumbnails
- * - Creating reusable textures from rendered content
- *
- * Performance Considerations:
- * - Generating textures is relatively expensive
- * - Cache results when possible
- * - Be mindful of resolution and size
- * - Clean up unused textures
- * @see {@link GenerateTextureOptions} For detailed texture generation options
- * @see {@link AbstractRenderer.generateTexture} For the main renderer method
- * @see {@link RenderTexture} For the resulting texture type
- * @category rendering
- * @standard
- */
-export declare class GenerateTextureSystem implements System {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGLSystem,
-			ExtensionType.WebGPUSystem
-		];
-		readonly name: "textureGenerator";
-	};
-	private readonly _renderer;
-	constructor(renderer: Renderer);
-	/**
-	 * Creates a texture from a display object that can be used for creating sprites and other textures.
-	 * This is particularly useful for optimizing performance when a complex container needs to be reused.
-	 * @param options - Generate texture options or a container to convert to texture
-	 * @returns A new RenderTexture containing the rendered display object
-	 * @example
-	 * ```ts
-	 * // Basic usage with a container
-	 * const container = new Container();
-	 * container.addChild(
-	 *     new Graphics()
-	 *         .circle(0, 0, 50)
-	 *         .fill('red')
-	 * );
-	 *
-	 * const texture = renderer.textureGenerator.generateTexture(container);
-	 *
-	 * // Advanced usage with options
-	 * const texture = renderer.textureGenerator.generateTexture({
-	 *     target: container,
-	 *     frame: new Rectangle(0, 0, 100, 100), // Specific region
-	 *     resolution: 2,                        // High DPI
-	 *     clearColor: '#ff0000',               // Red background
-	 *     antialias: true                      // Smooth edges
-	 * });
-	 *
-	 * // Create a sprite from the generated texture
-	 * const sprite = new Sprite(texture);
-	 *
-	 * // Clean up when done
-	 * texture.destroy(true);
-	 * ```
-	 * @see {@link GenerateTextureOptions} For detailed texture generation options
-	 * @see {@link RenderTexture} For the type of texture created
-	 * @category rendering
-	 */
-	generateTexture(options: GenerateTextureOptions | Container): RenderTexture;
-	destroy(): void;
-}
-/**
- * An effect that can be applied to a container. This is used to create effects such as filters/masks etc.
- * @category rendering
- * @advanced
- */
-export interface Effect {
-	pipe: string;
-	priority: number;
-	addBounds?(bounds: Bounds, skipUpdateTransform?: boolean): void;
-	addLocalBounds?(bounds: Bounds, localRoot: Container): void;
-	containsPoint?(point: PointData, hitTestFn: (container: Container, point: Point) => boolean): boolean;
-	destroy(): void;
-}
-/**
- * The constructor for an Effect.
- * It is used to create instances of effects that can be applied to containers.
- * @param options - The options for the effect.
- * @returns A new instance of the effect.
- * @category rendering
- * @advanced
- */
-export interface EffectConstructor {
-	new (options?: any): Effect;
-	test?(options: any): boolean;
-}
-/**
- * Flexible wrapper around `ArrayBuffer` that also provides typed array views on demand.
- * @category utils
- * @advanced
- */
-export declare class ViewableBuffer {
-	/** The size of the buffer in bytes. */
-	size: number;
-	/** Underlying `ArrayBuffer` that holds all the data and is of capacity `this.size`. */
-	rawBinaryData: ArrayBuffer;
-	/** View on the raw binary data as a `Uint32Array`. */
-	uint32View: Uint32Array;
-	/** View on the raw binary data as a `Float32Array`. */
-	float32View: Float32Array;
-	/** View on the raw binary data as a `Uint16Array`. */
-	uint16View: Uint16Array;
-	private _int8View;
-	private _uint8View;
-	private _int16View;
-	private _int32View;
-	private _float64Array;
-	private _bigUint64Array;
-	/**
-	 * @param length - The size of the buffer in bytes.
-	 */
-	constructor(length: number);
-	/**
-	 * @param arrayBuffer - The source array buffer.
-	 */
-	constructor(arrayBuffer: ArrayBuffer);
-	/** View on the raw binary data as a `Int8Array`. */
-	get int8View(): Int8Array;
-	/** View on the raw binary data as a `Uint8Array`. */
-	get uint8View(): Uint8Array;
-	/**  View on the raw binary data as a `Int16Array`. */
-	get int16View(): Int16Array;
-	/** View on the raw binary data as a `Int32Array`. */
-	get int32View(): Int32Array;
-	/** View on the raw binary data as a `Float64Array`. */
-	get float64View(): Float64Array;
-	/** View on the raw binary data as a `BigUint64Array`. */
-	get bigUint64View(): BigUint64Array;
-	/**
-	 * Returns the view of the given type.
-	 * @param type - One of `int8`, `uint8`, `int16`,
-	 *    `uint16`, `int32`, `uint32`, and `float32`.
-	 * @returns - typed array of given type
-	 */
-	view(type: string): TypedArray;
-	/** Destroys all buffer references. Do not use after calling this. */
-	destroy(): void;
-	/**
-	 * Returns the size of the given type in bytes.
-	 * @param type - One of `int8`, `uint8`, `int16`,
-	 *   `uint16`, `int32`, `uint32`, and `float32`.
-	 * @returns - size of the type in bytes
-	 */
-	static sizeOf(type: string): number;
-}
-/**
- * Various blend modes supported by Pixi
- * @category filters
- * @standard
- */
-export type BLEND_MODES = "inherit" | "normal" | "add" | "multiply" | "screen" | "darken" | "lighten" | "erase" | "color-dodge" | "color-burn" | "linear-burn" | "linear-dodge" | "linear-light" | "hard-light" | "soft-light" | "pin-light" | "difference" | "exclusion" | "overlay" | "saturation" | "color" | "luminosity" | "normal-npm" | "add-npm" | "screen-npm" | "none" | "subtract" | "divide" | "vivid-light" | "hard-mix" | "negation" | "min" | "max";
-/**
- * The map of blend modes supported by Pixi
- * @category rendering
- * @advanced
- */
-export declare const BLEND_TO_NPM: {
-	normal: string;
-	add: string;
-	screen: string;
-};
-/**
- * The stencil operation to perform when using the stencil buffer
- * @category rendering
- * @advanced
- */
-export declare enum STENCIL_MODES {
-	DISABLED = 0,
-	RENDERING_MASK_ADD = 1,
-	MASK_ACTIVE = 2,
-	INVERSE_MASK_ACTIVE = 3,
-	RENDERING_MASK_REMOVE = 4,
-	NONE = 5
-}
-/**
- * The culling mode to use. It can be either `none`, `front` or `back`.
- * @category rendering
- * @advanced
- */
-export type CULL_MODES = "none" | "back" | "front";
-/**
- * Used by the batcher to build texture batches. Holds list of textures and their respective locations.
- * @category rendering
- * @advanced
- */
-export declare class BatchTextureArray {
-	/** Inside textures array. */
-	textures: TextureSource[];
-	/** Respective locations for textures. */
-	ids: Record<number, number>;
-	/** Number of filled elements. */
-	count: number;
-	constructor();
-	/** Clear the textures and their locations. */
-	clear(): void;
-}
-/**
- * The different topology types supported by the renderer used to describe how the geometry should be renderer
- * @category rendering
- * @advanced
- */
-export type Topology = "point-list" | "line-list" | "line-strip" | "triangle-list" | "triangle-strip";
-/**
- * @deprecated since 8.0.0
- * @category rendering
- * @advanced
- */
-export declare const DRAW_MODES: {
-	POINTS: string;
-	LINES: string;
-	LINE_STRIP: string;
-	TRIANGLES: string;
-	TRIANGLE_STRIP: string;
-};
-/**
- * The different types of vertex formats supported by the renderer
- * @category rendering
- * @advanced
- */
-export type VertexFormat = "uint8x2" | "uint8x4" | "sint8x2" | "sint8x4" | "unorm8x2" | "unorm8x4" | "snorm8x2" | "snorm8x4" | "uint16x2" | "uint16x4" | "sint16x2" | "sint16x4" | "unorm16x2" | "unorm16x4" | "snorm16x2" | "snorm16x4" | "float16x2" | "float16x4" | "float32" | "float32x2" | "float32x3" | "float32x4" | "uint32" | "uint32x2" | "uint32x3" | "uint32x4" | "sint32" | "sint32x2" | "sint32x3" | "sint32x4";
-/**
- * The index buffer array type used in geometries.
- * @category rendering
- * @advanced
- */
-export type IndexBufferArray = Uint16Array | Uint32Array;
-/**
- * The attribute data for a geometries attributes
- * @category rendering
- * @advanced
- */
-export interface Attribute {
-	/** the buffer that this attributes data belongs to */
-	buffer: Buffer$1;
-	/** the format of the attribute */
-	format?: VertexFormat;
-	/** the stride of the data in the buffer - in bytes*/
-	stride?: number;
-	/** the offset of the attribute from the buffer, defaults to 0 - in bytes*/
-	offset?: number;
-	/** is this an instanced buffer? (defaults to false) */
-	instance?: boolean;
-	/** the number of elements to be rendered. If not specified, all vertices after the starting vertex will be drawn. */
-	size?: number;
-	/**
-	 * the starting vertex in the geometry to start drawing from. If not specified,
-	 *  drawing will start from the first vertex.
-	 */
-	start?: number;
-	/**
-	 * attribute divisor for instanced rendering. Note: this is a **WebGL-only** feature, the WebGPU renderer will
-	 * issue a warning if one of the attributes has divisor set.
-	 */
-	divisor?: number;
-}
-/**
- * The attribute option used by the constructor for adding geometries attributes
- * extends {@link Attribute} but allows for the buffer to be a typed or number array
- * @category rendering
- * @advanced
- */
-export type AttributeOption = Omit<Attribute, "buffer"> & {
-	buffer: Buffer$1 | TypedArray | number[];
-} | Buffer$1 | TypedArray | number[];
-/**
- * The attribute options used by the constructor for adding geometries attributes
- * extends {@link Attribute} but allows for the buffer to be a typed or number array
- * @category rendering
- * @advanced
- */
-export type AttributeOptions = Record<string, AttributeOption>;
-/**
- * the interface that describes the structure of the geometry
- * @category rendering
- * @advanced
- */
-export interface GeometryDescriptor {
-	/** an optional label to easily identify the geometry */
-	label?: string;
-	/** the attributes that make up the geometry */
-	attributes?: AttributeOptions;
-	/** optional index buffer for this geometry */
-	indexBuffer?: Buffer$1 | TypedArray | number[];
-	/** the topology of the geometry, defaults to 'triangle-list' */
-	topology?: Topology;
-	instanceCount?: number;
-}
-/**
- * A Geometry is a low-level object that represents the structure of 2D shapes in terms of vertices and attributes.
- * It's a crucial component for rendering as it describes the shape and format of the data that will go through the shaders.
- * Essentially, a Geometry object holds the data you'd send to a GPU buffer.
- *
- * A geometry is basically made of two components:
- * <br>
- * <b>Attributes</b>: These are essentially arrays that define properties of the vertices like position, color,
- * texture coordinates, etc. They map directly to attributes in your vertex shaders.
- * <br>
- * <b>Indices</b>: An optional array that describes how the vertices are connected.
- * If not provided, vertices will be interpreted in the sequence they're given.
- * @example
- *
- * const geometry = new Geometry({
- *   attributes: {
- *     aPosition: [ // add some positions
- *       0, 0,
- *       0, 100,
- *       100, 100,
- *       100,   0,
- *     ],
- *     aUv: [ // add some uvs
- *       0, 0,
- *       0, 1,
- *       1, 1,
- *       1, 0,
- *     ]
- *   }
- * });
- * @category rendering
- * @advanced
- */
-export declare class Geometry extends EventEmitter<{
-	update: Geometry;
-	destroy: Geometry;
-}> {
-	/** The topology of the geometry. */
-	topology: Topology;
-	/** The unique id of the geometry. */
-	readonly uid: number;
-	/** A record of the attributes of the geometry. */
-	readonly attributes: Record<string, Attribute>;
-	/** The buffers that the attributes use */
-	readonly buffers: Buffer$1[];
-	/** The index buffer of the geometry */
-	indexBuffer: Buffer$1;
-	/**
-	 * the layout key will be generated by WebGPU all geometries that have the same structure
-	 * will have the same layout key. This is used to cache the pipeline layout
-	 * @internal
-	 */
-	_layoutKey: number;
-	/** the instance count of the geometry to draw */
-	instanceCount: number;
-	private readonly _bounds;
-	private _boundsDirty;
-	/**
-	 * Create a new instance of a geometry
-	 * @param options - The options for the geometry.
-	 */
-	constructor(options?: GeometryDescriptor);
-	protected onBufferUpdate(): void;
-	/**
-	 * Returns the requested attribute.
-	 * @param id - The name of the attribute required
-	 * @returns - The attribute requested.
-	 */
-	getAttribute(id: string): Attribute;
-	/**
-	 * Returns the index buffer
-	 * @returns - The index buffer.
-	 */
-	getIndex(): Buffer$1;
-	/**
-	 * Returns the requested buffer.
-	 * @param id - The name of the buffer required.
-	 * @returns - The buffer requested.
-	 */
-	getBuffer(id: string): Buffer$1;
-	/**
-	 * Used to figure out how many vertices there are in this geometry
-	 * @returns the number of vertices in the geometry
-	 */
-	getSize(): number;
-	/**
-	 * Adds an attribute to the geometry.
-	 * @param name - The name of the attribute to add.
-	 * @param attributeOption - The attribute option to add.
-	 */
-	addAttribute(name: string, attributeOption: AttributeOption): void;
-	/**
-	 * Adds an index buffer to the geometry.
-	 * @param indexBuffer - The index buffer to add. Can be a Buffer, TypedArray, or an array of numbers.
-	 */
-	addIndex(indexBuffer: Buffer$1 | TypedArray | number[]): void;
-	/** Returns the bounds of the geometry. */
-	get bounds(): Bounds;
-	/**
-	 * destroys the geometry.
-	 * @param destroyBuffers - destroy the buffers associated with this geometry
-	 */
-	destroy(destroyBuffers?: boolean): void;
-}
-/**
- * An instruction that can be executed by the renderer
- * @category rendering
- * @advanced
- */
-export interface Instruction {
-	/** a the id of the render pipe that can run this instruction */
-	renderPipeId: string;
-	/** the name of the instruction */
-	action?: string;
-	/** true if this instruction can be compiled into a WebGPU bundle */
-	canBundle: boolean;
-}
-/**
- * This interface represents the extracted attribute data from a WebGL program.
- * It extends the `Attribute` interface but omits the `buffer` property.
- * It includes an optional `location` property that indicates where the shader location is for this attribute.
- * @category rendering
- * @advanced
- */
-export interface ExtractedAttributeData extends Omit<Attribute, "buffer"> {
-	/** set where the shader location is for this attribute */
-	location?: number;
-}
-/**
- * returns the attribute data from the program
- * @private
- * @param {WebGLProgram} [program] - the WebGL program
- * @param {WebGLRenderingContext} [gl] - the WebGL context
- * @param sortAttributes
- * @returns {object} the attribute data for this program
- */
-export declare function extractAttributesFromGlProgram(program: WebGLProgram, gl: WebGLRenderingContextBase, sortAttributes?: boolean): Record<string, ExtractedAttributeData>;
 /** @internal */
 export interface GlUniformData {
 	name: string;
@@ -6222,6 +5185,318 @@ export declare class GlProgram {
 	 */
 	static from(options: GlProgramOptions): GlProgram;
 }
+/**
+ * Stores GPU-specific data for a Geometry instance in WebGL context.
+ *
+ * This class manages Vertex Array Object (VAO) caching for geometries,
+ * allowing efficient reuse of VAOs across different shader programs.
+ * Each geometry can have multiple VAOs cached, one for each unique
+ * shader program signature it's used with.
+ * @internal
+ */
+export declare class GlGeometryGpuData implements GPUData {
+	vaoCache: Record<string, WebGLVertexArrayObject>;
+	constructor();
+	destroy(): void;
+}
+/**
+ * System plugin to the renderer to manage geometry.
+ * @category rendering
+ * @advanced
+ */
+export declare class GlGeometrySystem implements System {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGLSystem
+		];
+		readonly name: "geometry";
+	};
+	/**
+	 * `true` if we has `*_vertex_array_object` extension.
+	 * @readonly
+	 */
+	hasVao: boolean;
+	/**
+	 * `true` if has `ANGLE_instanced_arrays` extension.
+	 * @readonly
+	 */
+	hasInstance: boolean;
+	protected gl: GlRenderingContext;
+	protected _activeGeometry: Geometry;
+	/** @internal */
+	_activeVao: WebGLVertexArrayObject;
+	/** @internal */
+	_managedGeometries: GCManagedHash<Geometry>;
+	/** Renderer that owns this {@link GeometrySystem}. */
+	private _renderer;
+	/** @param renderer - The renderer this System works for. */
+	constructor(renderer: WebGLRenderer);
+	/** Sets up the renderer context and necessary buffers. */
+	protected contextChange(): void;
+	/**
+	 * Binds geometry so that is can be drawn. Creating a Vao if required
+	 * @param geometry - Instance of geometry to bind.
+	 * @param program - Instance of program to use vao for.
+	 */
+	bind(geometry?: Geometry, program?: GlProgram): void;
+	/** Reset and unbind any active VAO and geometry. */
+	resetState(): void;
+	/** Update buffers of the currently bound geometry. */
+	updateBuffers(): void;
+	/**
+	 * Check compatibility between a geometry and a program
+	 * @param geometry - Geometry instance.
+	 * @param program - Program instance.
+	 */
+	protected checkCompatibility(geometry: Geometry, program: GlProgram): void;
+	/**
+	 * Takes a geometry and program and generates a unique signature for them.
+	 * @param geometry - To get signature from.
+	 * @param program - To test geometry against.
+	 * @returns - Unique signature of the geometry and program
+	 */
+	protected getSignature(geometry: Geometry, program: GlProgram): string;
+	protected getVao(geometry: Geometry, program: GlProgram): WebGLVertexArrayObject;
+	/**
+	 * Creates or gets Vao with the same structure as the geometry and stores it on the geometry.
+	 * If vao is created, it is bound automatically. We use a shader to infer what and how to set up the
+	 * attribute locations.
+	 * @param geometry - Instance of geometry to to generate Vao for.
+	 * @param program
+	 * @param _incRefCount - Increment refCount of all geometry buffers.
+	 */
+	protected initGeometryVao(geometry: Geometry, program: GlProgram, _incRefCount?: boolean): WebGLVertexArrayObject;
+	protected onGeometryUnload(geometry: Geometry, contextLost?: boolean): void;
+	/**
+	 * Dispose all WebGL resources of all managed geometries.
+	 * @param [contextLost=false] - If context was lost, we suppress `gl.delete` calls
+	 */
+	destroyAll(contextLost?: boolean): void;
+	/**
+	 * Activate vertex array object.
+	 * @param geometry - Geometry instance.
+	 * @param program - Shader program instance.
+	 */
+	protected activateVao(geometry: Geometry, program: GlProgram): void;
+	/**
+	 * Draws the currently bound geometry.
+	 * @param topology - The type primitive to render.
+	 * @param size - The number of elements to be rendered. If not specified, all vertices after the
+	 *  starting vertex will be drawn.
+	 * @param start - The starting vertex in the geometry to start drawing from. If not specified,
+	 *  drawing will start from the first vertex.
+	 * @param instanceCount - The number of instances of the set of elements to execute. If not specified,
+	 *  all instances will be drawn.
+	 * @returns This instance of the geometry system.
+	 */
+	draw(topology?: Topology, size?: number, start?: number, instanceCount?: number): this;
+	/** Unbind/reset everything. */
+	protected unbind(): void;
+	destroy(): void;
+}
+/**
+ * The index buffer array type used in geometries.
+ * @category rendering
+ * @advanced
+ */
+export type IndexBufferArray = Uint16Array | Uint32Array;
+/**
+ * The attribute data for a geometries attributes
+ * @category rendering
+ * @advanced
+ */
+export interface Attribute {
+	/** the buffer that this attributes data belongs to */
+	buffer: Buffer$1;
+	/** the format of the attribute */
+	format?: VertexFormat;
+	/** the stride of the data in the buffer - in bytes*/
+	stride?: number;
+	/** the offset of the attribute from the buffer, defaults to 0 - in bytes*/
+	offset?: number;
+	/** is this an instanced buffer? (defaults to false) */
+	instance?: boolean;
+	/** the number of elements to be rendered. If not specified, all vertices after the starting vertex will be drawn. */
+	size?: number;
+	/**
+	 * the starting vertex in the geometry to start drawing from. If not specified,
+	 *  drawing will start from the first vertex.
+	 */
+	start?: number;
+	/**
+	 * attribute divisor for instanced rendering. Note: this is a **WebGL-only** feature, the WebGPU renderer will
+	 * issue a warning if one of the attributes has divisor set.
+	 */
+	divisor?: number;
+}
+/**
+ * The attribute option used by the constructor for adding geometries attributes
+ * extends {@link Attribute} but allows for the buffer to be a typed or number array
+ * @category rendering
+ * @advanced
+ */
+export type AttributeOption = Omit<Attribute, "buffer"> & {
+	buffer: Buffer$1 | TypedArray | number[];
+} | Buffer$1 | TypedArray | number[];
+/**
+ * The attribute options used by the constructor for adding geometries attributes
+ * extends {@link Attribute} but allows for the buffer to be a typed or number array
+ * @category rendering
+ * @advanced
+ */
+export type AttributeOptions = Record<string, AttributeOption>;
+/**
+ * the interface that describes the structure of the geometry
+ * @category rendering
+ * @advanced
+ */
+export interface GeometryDescriptor {
+	/** an optional label to easily identify the geometry */
+	label?: string;
+	/** the attributes that make up the geometry */
+	attributes?: AttributeOptions;
+	/** optional index buffer for this geometry */
+	indexBuffer?: Buffer$1 | TypedArray | number[];
+	/** the topology of the geometry, defaults to 'triangle-list' */
+	topology?: Topology;
+	instanceCount?: number;
+}
+/**
+ * A Geometry is a low-level object that represents the structure of 2D shapes in terms of vertices and attributes.
+ * It's a crucial component for rendering as it describes the shape and format of the data that will go through the shaders.
+ * Essentially, a Geometry object holds the data you'd send to a GPU buffer.
+ *
+ * A geometry is basically made of two components:
+ * <br>
+ * <b>Attributes</b>: These are essentially arrays that define properties of the vertices like position, color,
+ * texture coordinates, etc. They map directly to attributes in your vertex shaders.
+ * <br>
+ * <b>Indices</b>: An optional array that describes how the vertices are connected.
+ * If not provided, vertices will be interpreted in the sequence they're given.
+ * @example
+ *
+ * const geometry = new Geometry({
+ *   attributes: {
+ *     aPosition: [ // add some positions
+ *       0, 0,
+ *       0, 100,
+ *       100, 100,
+ *       100,   0,
+ *     ],
+ *     aUv: [ // add some uvs
+ *       0, 0,
+ *       0, 1,
+ *       1, 1,
+ *       1, 0,
+ *     ]
+ *   }
+ * });
+ * @category rendering
+ * @advanced
+ */
+export declare class Geometry extends EventEmitter<{
+	update: Geometry;
+	destroy: Geometry;
+	unload: Geometry;
+}> implements GPUDataOwner, GCable {
+	/** @internal */
+	_gpuData: Record<number, GlGeometryGpuData>;
+	/** @internal */
+	_gcData?: GCData;
+	/** If set to true, the resource will be garbage collected automatically when it is not used. */
+	autoGarbageCollect: boolean;
+	/** @internal */
+	_gcLastUsed: number;
+	/** The topology of the geometry. */
+	topology: Topology;
+	/** The unique id of the geometry. */
+	readonly uid: number;
+	/** A record of the attributes of the geometry. */
+	readonly attributes: Record<string, Attribute>;
+	/** The buffers that the attributes use */
+	readonly buffers: Buffer$1[];
+	/** The index buffer of the geometry */
+	indexBuffer: Buffer$1;
+	/**
+	 * the layout key will be generated by WebGPU all geometries that have the same structure
+	 * will have the same layout key. This is used to cache the pipeline layout
+	 * @internal
+	 */
+	_layoutKey: number;
+	/** the instance count of the geometry to draw */
+	instanceCount: number;
+	private readonly _bounds;
+	private _boundsDirty;
+	/**
+	 * Create a new instance of a geometry
+	 * @param options - The options for the geometry.
+	 */
+	constructor(options?: GeometryDescriptor);
+	protected onBufferUpdate(): void;
+	/**
+	 * Returns the requested attribute.
+	 * @param id - The name of the attribute required
+	 * @returns - The attribute requested.
+	 */
+	getAttribute(id: string): Attribute;
+	/**
+	 * Returns the index buffer
+	 * @returns - The index buffer.
+	 */
+	getIndex(): Buffer$1;
+	/**
+	 * Returns the requested buffer.
+	 * @param id - The name of the buffer required.
+	 * @returns - The buffer requested.
+	 */
+	getBuffer(id: string): Buffer$1;
+	/**
+	 * Used to figure out how many vertices there are in this geometry
+	 * @returns the number of vertices in the geometry
+	 */
+	getSize(): number;
+	/**
+	 * Adds an attribute to the geometry.
+	 * @param name - The name of the attribute to add.
+	 * @param attributeOption - The attribute option to add.
+	 */
+	addAttribute(name: string, attributeOption: AttributeOption): void;
+	/**
+	 * Adds an index buffer to the geometry.
+	 * @param indexBuffer - The index buffer to add. Can be a Buffer, TypedArray, or an array of numbers.
+	 */
+	addIndex(indexBuffer: Buffer$1 | TypedArray | number[]): void;
+	/** Returns the bounds of the geometry. */
+	get bounds(): Bounds;
+	/** Unloads the geometry from the GPU. */
+	unload(): void;
+	/**
+	 * destroys the geometry.
+	 * @param destroyBuffers - destroy the buffers associated with this geometry
+	 */
+	destroy(destroyBuffers?: boolean): void;
+}
+/**
+ * This interface represents the extracted attribute data from a WebGL program.
+ * It extends the `Attribute` interface but omits the `buffer` property.
+ * It includes an optional `location` property that indicates where the shader location is for this attribute.
+ * @category rendering
+ * @advanced
+ */
+export interface ExtractedAttributeData extends Omit<Attribute, "buffer"> {
+	/** set where the shader location is for this attribute */
+	location?: number;
+}
+/**
+ * returns the attribute data from the program
+ * @private
+ * @param {WebGLProgram} [program] - the WebGL program
+ * @param {WebGLRenderingContext} [gl] - the WebGL context
+ * @param sortAttributes
+ * @returns {object} the attribute data for this program
+ */
+export declare function extractAttributesFromGlProgram(program: WebGLProgram, gl: WebGLRenderingContextBase, sortAttributes?: boolean): Record<string, ExtractedAttributeData>;
 /**
  * Defines the structure of the extracted WGSL structs and groups.
  * @category rendering
@@ -6390,6 +5665,47 @@ export declare class GpuProgram {
 	 * @returns A program using the same source
 	 */
 	static from(options: GpuProgramOptions): GpuProgram;
+}
+/**
+ * This manages the WebGPU bind groups. this is how data is bound to a shader when rendering
+ * @category rendering
+ * @advanced
+ */
+export declare class BindGroupSystem implements System {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGPUSystem
+		];
+		readonly name: "bindGroup";
+	};
+	private readonly _renderer;
+	private _hash;
+	private _gpu;
+	constructor(renderer: WebGPURenderer);
+	protected contextChange(gpu: GPU$1): void;
+	getBindGroup(bindGroup: BindGroup, program: GpuProgram, groupIndex: number): GPUBindGroup;
+	private _createBindGroup;
+	destroy(): void;
+}
+/**
+ * The system that handles color masking for the GPU.
+ * @category rendering
+ * @advanced
+ */
+export declare class GpuColorMaskSystem implements System {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGPUSystem
+		];
+		readonly name: "colorMask";
+	};
+	private readonly _renderer;
+	private _colorMaskCache;
+	constructor(renderer: WebGPURenderer);
+	setMask(colorMask: number): void;
+	destroy(): void;
 }
 /**
  * A record of {@link BindGroup}'s used by the shader.
@@ -6610,6 +5926,1268 @@ export declare class Shader extends EventEmitter<{
 	 */
 	static from(options: ShaderFromGroups): Shader;
 	static from(options: ShaderFromResources): Shader;
+}
+/**
+ * Various blend modes supported by Pixi
+ * @category filters
+ * @standard
+ */
+export type BLEND_MODES = "inherit" | "normal" | "add" | "multiply" | "screen" | "darken" | "lighten" | "erase" | "color-dodge" | "color-burn" | "linear-burn" | "linear-dodge" | "linear-light" | "hard-light" | "soft-light" | "pin-light" | "difference" | "exclusion" | "overlay" | "saturation" | "color" | "luminosity" | "normal-npm" | "add-npm" | "screen-npm" | "none" | "subtract" | "divide" | "vivid-light" | "hard-mix" | "negation" | "min" | "max";
+/**
+ * The map of blend modes supported by Pixi
+ * @category rendering
+ * @advanced
+ */
+export declare const BLEND_TO_NPM: {
+	normal: string;
+	add: string;
+	screen: string;
+};
+/**
+ * The stencil operation to perform when using the stencil buffer
+ * @category rendering
+ * @advanced
+ */
+export declare enum STENCIL_MODES {
+	DISABLED = 0,
+	RENDERING_MASK_ADD = 1,
+	MASK_ACTIVE = 2,
+	INVERSE_MASK_ACTIVE = 3,
+	RENDERING_MASK_REMOVE = 4,
+	NONE = 5
+}
+/**
+ * The culling mode to use. It can be either `none`, `front` or `back`.
+ * @category rendering
+ * @advanced
+ */
+export type CULL_MODES = "none" | "back" | "front";
+/**
+ * This is a WebGL state, and is is passed to {@link GlStateSystem}.
+ *
+ * Each mesh rendered may require WebGL to be in a different state.
+ * For example you may want different blend mode or to enable polygon offsets
+ * @category rendering
+ * @advanced
+ */
+export declare class State {
+	/**
+	 * The data is a unique number based on the states settings.
+	 * This lets us quickly compare states with a single number rather than looking
+	 * at all the individual settings.
+	 */
+	data: number;
+	/** @internal */
+	_blendModeId: number;
+	private _blendMode;
+	private _polygonOffset;
+	constructor();
+	/**
+	 * Activates blending of the computed fragment color values.
+	 * @default true
+	 */
+	get blend(): boolean;
+	set blend(value: boolean);
+	/**
+	 * Activates adding an offset to depth values of polygon's fragments
+	 * @default false
+	 */
+	get offsets(): boolean;
+	set offsets(value: boolean);
+	/** The culling settings for this state none - No culling back - Back face culling front - Front face culling */
+	set cullMode(value: CULL_MODES);
+	get cullMode(): CULL_MODES;
+	/**
+	 * Activates culling of polygons.
+	 * @default false
+	 */
+	get culling(): boolean;
+	set culling(value: boolean);
+	/**
+	 * Activates depth comparisons and updates to the depth buffer.
+	 * @default false
+	 */
+	get depthTest(): boolean;
+	set depthTest(value: boolean);
+	/**
+	 * Enables or disables writing to the depth buffer.
+	 * @default true
+	 */
+	get depthMask(): boolean;
+	set depthMask(value: boolean);
+	/**
+	 * Specifies whether or not front or back-facing polygons can be culled.
+	 * @default false
+	 */
+	get clockwiseFrontFace(): boolean;
+	set clockwiseFrontFace(value: boolean);
+	/**
+	 * The blend mode to be applied when this state is set. Apply a value of `normal` to reset the blend mode.
+	 * Setting this mode to anything other than NO_BLEND will automatically switch blending on.
+	 * @default 'normal'
+	 */
+	get blendMode(): BLEND_MODES;
+	set blendMode(value: BLEND_MODES);
+	/**
+	 * The polygon offset. Setting this property to anything other than 0 will automatically enable polygon offset fill.
+	 * @default 0
+	 */
+	get polygonOffset(): number;
+	set polygonOffset(value: number);
+	toString(): string;
+	/**
+	 * A quickly getting an instance of a State that is configured for 2d rendering.
+	 * @returns a new State with values set for 2d rendering
+	 */
+	static for2d(): State;
+	static default2d: State;
+}
+/**
+ * A class which holds the canvas contexts and textures for a render target.
+ * @category rendering
+ * @ignore
+ */
+export declare class GpuRenderTarget {
+	contexts: GPUCanvasContext[];
+	msaaTextures: TextureSource[];
+	msaa: boolean;
+	msaaSamples: number;
+	colorTargetCount: number;
+	width: number;
+	height: number;
+	descriptor: GPURenderPassDescriptor;
+}
+/**
+ * The system that handles encoding commands for the GPU.
+ * @category rendering
+ * @advanced
+ */
+export declare class GpuEncoderSystem implements System {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGPUSystem
+		];
+		readonly name: "encoder";
+		readonly priority: 1;
+	};
+	commandEncoder: GPUCommandEncoder;
+	renderPassEncoder: GPURenderPassEncoder;
+	commandFinished: Promise<void>;
+	private _resolveCommandFinished;
+	private _gpu;
+	private _boundBindGroup;
+	private _boundVertexBuffer;
+	private _boundIndexBuffer;
+	private _boundPipeline;
+	private readonly _renderer;
+	constructor(renderer: WebGPURenderer);
+	renderStart(): void;
+	beginRenderPass(gpuRenderTarget: GpuRenderTarget): void;
+	endRenderPass(): void;
+	setViewport(viewport: Rectangle): void;
+	setPipelineFromGeometryProgramAndState(geometry: Geometry, program: GpuProgram, state: any, topology?: Topology): void;
+	setPipeline(pipeline: GPURenderPipeline): void;
+	private _setVertexBuffer;
+	private _setIndexBuffer;
+	resetBindGroup(index: number): void;
+	setBindGroup(index: number, bindGroup: BindGroup, program: GpuProgram): void;
+	setGeometry(geometry: Geometry, program: GpuProgram): void;
+	private _setShaderBindGroups;
+	private _syncBindGroup;
+	draw(options: {
+		geometry: Geometry;
+		shader: Shader;
+		state?: State;
+		topology?: Topology;
+		size?: number;
+		start?: number;
+		instanceCount?: number;
+		skipSync?: boolean;
+	}): void;
+	finishRenderPass(): void;
+	postrender(): void;
+	restoreRenderPass(): void;
+	private _clearCache;
+	destroy(): void;
+	protected contextChange(gpu: GPU$1): void;
+}
+/**
+ * The GpuLimitsSystem provides information about the capabilities and limitations of the underlying GPU.
+ * These limits, such as the maximum number of textures that can be used in a shader
+ * (`maxTextures`) or the maximum number of textures that can be batched together (`maxBatchableTextures`),
+ * are determined by the specific graphics hardware and driver.
+ *
+ * The values for these limits are not available immediately upon instantiation of the class.
+ * They are populated when the WebGPU Device rendering context is successfully initialized and ready,
+ * which occurs after the `renderer.init()` method has completed.
+ * Attempting to access these properties before the context is ready will result in undefined or default values.
+ *
+ * This system allows the renderer to adapt its behavior and resource allocation strategies
+ * to stay within the supported boundaries of the GPU, ensuring optimal performance and stability.
+ * @example
+ * ```ts
+ * const renderer = new WebGPURenderer();
+ * await renderer.init(); // GPU limits are populated after this call
+ *
+ * console.log(renderer.limits.maxTextures);
+ * console.log(renderer.limits.maxBatchableTextures);
+ * ```
+ * @category rendering
+ * @advanced
+ */
+export declare class GpuLimitsSystem implements System {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGPUSystem
+		];
+		readonly name: "limits";
+	};
+	/** The maximum number of textures that can be used by a shader */
+	maxTextures: number;
+	/** The maximum number of batchable textures */
+	maxBatchableTextures: number;
+	private readonly _renderer;
+	constructor(renderer: WebGPURenderer);
+	contextChange(): void;
+	destroy(): void;
+}
+/**
+ * Options for creating a render target.
+ * @category rendering
+ * @advanced
+ */
+export interface RenderTargetOptions {
+	/** the width of the RenderTarget */
+	width?: number;
+	/** the height of the RenderTarget */
+	height?: number;
+	/** the resolution of the RenderTarget */
+	resolution?: number;
+	/** an array of textures, or a number indicating how many color textures there should be */
+	colorTextures?: BindableTexture[] | number;
+	/** should this render target have a stencil buffer? */
+	stencil?: boolean;
+	/** should this render target have a depth buffer? */
+	depth?: boolean;
+	/** a depth stencil texture that the depth and stencil outputs will be written to */
+	depthStencilTexture?: BindableTexture | boolean;
+	/** should this render target be antialiased? */
+	antialias?: boolean;
+	/** is this a root element, true if this is gl context owners render target */
+	isRoot?: boolean;
+}
+/**
+ * A class that describes what the renderers are rendering to.
+ * This can be as simple as a Texture, or as complex as a multi-texture, multi-sampled render target.
+ * Support for stencil and depth buffers is also included.
+ *
+ * If you need something more complex than a Texture to render to, you should use this class.
+ * Under the hood, all textures you render to have a RenderTarget created on their behalf.
+ * @category rendering
+ * @advanced
+ */
+export declare class RenderTarget {
+	/** The default options for a render target */
+	static defaultOptions: RenderTargetOptions;
+	/** unique id for this render target */
+	readonly uid: number;
+	/**
+	 * An array of textures that can be written to by the GPU - mostly this has one texture in Pixi, but you could
+	 * write to multiple if required! (eg deferred lighting)
+	 */
+	colorTextures: TextureSource[];
+	/** the stencil and depth buffer will right to this texture in WebGPU */
+	depthStencilTexture: TextureSource;
+	/** if true, will ensure a stencil buffer is added. For WebGPU, this will automatically create a depthStencilTexture */
+	stencil: boolean;
+	/** if true, will ensure a depth buffer is added. For WebGPU, this will automatically create a depthStencilTexture */
+	depth: boolean;
+	dirtyId: number;
+	isRoot: boolean;
+	private readonly _size;
+	/** if true, then when the render target is destroyed, it will destroy all the textures that were created for it. */
+	private readonly _managedColorTextures;
+	/**
+	 * @param [descriptor] - Options for creating a render target.
+	 */
+	constructor(descriptor?: RenderTargetOptions);
+	get size(): [
+		number,
+		number
+	];
+	get width(): number;
+	get height(): number;
+	get pixelWidth(): number;
+	get pixelHeight(): number;
+	get resolution(): number;
+	get colorTexture(): TextureSource;
+	protected onSourceResize(source: TextureSource): void;
+	/**
+	 * This will ensure a depthStencil texture is created for this render target.
+	 * Most likely called by the mask system to make sure we have stencil buffer added.
+	 * @internal
+	 */
+	ensureDepthStencilTexture(): void;
+	resize(width: number, height: number, resolution?: number, skipColorTexture?: boolean): void;
+	destroy(): void;
+}
+/**
+ * This manages the stencil buffer. Used primarily for masking
+ * @category rendering
+ * @advanced
+ */
+export declare class GpuStencilSystem implements System {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGPUSystem
+		];
+		readonly name: "stencil";
+	};
+	private readonly _renderer;
+	private _renderTargetStencilState;
+	private _activeRenderTarget;
+	constructor(renderer: WebGPURenderer);
+	protected onRenderTargetChange(renderTarget: RenderTarget): void;
+	setStencilMode(stencilMode: STENCIL_MODES, stencilReference: number): void;
+	destroy(): void;
+}
+/** @internal */
+export declare const UNIFORM_TYPES_VALUES: readonly [
+	"f32",
+	"i32",
+	"vec2<f32>",
+	"vec3<f32>",
+	"vec4<f32>",
+	"mat2x2<f32>",
+	"mat3x3<f32>",
+	"mat4x4<f32>",
+	"mat3x2<f32>",
+	"mat4x2<f32>",
+	"mat2x3<f32>",
+	"mat4x3<f32>",
+	"mat2x4<f32>",
+	"mat3x4<f32>",
+	"vec2<i32>",
+	"vec3<i32>",
+	"vec4<i32>"
+];
+/**
+ * useful for checking if a type is supported - a map of supported types with a true value.
+ * @internal
+ */
+export declare const UNIFORM_TYPES_MAP: Record<UNIFORM_TYPES, boolean>;
+/** @internal */
+export type UNIFORM_TYPES_SINGLE = typeof UNIFORM_TYPES_VALUES[number];
+type OPTIONAL_SPACE = " " | "";
+/** @internal */
+export type UNIFORM_TYPES_ARRAY = `array<${UNIFORM_TYPES_SINGLE},${OPTIONAL_SPACE}${number}>`;
+/** @internal */
+export type UNIFORM_TYPES = UNIFORM_TYPES_SINGLE | UNIFORM_TYPES_ARRAY;
+/**
+ * This is the type of the uniform structures that are used in the UniformGroup.
+ * @category rendering
+ * @advanced
+ */
+export interface UniformData {
+	/** the value of the uniform, this could be any object - a parser will figure out how to write it to the buffer */
+	value: unknown;
+	type: UNIFORM_TYPES;
+	/** the size of the variable (eg 2 for vec2, 3 for vec3, 4 for vec4) */
+	size?: number;
+	name?: string;
+}
+/** @internal */
+export interface UboElement {
+	data: UniformData;
+	offset: number;
+	size: number;
+}
+/** @internal */
+export interface UboLayout {
+	uboElements: UboElement[];
+	/** float32 size // TODO change to bytes */
+	size: number;
+}
+/** @internal */
+export type UniformsSyncCallback = (...args: any[]) => void;
+type FLOPS<T = UniformData> = T extends {
+	value: infer V;
+} ? V : never;
+/**
+ * Extracts the value type from a uniform data object.
+ * @internal
+ */
+export type ExtractUniformObject<T = Record<string, UniformData>> = {
+	[K in keyof T]: FLOPS<T[K]>;
+};
+/**
+ * Uniform group options
+ * @category rendering
+ * @advanced
+ */
+export type UniformGroupOptions = {
+	/**
+	 * if true the UniformGroup is handled as an Uniform buffer object.
+	 * This is the only way WebGPU can work with uniforms. WebGL2 can also use this.
+	 * So don't set to true if you want to use WebGPU :D
+	 */
+	ubo?: boolean;
+	/** if true, then you are responsible for when the data is uploaded to the GPU by calling `update()` */
+	isStatic?: boolean;
+};
+/**
+ * Uniform group holds uniform map and some ID's for work
+ *
+ * `UniformGroup` has two modes:
+ *
+ * 1: Normal mode
+ * Normal mode will upload the uniforms with individual function calls as required. This is the default mode
+ * for WebGL rendering.
+ *
+ * 2: Uniform buffer mode
+ * This mode will treat the uniforms as a uniform buffer. You can pass in either a buffer that you manually handle, or
+ * or a generic object that PixiJS will automatically map to a buffer for you.
+ * For maximum benefits, make Ubo UniformGroups static, and only update them each frame.
+ * This is the only way uniforms can be used with WebGPU.
+ *
+ * Rules of UBOs:
+ * - UBOs only work with WebGL2, so make sure you have a fallback!
+ * - Only floats are supported (including vec[2,3,4], mat[2,3,4])
+ * - Samplers cannot be used in ubo's (a GPU limitation)
+ * - You must ensure that the object you pass in exactly matches in the shader ubo structure.
+ * Otherwise, weirdness will ensue!
+ * - The name of the ubo object added to the group must match exactly the name of the ubo in the shader.
+ *
+ * When declaring your uniform options, you ust parse in the value and the type of the uniform.
+ * The types correspond to the WebGPU types
+ *
+ Uniforms can be modified via the classes 'uniforms' property. It will contain all the uniforms declared in the constructor.
+ *
+ * ```ts
+ * // UBO in shader:
+ * uniform myCoolData { // Declaring a UBO...
+ *     mat4 uCoolMatrix;
+ *     float uFloatyMcFloatFace;
+ * };
+ * ```
+ *
+ * ```js
+ * // A new Uniform Buffer Object...
+ * const myCoolData = new UniformGroup({
+ *     uCoolMatrix: {value:new Matrix(), type: 'mat4<f32>'},
+ *     uFloatyMcFloatFace: {value:23, type: 'f32'},
+ * }}
+ *
+ * // modify the data
+ * myCoolData.uniforms.uFloatyMcFloatFace = 42;
+ * // Build a shader...
+ * const shader = Shader.from(srcVert, srcFrag, {
+ *     myCoolData // Name matches the UBO name in the shader. Will be processed accordingly.
+ * })
+ * ```
+ * @category rendering
+ * @advanced
+ */
+export declare class UniformGroup<UNIFORMS extends {
+	[key: string]: UniformData;
+} = any> implements BindResource {
+	/** The default options used by the uniform group. */
+	static defaultOptions: UniformGroupOptions;
+	/**
+	 * used internally to know if a uniform group was used in the last render pass
+	 * @internal
+	 */
+	_touched: number;
+	/** a unique id for this uniform group used through the renderer */
+	readonly uid: number;
+	/**
+	 * a resource type, used to identify how to handle it when its in a bind group / shader resource
+	 * @internal
+	 */
+	_resourceType: string;
+	/**
+	 * the resource id used internally by the renderer to build bind group keys
+	 * @internal
+	 */
+	_resourceId: number;
+	/** the structures of the uniform group */
+	uniformStructures: UNIFORMS;
+	/** the uniforms as an easily accessible map of properties */
+	uniforms: ExtractUniformObject<UNIFORMS>;
+	/** true if it should be used as a uniform buffer object */
+	ubo: boolean;
+	/** an underlying buffer that will be uploaded to the GPU when using this UniformGroup */
+	buffer?: Buffer$1;
+	/**
+	 * if true, then you are responsible for when the data is uploaded to the GPU.
+	 * otherwise, the data is reuploaded each frame.
+	 */
+	isStatic: boolean;
+	/** used ito identify if this is a uniform group */
+	readonly isUniformGroup = true;
+	/**
+	 * used to flag if this Uniform groups data is different from what it has stored in its buffer / on the GPU
+	 * @internal
+	 */
+	_dirtyId: number;
+	/**
+	 * a signature string generated for internal use
+	 * @internal
+	 */
+	readonly _signature: number;
+	readonly destroyed = false;
+	/**
+	 * Create a new Uniform group
+	 * @param uniformStructures - The structures of the uniform group
+	 * @param options - The optional parameters of this uniform group
+	 */
+	constructor(uniformStructures: UNIFORMS, options?: UniformGroupOptions);
+	/** Call this if you want the uniform groups data to be uploaded to the GPU only useful if `isStatic` is true. */
+	update(): void;
+}
+/** @internal */
+export interface UboAdaptor {
+	createUboElements: (uniformData: UniformData[]) => UboLayout;
+	generateUboSync: (uboElements: UboElement[]) => UniformsSyncCallback;
+}
+/**
+ * System plugin to the renderer to manage uniform buffers.
+ * @category rendering
+ * @advanced
+ */
+export declare class UboSystem implements System {
+	/** Cache of uniform buffer layouts and sync functions, so we don't have to re-create them */
+	private _syncFunctionHash;
+	private readonly _adaptor;
+	constructor(adaptor: UboAdaptor);
+	/**
+	 * Overridable function by `pixi.js/unsafe-eval` to silence
+	 * throwing an error if platform doesn't support unsafe-evals.
+	 * @private
+	 */
+	private _systemCheck;
+	ensureUniformGroup(uniformGroup: UniformGroup): void;
+	getUniformGroupData(uniformGroup: UniformGroup): {
+		layout: UboLayout;
+		syncFunction: (uniforms: Record<string, any>, data: Float32Array, dataInt32: Int32Array, offset: number) => void;
+	};
+	private _initUniformGroup;
+	private _generateUboSync;
+	syncUniformGroup(uniformGroup: UniformGroup, data?: Float32Array, offset?: number): boolean;
+	updateUniformGroup(uniformGroup: UniformGroup): boolean;
+	destroy(): void;
+}
+/**
+ * System plugin to the renderer to manage uniform buffers. With a WGSL twist!
+ * @category rendering
+ * @advanced
+ */
+export declare class GpuUboSystem extends UboSystem {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGPUSystem
+		];
+		readonly name: "ubo";
+	};
+	constructor();
+}
+/**
+ * A resource that can be bound to a bind group and used in a shader.
+ * Whilst a buffer can be used as a resource, this class allows you to specify an offset and size of the buffer to use.
+ * This is useful if you have a large buffer and only part of it is used in a shader.
+ *
+ * This resource, will listen for changes on the underlying buffer and emit a itself if the buffer changes shape.
+ * @example
+ *
+ * const buffer = new Buffer({
+ *     data: new Float32Array(1000),
+ *    usage: BufferUsage.UNIFORM,
+ * });
+ * // Create a buffer resource that uses the first 100 bytes of a buffer
+ * const bufferResource = new BufferResource({
+ *    buffer,
+ *    offset: 0,
+ *    size: 100,
+ * });
+ * @category rendering
+ * @advanced
+ */
+export declare class BufferResource extends EventEmitter<{
+	change: BindResource;
+}> implements BindResource {
+	/**
+	 * emits when the underlying buffer has changed shape (i.e. resized)
+	 * letting the renderer know that it needs to discard the old buffer on the GPU and create a new one
+	 * @event change
+	 */
+	/** a unique id for this uniform group used through the renderer */
+	readonly uid: number;
+	/**
+	 * a resource type, used to identify how to handle it when its in a bind group / shader resource
+	 * @internal
+	 */
+	readonly _resourceType = "bufferResource";
+	/**
+	 * used internally to know if a uniform group was used in the last render pass
+	 * @internal
+	 */
+	_touched: number;
+	/**
+	 * the resource id used internally by the renderer to build bind group keys
+	 * @internal
+	 */
+	_resourceId: number;
+	/** the underlying buffer that this resource is using */
+	buffer: Buffer$1;
+	/** the offset of the buffer this resource is using. If not provided, then it will use the offset of the buffer. */
+	readonly offset: number;
+	/** the size of the buffer this resource is using. If not provided, then it will use the size of the buffer. */
+	readonly size: number;
+	/**
+	 * A cheeky hint to the GL renderer to let it know this is a BufferResource
+	 * @internal
+	 */
+	readonly _bufferResource = true;
+	/**
+	 * Has the Buffer resource been destroyed?
+	 * @readonly
+	 */
+	destroyed: boolean;
+	/**
+	 * Create a new Buffer Resource.
+	 * @param options - The options for the buffer resource
+	 * @param options.buffer - The underlying buffer that this resource is using
+	 * @param options.offset - The offset of the buffer this resource is using.
+	 * If not provided, then it will use the offset of the buffer.
+	 * @param options.size - The size of the buffer this resource is using.
+	 * If not provided, then it will use the size of the buffer.
+	 */
+	constructor({ buffer, offset, size }: {
+		buffer: Buffer$1;
+		offset?: number;
+		size?: number;
+	});
+	protected onBufferChange(): void;
+	/**
+	 * Destroys this resource. Make sure the underlying buffer is not used anywhere else
+	 * if you want to destroy it as well, or code will explode
+	 * @param destroyBuffer - Should the underlying buffer be destroyed as well?
+	 */
+	destroy(destroyBuffer?: boolean): void;
+}
+/** @internal */
+export declare class GpuUniformBatchPipe {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGPUPipes
+		];
+		readonly name: "uniformBatch";
+	};
+	private _renderer;
+	private _bindGroupHash;
+	private readonly _batchBuffer;
+	private _buffers;
+	private _bindGroups;
+	private _bufferResources;
+	constructor(renderer: WebGPURenderer);
+	renderEnd(): void;
+	private _resetBindGroups;
+	getUniformBindGroup(group: UniformGroup<any>, duplicate: boolean): BindGroup;
+	getUboResource(group: UniformGroup<any>): BufferResource;
+	getArrayBindGroup(data: Float32Array): BindGroup;
+	getArrayBufferResource(data: Float32Array): BufferResource;
+	private _getBufferResource;
+	private _getBindGroup;
+	private _uploadBindGroups;
+	destroy(): void;
+}
+/**
+ * A system that creates and manages the GPU pipelines.
+ *
+ * Caching Mechanism: At its core, the system employs a two-tiered caching strategy to minimize
+ * the redundant creation of GPU pipelines (or "pipes"). This strategy is based on generating unique
+ * keys that represent the state of the graphics settings and the specific requirements of the
+ * item being rendered. By caching these pipelines, subsequent draw calls with identical configurations
+ * can reuse existing pipelines instead of generating new ones.
+ *
+ * State Management: The system differentiates between "global" state properties (like color masks
+ * and stencil masks, which do not change frequently) and properties that may vary between draw calls
+ * (such as geometry, shaders, and blend modes). Unique keys are generated for both these categories
+ * using getStateKey for global state and getGraphicsStateKey for draw-specific settings. These keys are
+ * then then used to caching the pipe. The next time we need a pipe we can check
+ * the cache by first looking at the state cache and then the pipe cache.
+ * @category rendering
+ * @advanced
+ */
+export declare class PipelineSystem implements System {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGPUSystem
+		];
+		readonly name: "pipeline";
+	};
+	private readonly _renderer;
+	protected CONTEXT_UID: number;
+	private _moduleCache;
+	private _bufferLayoutsCache;
+	private readonly _bindingNamesCache;
+	private _pipeCache;
+	private readonly _pipeStateCaches;
+	private _gpu;
+	private _stencilState;
+	private _stencilMode;
+	private _colorMask;
+	private _multisampleCount;
+	private _colorTargetCount;
+	private _depthStencilAttachment;
+	constructor(renderer: WebGPURenderer);
+	protected contextChange(gpu: GPU$1): void;
+	setMultisampleCount(multisampleCount: number): void;
+	setRenderTarget(renderTarget: GpuRenderTarget): void;
+	setColorMask(colorMask: number): void;
+	setStencilMode(stencilMode: STENCIL_MODES): void;
+	setPipeline(geometry: Geometry, program: GpuProgram, state: State, passEncoder: GPURenderPassEncoder): void;
+	getPipeline(geometry: Geometry, program: GpuProgram, state: State, topology?: Topology): GPURenderPipeline;
+	private _createPipeline;
+	private _getModule;
+	private _createModule;
+	private _generateBufferKey;
+	private _generateAttributeLocationsKey;
+	/**
+	 * Returns a hash of buffer names mapped to bind locations.
+	 * This is used to bind the correct buffer to the correct location in the shader.
+	 * @param geometry - The geometry where to get the buffer names
+	 * @param program - The program where to get the buffer names
+	 * @returns An object of buffer names mapped to the bind location.
+	 */
+	getBufferNamesToBind(geometry: Geometry, program: GpuProgram): Record<string, string>;
+	private _createVertexBufferLayouts;
+	private _updatePipeHash;
+	destroy(): void;
+}
+/**
+ * Represents a render target.
+ * @category rendering
+ * @ignore
+ */
+export declare class GlRenderTarget {
+	width: number;
+	height: number;
+	msaa: boolean;
+	framebuffer: WebGLFramebuffer;
+	resolveTargetFramebuffer: WebGLFramebuffer;
+	msaaRenderBuffer: WebGLRenderbuffer[];
+	depthStencilRenderBuffer: WebGLRenderbuffer;
+}
+/**
+ * A render surface is a texture, canvas, or render target
+ * @category rendering
+ * @see environment.ICanvas
+ * @see Texture
+ * @see RenderTarget
+ * @advanced
+ */
+export type RenderSurface = ICanvas | BindableTexture | RenderTarget;
+/**
+ * An adaptor interface for RenderTargetSystem to support WebGL and WebGPU.
+ * This is used internally by the renderer, and is not intended to be used directly.
+ * @ignore
+ */
+export interface RenderTargetAdaptor<RENDER_TARGET extends GlRenderTarget | GpuRenderTarget> {
+	init(
+	/** the renderer */
+	renderer: Renderer, 
+	/** the render target system */
+	renderTargetSystem: RenderTargetSystem<RENDER_TARGET>): void;
+	/** A function copies the contents of a render surface to a texture */
+	copyToTexture(
+	/** the render surface to copy from  */
+	sourceRenderSurfaceTexture: RenderTarget, 
+	/** the texture to copy to */
+	destinationTexture: Texture, 
+	/** the origin of the copy */
+	originSrc: {
+		x: number;
+		y: number;
+	}, 
+	/** the size of the copy */
+	size: {
+		width: number;
+		height: number;
+	}, 
+	/** the destination origin (top left to paste from!) */
+	originDest?: {
+		x: number;
+		y: number;
+	}): Texture;
+	/** starts a render pass on the render target */
+	startRenderPass(
+	/** the render target to start the render pass on */
+	renderTarget: RenderTarget, clear: CLEAR_OR_BOOL, 
+	/** the color to clear to */
+	clearColor?: RgbaArray, 
+	/** the viewport to use */
+	viewport?: Rectangle): void;
+	/** clears the current render target to the specified color */
+	clear(
+	/** the render target to clear */
+	renderTarget: RenderTarget, 
+	/** the clear mode to use. Can be true or a CLEAR number 'COLOR | DEPTH | STENCIL' 0b111 */
+	clear: CLEAR_OR_BOOL, 
+	/** the color to clear to   */
+	clearColor?: RgbaArray, 
+	/** the viewport to use */
+	viewport?: Rectangle): void;
+	/** finishes the current render pass */
+	finishRenderPass(renderTarget: RenderTarget): void;
+	/** called after the render pass is finished */
+	postrender?(renderTarget: RenderTarget): void;
+	/** called before the render main pass is started */
+	prerender?(renderTarget: RenderTarget): void;
+	/**
+	 * initializes a gpu render target. Both renderers use this function to initialize a gpu render target
+	 * Its different type of object depending on the renderer.
+	 */
+	initGpuRenderTarget(
+	/** the render target to initialize */
+	renderTarget: RenderTarget): RENDER_TARGET;
+	/** called when a render target is resized */
+	resizeGpuRenderTarget(
+	/** the render target to resize */
+	renderTarget: RenderTarget): void;
+	/** destroys the gpu render target */
+	destroyGpuRenderTarget(
+	/** the render target to destroy */
+	gpuRenderTarget: RENDER_TARGET): void;
+}
+/**
+ * A system that manages render targets. A render target is essentially a place where the shaders can color in the pixels.
+ * The render target system is responsible for binding the render target to the renderer, and managing the viewport.
+ * Render targets can be pushed and popped.
+ *
+ * To make it easier, you can also bind textures and canvases too. This will automatically create a render target for you.
+ * The render target itself is a lot more powerful than just a texture or canvas,
+ * as it can have multiple textures attached to it.
+ * It will also give ou fine grain control over the stencil buffer / depth texture.
+ * @example
+ *
+ * ```js
+ *
+ * // create a render target
+ * const renderTarget = new RenderTarget({
+ *   colorTextures: [new TextureSource({ width: 100, height: 100 })],
+ * });
+ *
+ * // bind the render target
+ * renderer.renderTarget.bind(renderTarget);
+ *
+ * // draw something!
+ * ```
+ * @category rendering
+ * @advanced
+ */
+export declare class RenderTargetSystem<RENDER_TARGET extends GlRenderTarget | GpuRenderTarget> implements System {
+	/** When rendering of a scene begins, this is where the root render surface is stored */
+	rootRenderTarget: RenderTarget;
+	/** This is the root viewport for the render pass*/
+	rootViewPort: Rectangle;
+	/** A boolean that lets the dev know if the current render pass is rendering to the screen. Used by some plugins */
+	renderingToScreen: boolean;
+	/** the current active render target */
+	renderTarget: RenderTarget;
+	/** the current active render surface that the render target is created from */
+	renderSurface: RenderSurface;
+	/** the current viewport that the gpu is using */
+	readonly viewport: Rectangle;
+	/**
+	 * a runner that lets systems know if the active render target has changed.
+	 * Eg the Stencil System needs to know so it can manage the stencil buffer
+	 */
+	readonly onRenderTargetChange: SystemRunner;
+	/** the projection matrix that is used by the shaders based on the active render target and the viewport */
+	readonly projectionMatrix: Matrix;
+	/** the default clear color for render targets */
+	readonly defaultClearColor: RgbaArray;
+	/** a reference to the adaptor that interfaces with WebGL / WebGP */
+	readonly adaptor: RenderTargetAdaptor<RENDER_TARGET>;
+	/**
+	 * a hash that stores the render target for a given render surface. When you pass in a texture source,
+	 * a render target is created for it. This map stores and makes it easy to retrieve the render target
+	 */
+	private readonly _renderSurfaceToRenderTargetHash;
+	/** A hash that stores a gpu render target for a given render target. */
+	private _gpuRenderTargetHash;
+	/**
+	 * A stack that stores the render target and frame that is currently being rendered to.
+	 * When push is called, the current render target is stored in this stack.
+	 * When pop is called, the previous render target is restored.
+	 */
+	private readonly _renderTargetStack;
+	/** A reference to the renderer */
+	private readonly _renderer;
+	constructor(renderer: Renderer);
+	/** called when dev wants to finish a render pass */
+	finishRenderPass(): void;
+	/**
+	 * called when the renderer starts to render a scene.
+	 * @param options
+	 * @param options.target - the render target to render to
+	 * @param options.clear - the clear mode to use. Can be true or a CLEAR number 'COLOR | DEPTH | STENCIL' 0b111
+	 * @param options.clearColor - the color to clear to
+	 * @param options.frame - the frame to render to
+	 */
+	renderStart({ target, clear, clearColor, frame }: {
+		target: RenderSurface;
+		clear: CLEAR_OR_BOOL;
+		clearColor: RgbaArray;
+		frame?: Rectangle;
+	}): void;
+	postrender(): void;
+	/**
+	 * Binding a render surface! This is the main function of the render target system.
+	 * It will take the RenderSurface (which can be a texture, canvas, or render target) and bind it to the renderer.
+	 * Once bound all draw calls will be rendered to the render surface.
+	 *
+	 * If a frame is not provide and the render surface is a texture, the frame of the texture will be used.
+	 * @param renderSurface - the render surface to bind
+	 * @param clear - the clear mode to use. Can be true or a CLEAR number 'COLOR | DEPTH | STENCIL' 0b111
+	 * @param clearColor - the color to clear to
+	 * @param frame - the frame to render to
+	 * @returns the render target that was bound
+	 */
+	bind(renderSurface: RenderSurface, clear?: CLEAR_OR_BOOL, clearColor?: RgbaArray, frame?: Rectangle): RenderTarget;
+	clear(target?: RenderSurface, clear?: CLEAR_OR_BOOL, clearColor?: RgbaArray): void;
+	protected contextChange(): void;
+	/**
+	 * Push a render surface to the renderer. This will bind the render surface to the renderer,
+	 * @param renderSurface - the render surface to push
+	 * @param clear - the clear mode to use. Can be true or a CLEAR number 'COLOR | DEPTH | STENCIL' 0b111
+	 * @param clearColor - the color to clear to
+	 * @param frame - the frame to use when rendering to the render surface
+	 */
+	push(renderSurface: RenderSurface, clear?: CLEAR | boolean, clearColor?: RgbaArray, frame?: Rectangle): RenderTarget;
+	/** Pops the current render target from the renderer and restores the previous render target. */
+	pop(): void;
+	/**
+	 * Gets the render target from the provide render surface. Eg if its a texture,
+	 * it will return the render target for the texture.
+	 * If its a render target, it will return the same render target.
+	 * @param renderSurface - the render surface to get the render target for
+	 * @returns the render target for the render surface
+	 */
+	getRenderTarget(renderSurface: RenderSurface): RenderTarget;
+	/**
+	 * Copies a render surface to another texture.
+	 *
+	 * NOTE:
+	 * for sourceRenderSurfaceTexture, The render target must be something that is written too by the renderer
+	 *
+	 * The following is not valid:
+	 * @example
+	 * const canvas = document.createElement('canvas')
+	 * canvas.width = 200;
+	 * canvas.height = 200;
+	 *
+	 * const ctx = canvas2.getContext('2d')!
+	 * ctx.fillStyle = 'red'
+	 * ctx.fillRect(0, 0, 200, 200);
+	 *
+	 * const texture = RenderTexture.create({
+	 *   width: 200,
+	 *   height: 200,
+	 * })
+	 * const renderTarget = renderer.renderTarget.getRenderTarget(canvas2);
+	 *
+	 * renderer.renderTarget.copyToTexture(renderTarget,texture, {x:0,y:0},{width:200,height:200},{x:0,y:0});
+	 *
+	 * The best way to copy a canvas is to create a texture from it. Then render with that.
+	 *
+	 * Parsing in a RenderTarget canvas context (with a 2d context)
+	 * @param sourceRenderSurfaceTexture - the render surface to copy from
+	 * @param destinationTexture - the texture to copy to
+	 * @param originSrc - the origin of the copy
+	 * @param originSrc.x - the x origin of the copy
+	 * @param originSrc.y - the y origin of the copy
+	 * @param size - the size of the copy
+	 * @param size.width - the width of the copy
+	 * @param size.height - the height of the copy
+	 * @param originDest - the destination origin (top left to paste from!)
+	 * @param originDest.x - the x origin of the paste
+	 * @param originDest.y - the y origin of the paste
+	 */
+	copyToTexture(sourceRenderSurfaceTexture: RenderTarget, destinationTexture: Texture, originSrc: {
+		x: number;
+		y: number;
+	}, size: {
+		width: number;
+		height: number;
+	}, originDest: {
+		x: number;
+		y: number;
+	}): Texture<TextureSource<any>>;
+	/**
+	 * ensures that we have a depth stencil buffer available to render to
+	 * This is used by the mask system to make sure we have a stencil buffer.
+	 */
+	ensureDepthStencil(): void;
+	/** nukes the render target system */
+	destroy(): void;
+	private _initRenderTarget;
+	getGpuRenderTarget(renderTarget: RenderTarget): RENDER_TARGET;
+	resetState(): void;
+}
+/**
+ * The WebGPU adaptor for the render target system. Allows the Render Target System to
+ * be used with the WebGPU renderer
+ * @category rendering
+ * @ignore
+ */
+export declare class GpuRenderTargetAdaptor implements RenderTargetAdaptor<GpuRenderTarget> {
+	private _renderTargetSystem;
+	private _renderer;
+	init(renderer: WebGPURenderer, renderTargetSystem: RenderTargetSystem<GpuRenderTarget>): void;
+	copyToTexture(sourceRenderSurfaceTexture: RenderTarget, destinationTexture: Texture, originSrc: {
+		x: number;
+		y: number;
+	}, size: {
+		width: number;
+		height: number;
+	}, originDest: {
+		x: number;
+		y: number;
+	}): Texture<TextureSource<any>>;
+	startRenderPass(renderTarget: RenderTarget, clear?: CLEAR_OR_BOOL, clearColor?: RgbaArray, viewport?: Rectangle): void;
+	finishRenderPass(): void;
+	/**
+	 * returns the gpu texture for the first color texture in the render target
+	 * mainly used by the filter manager to get copy the texture for blending
+	 * @param renderTarget
+	 * @returns a gpu texture
+	 */
+	private _getGpuColorTexture;
+	getDescriptor(renderTarget: RenderTarget, clear: CLEAR_OR_BOOL, clearValue: RgbaArray): GPURenderPassDescriptor;
+	clear(renderTarget: RenderTarget, clear?: CLEAR_OR_BOOL, clearColor?: RgbaArray, viewport?: Rectangle): void;
+	initGpuRenderTarget(renderTarget: RenderTarget): GpuRenderTarget;
+	destroyGpuRenderTarget(gpuRenderTarget: GpuRenderTarget): void;
+	ensureDepthStencilTexture(renderTarget: RenderTarget): void;
+	resizeGpuRenderTarget(renderTarget: RenderTarget): void;
+}
+/**
+ * The WebGL adaptor for the render target system. Allows the Render Target System to be used with the WebGl renderer
+ * @category rendering
+ * @advanced
+ */
+export declare class GpuRenderTargetSystem extends RenderTargetSystem<GpuRenderTarget> {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGPUSystem
+		];
+		readonly name: "renderTarget";
+	};
+	adaptor: GpuRenderTargetAdaptor;
+	constructor(renderer: WebGPURenderer);
+}
+/**
+ * Data structure for GPU program layout.
+ * Contains bind group layouts and pipeline layout.
+ * @category rendering
+ * @advanced
+ */
+export interface GPUProgramData {
+	bindGroups: GPUBindGroupLayout[];
+	pipeline: GPUPipelineLayout;
+}
+/**
+ * A system that manages the rendering of GpuPrograms.
+ * @category rendering
+ * @advanced
+ */
+export declare class GpuShaderSystem {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGPUSystem
+		];
+		readonly name: "shader";
+	};
+	private _gpu;
+	private readonly _gpuProgramData;
+	protected contextChange(gpu: GPU$1): void;
+	getProgramData(program: GpuProgram): GPUProgramData;
+	private _createGPUProgramData;
+	destroy(): void;
+}
+/**
+ * System plugin to the renderer to manage WebGL state machines.
+ * @category rendering
+ * @advanced
+ */
+export declare class GpuStateSystem implements System {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGPUSystem
+		];
+		readonly name: "state";
+	};
+	/**
+	 * State ID
+	 * @readonly
+	 */
+	stateId: number;
+	/**
+	 * Polygon offset
+	 * @readonly
+	 */
+	polygonOffset: number;
+	/**
+	 * Blend mode
+	 * @default 'none'
+	 * @readonly
+	 */
+	blendMode: BLEND_MODES;
+	/** Whether current blend equation is different */
+	protected _blendEq: boolean;
+	/**
+	 * GL context
+	 * @type {WebGLRenderingContext}
+	 * @readonly
+	 */
+	protected gpu: GPU$1;
+	/**
+	 * Default WebGL State
+	 * @readonly
+	 */
+	protected defaultState: State;
+	constructor();
+	protected contextChange(gpu: GPU$1): void;
+	/**
+	 * Gets the blend mode data for the current state
+	 * @param state - The state to get the blend mode from
+	 * @param count - The number of color targets to create
+	 */
+	getColorTargets(state: State, count: number): GPUColorTargetState[];
+	destroy(): void;
+}
+/**
+ * An effect that can be applied to a container. This is used to create effects such as filters/masks etc.
+ * @category rendering
+ * @advanced
+ */
+export interface Effect {
+	pipe: string;
+	priority: number;
+	addBounds?(bounds: Bounds, skipUpdateTransform?: boolean): void;
+	addLocalBounds?(bounds: Bounds, localRoot: Container): void;
+	containsPoint?(point: PointData, hitTestFn: (container: Container, point: Point) => boolean): boolean;
+	destroy(): void;
+}
+/**
+ * The constructor for an Effect.
+ * It is used to create instances of effects that can be applied to containers.
+ * @param options - The options for the effect.
+ * @returns A new instance of the effect.
+ * @category rendering
+ * @advanced
+ */
+export interface EffectConstructor {
+	new (options?: any): Effect;
+	test?(options: any): boolean;
+}
+/**
+ * Flexible wrapper around `ArrayBuffer` that also provides typed array views on demand.
+ * @category utils
+ * @advanced
+ */
+export declare class ViewableBuffer {
+	/** The size of the buffer in bytes. */
+	size: number;
+	/** Underlying `ArrayBuffer` that holds all the data and is of capacity `this.size`. */
+	rawBinaryData: ArrayBuffer;
+	/** View on the raw binary data as a `Uint32Array`. */
+	uint32View: Uint32Array;
+	/** View on the raw binary data as a `Float32Array`. */
+	float32View: Float32Array;
+	/** View on the raw binary data as a `Uint16Array`. */
+	uint16View: Uint16Array;
+	private _int8View;
+	private _uint8View;
+	private _int16View;
+	private _int32View;
+	private _float64Array;
+	private _bigUint64Array;
+	/**
+	 * @param length - The size of the buffer in bytes.
+	 */
+	constructor(length: number);
+	/**
+	 * @param arrayBuffer - The source array buffer.
+	 */
+	constructor(arrayBuffer: ArrayBuffer);
+	/** View on the raw binary data as a `Int8Array`. */
+	get int8View(): Int8Array;
+	/** View on the raw binary data as a `Uint8Array`. */
+	get uint8View(): Uint8Array;
+	/**  View on the raw binary data as a `Int16Array`. */
+	get int16View(): Int16Array;
+	/** View on the raw binary data as a `Int32Array`. */
+	get int32View(): Int32Array;
+	/** View on the raw binary data as a `Float64Array`. */
+	get float64View(): Float64Array;
+	/** View on the raw binary data as a `BigUint64Array`. */
+	get bigUint64View(): BigUint64Array;
+	/**
+	 * Returns the view of the given type.
+	 * @param type - One of `int8`, `uint8`, `int16`,
+	 *    `uint16`, `int32`, `uint32`, and `float32`.
+	 * @returns - typed array of given type
+	 */
+	view(type: string): TypedArray;
+	/** Destroys all buffer references. Do not use after calling this. */
+	destroy(): void;
+	/**
+	 * Returns the size of the given type in bytes.
+	 * @param type - One of `int8`, `uint8`, `int16`,
+	 *   `uint16`, `int32`, `uint32`, and `float32`.
+	 * @returns - size of the type in bytes
+	 */
+	static sizeOf(type: string): number;
+}
+/**
+ * Used by the batcher to build texture batches. Holds list of textures and their respective locations.
+ * @category rendering
+ * @advanced
+ */
+export declare class BatchTextureArray {
+	/** Inside textures array. */
+	textures: TextureSource[];
+	/** Respective locations for textures. */
+	ids: Record<number, number>;
+	/** Number of filled elements. */
+	count: number;
+	constructor();
+	/** Clear the textures and their locations. */
+	clear(): void;
+}
+/**
+ * An instruction that can be executed by the renderer
+ * @category rendering
+ * @advanced
+ */
+export interface Instruction {
+	/** a the id of the render pipe that can run this instruction */
+	renderPipeId: string;
+	/** the name of the instruction */
+	action?: string;
+	/** true if this instruction can be compiled into a WebGPU bundle */
+	canBundle: boolean;
 }
 /**
  * The action types for a batch.
@@ -7013,482 +7591,6 @@ export interface PipeConstructor {
 	new (renderer: Renderer, adaptor?: any): RenderPipe | BatchPipe | InstructionPipe<any>;
 }
 /**
- * Options for creating a render target.
- * @category rendering
- * @advanced
- */
-export interface RenderTargetOptions {
-	/** the width of the RenderTarget */
-	width?: number;
-	/** the height of the RenderTarget */
-	height?: number;
-	/** the resolution of the RenderTarget */
-	resolution?: number;
-	/** an array of textures, or a number indicating how many color textures there should be */
-	colorTextures?: BindableTexture[] | number;
-	/** should this render target have a stencil buffer? */
-	stencil?: boolean;
-	/** should this render target have a depth buffer? */
-	depth?: boolean;
-	/** a depth stencil texture that the depth and stencil outputs will be written to */
-	depthStencilTexture?: BindableTexture | boolean;
-	/** should this render target be antialiased? */
-	antialias?: boolean;
-	/** is this a root element, true if this is gl context owners render target */
-	isRoot?: boolean;
-}
-/**
- * A class that describes what the renderers are rendering to.
- * This can be as simple as a Texture, or as complex as a multi-texture, multi-sampled render target.
- * Support for stencil and depth buffers is also included.
- *
- * If you need something more complex than a Texture to render to, you should use this class.
- * Under the hood, all textures you render to have a RenderTarget created on their behalf.
- * @category rendering
- * @advanced
- */
-export declare class RenderTarget {
-	/** The default options for a render target */
-	static defaultOptions: RenderTargetOptions;
-	/** unique id for this render target */
-	readonly uid: number;
-	/**
-	 * An array of textures that can be written to by the GPU - mostly this has one texture in Pixi, but you could
-	 * write to multiple if required! (eg deferred lighting)
-	 */
-	colorTextures: TextureSource[];
-	/** the stencil and depth buffer will right to this texture in WebGPU */
-	depthStencilTexture: TextureSource;
-	/** if true, will ensure a stencil buffer is added. For WebGPU, this will automatically create a depthStencilTexture */
-	stencil: boolean;
-	/** if true, will ensure a depth buffer is added. For WebGPU, this will automatically create a depthStencilTexture */
-	depth: boolean;
-	dirtyId: number;
-	isRoot: boolean;
-	private readonly _size;
-	/** if true, then when the render target is destroyed, it will destroy all the textures that were created for it. */
-	private readonly _managedColorTextures;
-	/**
-	 * @param [descriptor] - Options for creating a render target.
-	 */
-	constructor(descriptor?: RenderTargetOptions);
-	get size(): [
-		number,
-		number
-	];
-	get width(): number;
-	get height(): number;
-	get pixelWidth(): number;
-	get pixelHeight(): number;
-	get resolution(): number;
-	get colorTexture(): TextureSource;
-	protected onSourceResize(source: TextureSource): void;
-	/**
-	 * This will ensure a depthStencil texture is created for this render target.
-	 * Most likely called by the mask system to make sure we have stencil buffer added.
-	 * @internal
-	 */
-	ensureDepthStencilTexture(): void;
-	resize(width: number, height: number, resolution?: number, skipColorTexture?: boolean): void;
-	destroy(): void;
-}
-/**
- * Represents a render target.
- * @category rendering
- * @ignore
- */
-export declare class GlRenderTarget {
-	width: number;
-	height: number;
-	msaa: boolean;
-	framebuffer: WebGLFramebuffer;
-	resolveTargetFramebuffer: WebGLFramebuffer;
-	msaaRenderBuffer: WebGLRenderbuffer[];
-	depthStencilRenderBuffer: WebGLRenderbuffer;
-}
-/**
- * A class which holds the canvas contexts and textures for a render target.
- * @category rendering
- * @ignore
- */
-export declare class GpuRenderTarget {
-	contexts: GPUCanvasContext[];
-	msaaTextures: TextureSource[];
-	msaa: boolean;
-	msaaSamples: number;
-	width: number;
-	height: number;
-	descriptor: GPURenderPassDescriptor;
-}
-/**
- * A render surface is a texture, canvas, or render target
- * @category rendering
- * @see environment.ICanvas
- * @see Texture
- * @see RenderTarget
- * @advanced
- */
-export type RenderSurface = ICanvas | BindableTexture | RenderTarget;
-/**
- * An adaptor interface for RenderTargetSystem to support WebGL and WebGPU.
- * This is used internally by the renderer, and is not intended to be used directly.
- * @ignore
- */
-export interface RenderTargetAdaptor<RENDER_TARGET extends GlRenderTarget | GpuRenderTarget> {
-	init(
-	/** the renderer */
-	renderer: Renderer, 
-	/** the render target system */
-	renderTargetSystem: RenderTargetSystem<RENDER_TARGET>): void;
-	/** A function copies the contents of a render surface to a texture */
-	copyToTexture(
-	/** the render surface to copy from  */
-	sourceRenderSurfaceTexture: RenderTarget, 
-	/** the texture to copy to */
-	destinationTexture: Texture, 
-	/** the origin of the copy */
-	originSrc: {
-		x: number;
-		y: number;
-	}, 
-	/** the size of the copy */
-	size: {
-		width: number;
-		height: number;
-	}, 
-	/** the destination origin (top left to paste from!) */
-	originDest?: {
-		x: number;
-		y: number;
-	}): Texture;
-	/** starts a render pass on the render target */
-	startRenderPass(
-	/** the render target to start the render pass on */
-	renderTarget: RenderTarget, clear: CLEAR_OR_BOOL, 
-	/** the color to clear to */
-	clearColor?: RgbaArray, 
-	/** the viewport to use */
-	viewport?: Rectangle): void;
-	/** clears the current render target to the specified color */
-	clear(
-	/** the render target to clear */
-	renderTarget: RenderTarget, 
-	/** the clear mode to use. Can be true or a CLEAR number 'COLOR | DEPTH | STENCIL' 0b111 */
-	clear: CLEAR_OR_BOOL, 
-	/** the color to clear to   */
-	clearColor?: RgbaArray, 
-	/** the viewport to use */
-	viewport?: Rectangle): void;
-	/** finishes the current render pass */
-	finishRenderPass(renderTarget: RenderTarget): void;
-	/** called after the render pass is finished */
-	postrender?(renderTarget: RenderTarget): void;
-	/** called before the render main pass is started */
-	prerender?(renderTarget: RenderTarget): void;
-	/**
-	 * initializes a gpu render target. Both renderers use this function to initialize a gpu render target
-	 * Its different type of object depending on the renderer.
-	 */
-	initGpuRenderTarget(
-	/** the render target to initialize */
-	renderTarget: RenderTarget): RENDER_TARGET;
-	/** called when a render target is resized */
-	resizeGpuRenderTarget(
-	/** the render target to resize */
-	renderTarget: RenderTarget): void;
-	/** destroys the gpu render target */
-	destroyGpuRenderTarget(
-	/** the render target to destroy */
-	gpuRenderTarget: RENDER_TARGET): void;
-}
-/**
- * A system that manages render targets. A render target is essentially a place where the shaders can color in the pixels.
- * The render target system is responsible for binding the render target to the renderer, and managing the viewport.
- * Render targets can be pushed and popped.
- *
- * To make it easier, you can also bind textures and canvases too. This will automatically create a render target for you.
- * The render target itself is a lot more powerful than just a texture or canvas,
- * as it can have multiple textures attached to it.
- * It will also give ou fine grain control over the stencil buffer / depth texture.
- * @example
- *
- * ```js
- *
- * // create a render target
- * const renderTarget = new RenderTarget({
- *   colorTextures: [new TextureSource({ width: 100, height: 100 })],
- * });
- *
- * // bind the render target
- * renderer.renderTarget.bind(renderTarget);
- *
- * // draw something!
- * ```
- * @category rendering
- * @advanced
- */
-export declare class RenderTargetSystem<RENDER_TARGET extends GlRenderTarget | GpuRenderTarget> implements System {
-	/** When rendering of a scene begins, this is where the root render surface is stored */
-	rootRenderTarget: RenderTarget;
-	/** This is the root viewport for the render pass*/
-	rootViewPort: Rectangle;
-	/** A boolean that lets the dev know if the current render pass is rendering to the screen. Used by some plugins */
-	renderingToScreen: boolean;
-	/** the current active render target */
-	renderTarget: RenderTarget;
-	/** the current active render surface that the render target is created from */
-	renderSurface: RenderSurface;
-	/** the current viewport that the gpu is using */
-	readonly viewport: Rectangle;
-	/**
-	 * a runner that lets systems know if the active render target has changed.
-	 * Eg the Stencil System needs to know so it can manage the stencil buffer
-	 */
-	readonly onRenderTargetChange: SystemRunner;
-	/** the projection matrix that is used by the shaders based on the active render target and the viewport */
-	readonly projectionMatrix: Matrix;
-	/** the default clear color for render targets */
-	readonly defaultClearColor: RgbaArray;
-	/** a reference to the adaptor that interfaces with WebGL / WebGP */
-	readonly adaptor: RenderTargetAdaptor<RENDER_TARGET>;
-	/**
-	 * a hash that stores the render target for a given render surface. When you pass in a texture source,
-	 * a render target is created for it. This map stores and makes it easy to retrieve the render target
-	 */
-	private readonly _renderSurfaceToRenderTargetHash;
-	/** A hash that stores a gpu render target for a given render target. */
-	private _gpuRenderTargetHash;
-	/**
-	 * A stack that stores the render target and frame that is currently being rendered to.
-	 * When push is called, the current render target is stored in this stack.
-	 * When pop is called, the previous render target is restored.
-	 */
-	private readonly _renderTargetStack;
-	/** A reference to the renderer */
-	private readonly _renderer;
-	constructor(renderer: Renderer);
-	/** called when dev wants to finish a render pass */
-	finishRenderPass(): void;
-	/**
-	 * called when the renderer starts to render a scene.
-	 * @param options
-	 * @param options.target - the render target to render to
-	 * @param options.clear - the clear mode to use. Can be true or a CLEAR number 'COLOR | DEPTH | STENCIL' 0b111
-	 * @param options.clearColor - the color to clear to
-	 * @param options.frame - the frame to render to
-	 */
-	renderStart({ target, clear, clearColor, frame }: {
-		target: RenderSurface;
-		clear: CLEAR_OR_BOOL;
-		clearColor: RgbaArray;
-		frame?: Rectangle;
-	}): void;
-	postrender(): void;
-	/**
-	 * Binding a render surface! This is the main function of the render target system.
-	 * It will take the RenderSurface (which can be a texture, canvas, or render target) and bind it to the renderer.
-	 * Once bound all draw calls will be rendered to the render surface.
-	 *
-	 * If a frame is not provide and the render surface is a texture, the frame of the texture will be used.
-	 * @param renderSurface - the render surface to bind
-	 * @param clear - the clear mode to use. Can be true or a CLEAR number 'COLOR | DEPTH | STENCIL' 0b111
-	 * @param clearColor - the color to clear to
-	 * @param frame - the frame to render to
-	 * @returns the render target that was bound
-	 */
-	bind(renderSurface: RenderSurface, clear?: CLEAR_OR_BOOL, clearColor?: RgbaArray, frame?: Rectangle): RenderTarget;
-	clear(target?: RenderSurface, clear?: CLEAR_OR_BOOL, clearColor?: RgbaArray): void;
-	protected contextChange(): void;
-	/**
-	 * Push a render surface to the renderer. This will bind the render surface to the renderer,
-	 * @param renderSurface - the render surface to push
-	 * @param clear - the clear mode to use. Can be true or a CLEAR number 'COLOR | DEPTH | STENCIL' 0b111
-	 * @param clearColor - the color to clear to
-	 * @param frame - the frame to use when rendering to the render surface
-	 */
-	push(renderSurface: RenderSurface, clear?: CLEAR | boolean, clearColor?: RgbaArray, frame?: Rectangle): RenderTarget;
-	/** Pops the current render target from the renderer and restores the previous render target. */
-	pop(): void;
-	/**
-	 * Gets the render target from the provide render surface. Eg if its a texture,
-	 * it will return the render target for the texture.
-	 * If its a render target, it will return the same render target.
-	 * @param renderSurface - the render surface to get the render target for
-	 * @returns the render target for the render surface
-	 */
-	getRenderTarget(renderSurface: RenderSurface): RenderTarget;
-	/**
-	 * Copies a render surface to another texture.
-	 *
-	 * NOTE:
-	 * for sourceRenderSurfaceTexture, The render target must be something that is written too by the renderer
-	 *
-	 * The following is not valid:
-	 * @example
-	 * const canvas = document.createElement('canvas')
-	 * canvas.width = 200;
-	 * canvas.height = 200;
-	 *
-	 * const ctx = canvas2.getContext('2d')!
-	 * ctx.fillStyle = 'red'
-	 * ctx.fillRect(0, 0, 200, 200);
-	 *
-	 * const texture = RenderTexture.create({
-	 *   width: 200,
-	 *   height: 200,
-	 * })
-	 * const renderTarget = renderer.renderTarget.getRenderTarget(canvas2);
-	 *
-	 * renderer.renderTarget.copyToTexture(renderTarget,texture, {x:0,y:0},{width:200,height:200},{x:0,y:0});
-	 *
-	 * The best way to copy a canvas is to create a texture from it. Then render with that.
-	 *
-	 * Parsing in a RenderTarget canvas context (with a 2d context)
-	 * @param sourceRenderSurfaceTexture - the render surface to copy from
-	 * @param destinationTexture - the texture to copy to
-	 * @param originSrc - the origin of the copy
-	 * @param originSrc.x - the x origin of the copy
-	 * @param originSrc.y - the y origin of the copy
-	 * @param size - the size of the copy
-	 * @param size.width - the width of the copy
-	 * @param size.height - the height of the copy
-	 * @param originDest - the destination origin (top left to paste from!)
-	 * @param originDest.x - the x origin of the paste
-	 * @param originDest.y - the y origin of the paste
-	 */
-	copyToTexture(sourceRenderSurfaceTexture: RenderTarget, destinationTexture: Texture, originSrc: {
-		x: number;
-		y: number;
-	}, size: {
-		width: number;
-		height: number;
-	}, originDest: {
-		x: number;
-		y: number;
-	}): Texture<TextureSource<any>>;
-	/**
-	 * ensures that we have a depth stencil buffer available to render to
-	 * This is used by the mask system to make sure we have a stencil buffer.
-	 */
-	ensureDepthStencil(): void;
-	/** nukes the render target system */
-	destroy(): void;
-	private _initRenderTarget;
-	getGpuRenderTarget(renderTarget: RenderTarget): RENDER_TARGET;
-	resetState(): void;
-}
-/**
- * Options passed to the ViewSystem
- * @category rendering
- * @advanced
- */
-export interface ViewSystemOptions {
-	/**
-	 * The width of the screen.
-	 * @default 800
-	 */
-	width?: number;
-	/**
-	 * The height of the screen.
-	 * @default 600
-	 */
-	height?: number;
-	/** The canvas to use as a view, optional. */
-	canvas?: ICanvas;
-	/**
-	 * Alias for `canvas`.
-	 * @deprecated since 8.0.0
-	 */
-	view?: ICanvas;
-	/**
-	 * Resizes renderer view in CSS pixels to allow for resolutions other than 1.
-	 *
-	 * This is only supported for HTMLCanvasElement
-	 * and will be ignored if the canvas is an OffscreenCanvas.
-	 */
-	autoDensity?: boolean;
-	/** The resolution / device pixel ratio of the renderer. */
-	resolution?: number;
-	/** Whether to enable anti-aliasing. This may affect performance. */
-	antialias?: boolean;
-	/** Whether to ensure the main view has can make use of the depth buffer. Always true for WebGL renderer. */
-	depth?: boolean;
-}
-/**
- * Options for destroying the ViewSystem.
- * @category rendering
- * @advanced
- */
-export interface ViewSystemDestroyOptions {
-	/** Whether to remove the view element from the DOM. Defaults to `false`. */
-	removeView?: boolean;
-}
-/**
- * The view system manages the main canvas that is attached to the DOM.
- * This main role is to deal with how the holding the view reference and dealing with how it is resized.
- * @category rendering
- * @advanced
- */
-export declare class ViewSystem implements System<ViewSystemOptions, TypeOrBool<ViewSystemDestroyOptions>> {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGLSystem,
-			ExtensionType.WebGPUSystem,
-			ExtensionType.CanvasSystem
-		];
-		readonly name: "view";
-		readonly priority: 0;
-	};
-	/** The default options for the view system. */
-	static defaultOptions: ViewSystemOptions;
-	/** The canvas element that everything is drawn to. */
-	canvas: ICanvas;
-	/** The texture that is used to draw the canvas to the screen. */
-	texture: Texture<CanvasSource>;
-	/**
-	 * Whether CSS dimensions of canvas view should be resized to screen dimensions automatically.
-	 * This is only supported for HTMLCanvasElement and will be ignored if the canvas is an OffscreenCanvas.
-	 * @type {boolean}
-	 */
-	get autoDensity(): boolean;
-	set autoDensity(value: boolean);
-	/** Whether to enable anti-aliasing. This may affect performance. */
-	antialias: boolean;
-	/**
-	 * Measurements of the screen. (0, 0, screenWidth, screenHeight).
-	 *
-	 * Its safe to use as filterArea or hitArea for the whole stage.
-	 */
-	screen: Rectangle;
-	/** The render target that the view is drawn to. */
-	renderTarget: RenderTarget;
-	/** The resolution / device pixel ratio of the renderer. */
-	get resolution(): number;
-	set resolution(value: number);
-	/**
-	 * initiates the view system
-	 * @param options - the options for the view
-	 */
-	init(options: ViewSystemOptions): void;
-	/**
-	 * Resizes the screen and canvas to the specified dimensions.
-	 * @param desiredScreenWidth - The new width of the screen.
-	 * @param desiredScreenHeight - The new height of the screen.
-	 * @param resolution
-	 */
-	resize(desiredScreenWidth: number, desiredScreenHeight: number, resolution: number): void;
-	/**
-	 * Destroys this System and optionally removes the canvas from the dom.
-	 * @param {options | false} options - The options for destroying the view, or "false".
-	 * @example
-	 * viewSystem.destroy();
-	 * viewSystem.destroy(true);
-	 * viewSystem.destroy({ removeView: true });
-	 */
-	destroy(options?: TypeOrBool<ViewSystemDestroyOptions>): void;
-}
-/**
  * A function that takes a renderer and does the custom rendering logic.
  * This is the function that will be called each frame.
  * @param renderer - The current renderer
@@ -7726,7 +7828,7 @@ export declare class DefaultBatcher extends Batcher {
  * A batchable sprite object.
  * @internal
  */
-export declare class BatchableSprite implements DefaultBatchableQuadElement {
+export declare class BatchableSprite implements DefaultBatchableQuadElement, GPUData {
 	batcherName: string;
 	topology: Topology;
 	readonly attributeSize = 4;
@@ -8435,1017 +8537,429 @@ export declare class SpritePipe implements RenderPipe<Sprite> {
 	destroy(): void;
 }
 /**
- * The GPU object.
- * Contains the GPU adapter and device.
+ * Options for {@link autoDetectRenderer}.
  * @category rendering
  * @advanced
  */
-interface GPU$1 {
-	/** The GPU adapter */
-	adapter: GPUAdapter;
-	/** The GPU device */
-	device: GPUDevice;
+export interface AutoDetectOptions extends RendererOptions {
+	/** The preferred renderer type. WebGPU is recommended as its generally faster than WebGL. */
+	preference?: "webgl" | "webgpu";
+	/** Optional WebGPUOptions to pass only to WebGPU renderer. */
+	webgpu?: Partial<WebGPUOptions>;
+	/** Optional WebGLOptions to pass only to the WebGL renderer */
+	webgl?: Partial<WebGLOptions>;
 }
 /**
- * Options for the WebGPU context.
- * @property {GpuPowerPreference} [powerPreference=default] - An optional hint indicating what configuration of GPU
- * is suitable for the WebGPU context, can be `'high-performance'` or `'low-power'`.
- * Setting to `'high-performance'` will prioritize rendering performance over power consumption,
- * while setting to `'low-power'` will prioritize power saving over rendering performance.
- * @property {boolean} [forceFallbackAdapter=false] - Force the use of the fallback adapter
- * @category rendering
- * @advanced
- */
-export interface GpuContextOptions {
-	/**
-	 * An optional hint indicating what configuration of GPU is suitable for the WebGPU context,
-	 * can be `'high-performance'` or `'low-power'`.
-	 * Setting to `'high-performance'` will prioritize rendering performance over power consumption,
-	 * while setting to `'low-power'` will prioritize power saving over rendering performance.
-	 * @default undefined
-	 */
-	powerPreference?: GpuPowerPreference;
-	/**
-	 * Force the use of the fallback adapter
-	 * @default false
-	 */
-	forceFallbackAdapter: boolean;
-	/** Using shared device and adaptor from other engine */
-	gpu?: GPU$1;
-}
-/**
- * System plugin to the renderer to manage the context.
- * @class
- * @category rendering
- * @advanced
- */
-export declare class GpuDeviceSystem implements System<GpuContextOptions> {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGPUSystem
-		];
-		readonly name: "device";
-	};
-	/** The default options for the GpuDeviceSystem. */
-	static defaultOptions: GpuContextOptions;
-	/** The GPU device */
-	gpu: GPU$1;
-	private _renderer;
-	private _initPromise;
-	/**
-	 * @param {WebGPURenderer} renderer - The renderer this System works for.
-	 */
-	constructor(renderer: WebGPURenderer);
-	init(options: GpuContextOptions): Promise<void>;
-	/**
-	 * Handle the context change event
-	 * @param gpu
-	 */
-	protected contextChange(gpu: GPU$1): void;
-	/**
-	 * Helper class to create a WebGL Context
-	 * @param {object} options - An options object that gets passed in to the canvas element containing the
-	 *    context attributes
-	 * @see https://developer.mozilla.org/en/docs/Web/API/HTMLCanvasElement/getContext
-	 * @returns {WebGLRenderingContext} the WebGL context
-	 */
-	private _createDeviceAndAdaptor;
-	destroy(): void;
-}
-/**
- * This manages the WebGPU bind groups. this is how data is bound to a shader when rendering
- * @category rendering
- * @advanced
- */
-export declare class BindGroupSystem implements System {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGPUSystem
-		];
-		readonly name: "bindGroup";
-	};
-	private readonly _renderer;
-	private _hash;
-	private _gpu;
-	constructor(renderer: WebGPURenderer);
-	protected contextChange(gpu: GPU$1): void;
-	getBindGroup(bindGroup: BindGroup, program: GpuProgram, groupIndex: number): GPUBindGroup;
-	private _createBindGroup;
-	destroy(): void;
-}
-/**
- * System plugin to the renderer to manage buffers.
- * @category rendering
- * @advanced
- */
-export declare class GpuBufferSystem implements System {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGPUSystem
-		];
-		readonly name: "buffer";
-	};
-	protected CONTEXT_UID: number;
-	private _gpuBuffers;
-	private _gpu;
-	constructor(renderer: WebGPURenderer);
-	protected contextChange(gpu: GPU$1): void;
-	getGPUBuffer(buffer: Buffer$1): GPUBuffer;
-	updateBuffer(buffer: Buffer$1): GPUBuffer;
-	/** dispose all WebGL resources of all managed buffers */
-	destroyAll(): void;
-	createGPUBuffer(buffer: Buffer$1): GPUBuffer;
-	protected onBufferChange(buffer: Buffer$1): void;
-	/**
-	 * Disposes buffer
-	 * @param buffer - buffer with data
-	 */
-	protected onBufferDestroy(buffer: Buffer$1): void;
-	destroy(): void;
-	private _destroyBuffer;
-}
-/**
- * The system that handles color masking for the GPU.
- * @category rendering
- * @advanced
- */
-export declare class GpuColorMaskSystem implements System {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGPUSystem
-		];
-		readonly name: "colorMask";
-	};
-	private readonly _renderer;
-	private _colorMaskCache;
-	constructor(renderer: WebGPURenderer);
-	setMask(colorMask: number): void;
-	destroy(): void;
-}
-/**
- * This is a WebGL state, and is is passed to {@link GlStateSystem}.
+ * Automatically determines the most appropriate renderer for the current environment.
  *
- * Each mesh rendered may require WebGL to be in a different state.
- * For example you may want different blend mode or to enable polygon offsets
- * @category rendering
- * @advanced
- */
-export declare class State {
-	/**
-	 * The data is a unique number based on the states settings.
-	 * This lets us quickly compare states with a single number rather than looking
-	 * at all the individual settings.
-	 */
-	data: number;
-	/** @internal */
-	_blendModeId: number;
-	private _blendMode;
-	private _polygonOffset;
-	constructor();
-	/**
-	 * Activates blending of the computed fragment color values.
-	 * @default true
-	 */
-	get blend(): boolean;
-	set blend(value: boolean);
-	/**
-	 * Activates adding an offset to depth values of polygon's fragments
-	 * @default false
-	 */
-	get offsets(): boolean;
-	set offsets(value: boolean);
-	/** The culling settings for this state none - No culling back - Back face culling front - Front face culling */
-	set cullMode(value: CULL_MODES);
-	get cullMode(): CULL_MODES;
-	/**
-	 * Activates culling of polygons.
-	 * @default false
-	 */
-	get culling(): boolean;
-	set culling(value: boolean);
-	/**
-	 * Activates depth comparisons and updates to the depth buffer.
-	 * @default false
-	 */
-	get depthTest(): boolean;
-	set depthTest(value: boolean);
-	/**
-	 * Enables or disables writing to the depth buffer.
-	 * @default true
-	 */
-	get depthMask(): boolean;
-	set depthMask(value: boolean);
-	/**
-	 * Specifies whether or not front or back-facing polygons can be culled.
-	 * @default false
-	 */
-	get clockwiseFrontFace(): boolean;
-	set clockwiseFrontFace(value: boolean);
-	/**
-	 * The blend mode to be applied when this state is set. Apply a value of `normal` to reset the blend mode.
-	 * Setting this mode to anything other than NO_BLEND will automatically switch blending on.
-	 * @default 'normal'
-	 */
-	get blendMode(): BLEND_MODES;
-	set blendMode(value: BLEND_MODES);
-	/**
-	 * The polygon offset. Setting this property to anything other than 0 will automatically enable polygon offset fill.
-	 * @default 0
-	 */
-	get polygonOffset(): number;
-	set polygonOffset(value: number);
-	toString(): string;
-	/**
-	 * A quickly getting an instance of a State that is configured for 2d rendering.
-	 * @returns a new State with values set for 2d rendering
-	 */
-	static for2d(): State;
-	static default2d: State;
-}
-/**
- * The system that handles encoding commands for the GPU.
- * @category rendering
- * @advanced
- */
-export declare class GpuEncoderSystem implements System {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGPUSystem
-		];
-		readonly name: "encoder";
-		readonly priority: 1;
-	};
-	commandEncoder: GPUCommandEncoder;
-	renderPassEncoder: GPURenderPassEncoder;
-	commandFinished: Promise<void>;
-	private _resolveCommandFinished;
-	private _gpu;
-	private _boundBindGroup;
-	private _boundVertexBuffer;
-	private _boundIndexBuffer;
-	private _boundPipeline;
-	private readonly _renderer;
-	constructor(renderer: WebGPURenderer);
-	renderStart(): void;
-	beginRenderPass(gpuRenderTarget: GpuRenderTarget): void;
-	endRenderPass(): void;
-	setViewport(viewport: Rectangle): void;
-	setPipelineFromGeometryProgramAndState(geometry: Geometry, program: GpuProgram, state: any, topology?: Topology): void;
-	setPipeline(pipeline: GPURenderPipeline): void;
-	private _setVertexBuffer;
-	private _setIndexBuffer;
-	resetBindGroup(index: number): void;
-	setBindGroup(index: number, bindGroup: BindGroup, program: GpuProgram): void;
-	setGeometry(geometry: Geometry, program: GpuProgram): void;
-	private _setShaderBindGroups;
-	private _syncBindGroup;
-	draw(options: {
-		geometry: Geometry;
-		shader: Shader;
-		state?: State;
-		topology?: Topology;
-		size?: number;
-		start?: number;
-		instanceCount?: number;
-		skipSync?: boolean;
-	}): void;
-	finishRenderPass(): void;
-	postrender(): void;
-	restoreRenderPass(): void;
-	private _clearCache;
-	destroy(): void;
-	protected contextChange(gpu: GPU$1): void;
-}
-/**
- * The GpuLimitsSystem provides information about the capabilities and limitations of the underlying GPU.
- * These limits, such as the maximum number of textures that can be used in a shader
- * (`maxTextures`) or the maximum number of textures that can be batched together (`maxBatchableTextures`),
- * are determined by the specific graphics hardware and driver.
+ * The function will prioritize the WebGL renderer as it is the most tested safe API to use.
+ * In the near future as WebGPU becomes more stable and ubiquitous, it will be prioritized over WebGL.
  *
- * The values for these limits are not available immediately upon instantiation of the class.
- * They are populated when the WebGPU Device rendering context is successfully initialized and ready,
- * which occurs after the `renderer.init()` method has completed.
- * Attempting to access these properties before the context is ready will result in undefined or default values.
+ * The selected renderer's code is then dynamically imported to optimize
+ * performance and minimize the initial bundle size.
  *
- * This system allows the renderer to adapt its behavior and resource allocation strategies
- * to stay within the supported boundaries of the GPU, ensuring optimal performance and stability.
+ * To maximize the benefits of dynamic imports, it's recommended to use a modern bundler
+ * that supports code splitting. This will place the renderer code in a separate chunk,
+ * which is loaded only when needed.
+ * @example
+ *
+ * // create a renderer
+ * const renderer = await autoDetectRenderer({
+ *   width: 800,
+ *   height: 600,
+ *   antialias: true,
+ * });
+ *
+ * // custom for each renderer
+ * const renderer = await autoDetectRenderer({
+ *   width: 800,
+ *   height: 600,
+ *   webgpu:{
+ *     antialias: true,
+ *     backgroundColor: 'red'
+ *   },
+ *   webgl:{
+ *     antialias: true,
+ *     backgroundColor: 'green'
+ *   }
+ *  });
+ * @param options - A partial configuration object based on the `AutoDetectOptions` type.
+ * @returns A Promise that resolves to an instance of the selected renderer.
+ * @category rendering
+ * @standard
+ */
+export declare function autoDetectRenderer(options: Partial<AutoDetectOptions>): Promise<Renderer>;
+/**
+ * Interface for creating Application plugins. Any plugin that's usable for Application must implement these methods.
+ *
+ * To create a plugin:
+ * 1. Create a class that implements this interface
+ * 2. Add the required static extension property
+ * 3. Register the plugin using extensions.add()
  * @example
  * ```ts
- * const renderer = new WebGPURenderer();
- * await renderer.init(); // GPU limits are populated after this call
+ * import { ApplicationPlugin, ExtensionType, extensions } from 'pixi.js';
  *
- * console.log(renderer.limits.maxTextures);
- * console.log(renderer.limits.maxBatchableTextures);
+ * class MyPlugin {
+ *    // Required: Declare the extension type
+ *    public static extension = ExtensionType.Application;
+ *
+ *    // Required: Implement init method
+ *    public static init(options: Partial<ApplicationOptions>): void {
+ *        // Add properties/methods to the Application instance (this)
+ *        Object.defineProperty(this, 'myFeature', {
+ *            value: () => console.log('My feature!'),
+ *        });
+ *
+ *        // Use options if needed
+ *        console.log('Plugin initialized with:', options);
+ *    }
+ *
+ *    // Required: Implement destroy method
+ *    public static destroy(): void {
+ *        // Clean up any resources
+ *        console.log('Plugin destroyed');
+ *    }
+ * }
+ *
+ * // Register the plugin
+ * extensions.add(MyPlugin);
+ *
+ * // Usage in application
+ * const app = new Application();
+ * await app.init();
+ * app.myFeature(); // Output: "My feature!"
  * ```
- * @category rendering
+ * > [!IMPORTANT]
+ * > - Plugins are initialized in the order they are added
+ * > - Plugins are destroyed in reverse order
+ * > - The `this` context in both methods refers to the Application instance
+ * @see {@link ExtensionType} For different types of extensions
+ * @see {@link extensions} For the extension registration system
+ * @see {@link ApplicationOptions} For available application options
+ * @category app
  * @advanced
  */
-export declare class GpuLimitsSystem implements System {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGPUSystem
-		];
-		readonly name: "limits";
-	};
-	/** The maximum number of textures that can be used by a shader */
-	maxTextures: number;
-	/** The maximum number of batchable textures */
-	maxBatchableTextures: number;
-	private readonly _renderer;
-	constructor(renderer: WebGPURenderer);
-	contextChange(): void;
-	destroy(): void;
-}
-/**
- * This manages the stencil buffer. Used primarily for masking
- * @category rendering
- * @advanced
- */
-export declare class GpuStencilSystem implements System {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGPUSystem
-		];
-		readonly name: "stencil";
-	};
-	private readonly _renderer;
-	private _renderTargetStencilState;
-	private _activeRenderTarget;
-	constructor(renderer: WebGPURenderer);
-	protected onRenderTargetChange(renderTarget: RenderTarget): void;
-	setStencilMode(stencilMode: STENCIL_MODES, stencilReference: number): void;
-	destroy(): void;
-}
-/** @internal */
-export declare const UNIFORM_TYPES_VALUES: readonly [
-	"f32",
-	"i32",
-	"vec2<f32>",
-	"vec3<f32>",
-	"vec4<f32>",
-	"mat2x2<f32>",
-	"mat3x3<f32>",
-	"mat4x4<f32>",
-	"mat3x2<f32>",
-	"mat4x2<f32>",
-	"mat2x3<f32>",
-	"mat4x3<f32>",
-	"mat2x4<f32>",
-	"mat3x4<f32>",
-	"vec2<i32>",
-	"vec3<i32>",
-	"vec4<i32>"
-];
-/**
- * useful for checking if a type is supported - a map of supported types with a true value.
- * @internal
- */
-export declare const UNIFORM_TYPES_MAP: Record<UNIFORM_TYPES, boolean>;
-/** @internal */
-export type UNIFORM_TYPES_SINGLE = typeof UNIFORM_TYPES_VALUES[number];
-type OPTIONAL_SPACE = " " | "";
-/** @internal */
-export type UNIFORM_TYPES_ARRAY = `array<${UNIFORM_TYPES_SINGLE},${OPTIONAL_SPACE}${number}>`;
-/** @internal */
-export type UNIFORM_TYPES = UNIFORM_TYPES_SINGLE | UNIFORM_TYPES_ARRAY;
-/**
- * This is the type of the uniform structures that are used in the UniformGroup.
- * @category rendering
- * @advanced
- */
-export interface UniformData {
-	/** the value of the uniform, this could be any object - a parser will figure out how to write it to the buffer */
-	value: unknown;
-	type: UNIFORM_TYPES;
-	/** the size of the variable (eg 2 for vec2, 3 for vec3, 4 for vec4) */
-	size?: number;
-	name?: string;
-}
-/** @internal */
-export interface UboElement {
-	data: UniformData;
-	offset: number;
-	size: number;
-}
-/** @internal */
-export interface UboLayout {
-	uboElements: UboElement[];
-	/** float32 size // TODO change to bytes */
-	size: number;
-}
-/** @internal */
-export type UniformsSyncCallback = (...args: any[]) => void;
-type FLOPS<T = UniformData> = T extends {
-	value: infer V;
-} ? V : never;
-/**
- * Extracts the value type from a uniform data object.
- * @internal
- */
-export type ExtractUniformObject<T = Record<string, UniformData>> = {
-	[K in keyof T]: FLOPS<T[K]>;
-};
-/**
- * Uniform group options
- * @category rendering
- * @advanced
- */
-export type UniformGroupOptions = {
+export interface ApplicationPlugin {
 	/**
-	 * if true the UniformGroup is handled as an Uniform buffer object.
-	 * This is the only way WebGPU can work with uniforms. WebGL2 can also use this.
-	 * So don't set to true if you want to use WebGPU :D
+	 * Called when Application is constructed, scoped to Application instance.
+	 * Passes in `options` as the only argument, which are Application `init()` options.
+	 * @param {object} options - Application options.
 	 */
-	ubo?: boolean;
-	/** if true, then you are responsible for when the data is uploaded to the GPU by calling `update()` */
-	isStatic?: boolean;
-};
+	init(options: Partial<ApplicationOptions>): void;
+	/** Called when destroying Application, scoped to Application instance. */
+	destroy(): void;
+}
 /**
- * Uniform group holds uniform map and some ID's for work
- *
- * `UniformGroup` has two modes:
- *
- * 1: Normal mode
- * Normal mode will upload the uniforms with individual function calls as required. This is the default mode
- * for WebGL rendering.
- *
- * 2: Uniform buffer mode
- * This mode will treat the uniforms as a uniform buffer. You can pass in either a buffer that you manually handle, or
- * or a generic object that PixiJS will automatically map to a buffer for you.
- * For maximum benefits, make Ubo UniformGroups static, and only update them each frame.
- * This is the only way uniforms can be used with WebGPU.
- *
- * Rules of UBOs:
- * - UBOs only work with WebGL2, so make sure you have a fallback!
- * - Only floats are supported (including vec[2,3,4], mat[2,3,4])
- * - Samplers cannot be used in ubo's (a GPU limitation)
- * - You must ensure that the object you pass in exactly matches in the shader ubo structure.
- * Otherwise, weirdness will ensue!
- * - The name of the ubo object added to the group must match exactly the name of the ubo in the shader.
- *
- * When declaring your uniform options, you ust parse in the value and the type of the uniform.
- * The types correspond to the WebGPU types
- *
- Uniforms can be modified via the classes 'uniforms' property. It will contain all the uniforms declared in the constructor.
- *
- * ```ts
- * // UBO in shader:
- * uniform myCoolData { // Declaring a UBO...
- *     mat4 uCoolMatrix;
- *     float uFloatyMcFloatFace;
- * };
- * ```
- *
+ * Application options supplied to the {@link Application#init} method.
+ * These options configure how your PixiJS application behaves.
+ * @category app
+ * @standard
+ * @example
  * ```js
- * // A new Uniform Buffer Object...
- * const myCoolData = new UniformGroup({
- *     uCoolMatrix: {value:new Matrix(), type: 'mat4<f32>'},
- *     uFloatyMcFloatFace: {value:23, type: 'f32'},
- * }}
+ * import { Application } from 'pixi.js';
  *
- * // modify the data
- * myCoolData.uniforms.uFloatyMcFloatFace = 42;
- * // Build a shader...
- * const shader = Shader.from(srcVert, srcFrag, {
- *     myCoolData // Name matches the UBO name in the shader. Will be processed accordingly.
- * })
+ * const app = new Application();
+ *
+ * // Initialize with common options
+ * await app.init({
+ *    // Rendering options
+ *    width: 800,                    // Canvas width
+ *    height: 600,                   // Canvas height
+ *    backgroundColor: 0x1099bb,     // Background color
+ *    antialias: true,              // Enable antialiasing
+ *    resolution: window.devicePixelRatio, // Screen resolution
+ *
+ *    // Performance options
+ *    autoStart: true,              // Auto-starts the render loop
+ *    sharedTicker: true,           // Use shared ticker for better performance
+ *
+ *    // Automatic resize options
+ *    resizeTo: window,             // Auto-resize to window
+ *    autoDensity: true,           // Adjust for device pixel ratio
+ *
+ *    // Advanced options
+ *    preference: 'webgl',         // Renderer preference ('webgl' or 'webgpu')
+ *    powerPreference: 'high-performance' // GPU power preference
+ * });
  * ```
- * @category rendering
- * @advanced
+ * @see {@link WebGLOptions} For resize-related options
+ * @see {@link WebGPUOptions} For resize-related options
+ * @see {@link TickerPlugin} For ticker-related options
+ * @see {@link ResizePlugin} For resize-related options
  */
-export declare class UniformGroup<UNIFORMS extends {
-	[key: string]: UniformData;
-} = any> implements BindResource {
-	/** The default options used by the uniform group. */
-	static defaultOptions: UniformGroupOptions;
-	/**
-	 * used internally to know if a uniform group was used in the last render pass
-	 * @internal
-	 */
-	_touched: number;
-	/** a unique id for this uniform group used through the renderer */
-	readonly uid: number;
-	/**
-	 * a resource type, used to identify how to handle it when its in a bind group / shader resource
-	 * @internal
-	 */
-	_resourceType: string;
-	/**
-	 * the resource id used internally by the renderer to build bind group keys
-	 * @internal
-	 */
-	_resourceId: number;
-	/** the structures of the uniform group */
-	uniformStructures: UNIFORMS;
-	/** the uniforms as an easily accessible map of properties */
-	uniforms: ExtractUniformObject<UNIFORMS>;
-	/** true if it should be used as a uniform buffer object */
-	ubo: boolean;
-	/** an underlying buffer that will be uploaded to the GPU when using this UniformGroup */
-	buffer?: Buffer$1;
-	/**
-	 * if true, then you are responsible for when the data is uploaded to the GPU.
-	 * otherwise, the data is reuploaded each frame.
-	 */
-	isStatic: boolean;
-	/** used ito identify if this is a uniform group */
-	readonly isUniformGroup = true;
-	/**
-	 * used to flag if this Uniform groups data is different from what it has stored in its buffer / on the GPU
-	 * @internal
-	 */
-	_dirtyId: number;
-	/**
-	 * a signature string generated for internal use
-	 * @internal
-	 */
-	readonly _signature: number;
-	readonly destroyed = false;
-	/**
-	 * Create a new Uniform group
-	 * @param uniformStructures - The structures of the uniform group
-	 * @param options - The optional parameters of this uniform group
-	 */
-	constructor(uniformStructures: UNIFORMS, options?: UniformGroupOptions);
-	/** Call this if you want the uniform groups data to be uploaded to the GPU only useful if `isStatic` is true. */
-	update(): void;
+export interface ApplicationOptions extends AutoDetectOptions, PixiMixins.ApplicationOptions {
 }
-/** @internal */
-export interface UboAdaptor {
-	createUboElements: (uniformData: UniformData[]) => UboLayout;
-	generateUboSync: (uboElements: UboElement[]) => UniformsSyncCallback;
+export interface Application extends PixiMixins.Application {
 }
 /**
- * System plugin to the renderer to manage uniform buffers.
- * @category rendering
- * @advanced
- */
-export declare class UboSystem implements System {
-	/** Cache of uniform buffer layouts and sync functions, so we don't have to re-create them */
-	private _syncFunctionHash;
-	private readonly _adaptor;
-	constructor(adaptor: UboAdaptor);
-	/**
-	 * Overridable function by `pixi.js/unsafe-eval` to silence
-	 * throwing an error if platform doesn't support unsafe-evals.
-	 * @private
-	 */
-	private _systemCheck;
-	ensureUniformGroup(uniformGroup: UniformGroup): void;
-	getUniformGroupData(uniformGroup: UniformGroup): {
-		layout: UboLayout;
-		syncFunction: (uniforms: Record<string, any>, data: Float32Array, dataInt32: Int32Array, offset: number) => void;
-	};
-	private _initUniformGroup;
-	private _generateUboSync;
-	syncUniformGroup(uniformGroup: UniformGroup, data?: Float32Array, offset?: number): boolean;
-	updateUniformGroup(uniformGroup: UniformGroup): boolean;
-	destroy(): void;
-}
-/**
- * System plugin to the renderer to manage uniform buffers. With a WGSL twist!
- * @category rendering
- * @advanced
- */
-export declare class GpuUboSystem extends UboSystem {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGPUSystem
-		];
-		readonly name: "ubo";
-	};
-	constructor();
-}
-/**
- * A resource that can be bound to a bind group and used in a shader.
- * Whilst a buffer can be used as a resource, this class allows you to specify an offset and size of the buffer to use.
- * This is useful if you have a large buffer and only part of it is used in a shader.
+ * Convenience class to create a new PixiJS application.
  *
- * This resource, will listen for changes on the underlying buffer and emit a itself if the buffer changes shape.
+ * The Application class is the main entry point for creating a PixiJS application. It handles the setup of all core
+ * components needed to start rendering and managing your game or interactive experience.
+ *
+ * Key features:
+ * - Automatically creates and manages the renderer
+ * - Provides a stage (root container) for your display objects
+ * - Handles canvas creation and management
+ * - Supports plugins for extending functionality
+ *   - {@link ResizePlugin} for automatic resizing
+ *   - {@link TickerPlugin} for managing frame updates
+ *   - {@link CullerPlugin} for culling off-screen objects
  * @example
+ * ```js
+ * import { Assets, Application, Sprite } from 'pixi.js';
  *
- * const buffer = new Buffer({
- *     data: new Float32Array(1000),
- *    usage: BufferUsage.UNIFORM,
+ * // Create a new application
+ * const app = new Application();
+ *
+ * // Initialize with options
+ * await app.init({
+ *     width: 800,           // Canvas width
+ *     height: 600,          // Canvas height
+ *     backgroundColor: 0x1099bb, // Background color
+ *     antialias: true,     // Enable antialiasing
+ *     resolution: 1,       // Resolution / device pixel ratio
+ *     preference: 'webgl', // or 'webgpu' // Renderer preference
  * });
- * // Create a buffer resource that uses the first 100 bytes of a buffer
- * const bufferResource = new BufferResource({
- *    buffer,
- *    offset: 0,
- *    size: 100,
- * });
- * @category rendering
- * @advanced
- */
-export declare class BufferResource extends EventEmitter<{
-	change: BindResource;
-}> implements BindResource {
-	/**
-	 * emits when the underlying buffer has changed shape (i.e. resized)
-	 * letting the renderer know that it needs to discard the old buffer on the GPU and create a new one
-	 * @event change
-	 */
-	/** a unique id for this uniform group used through the renderer */
-	readonly uid: number;
-	/**
-	 * a resource type, used to identify how to handle it when its in a bind group / shader resource
-	 * @internal
-	 */
-	readonly _resourceType = "bufferResource";
-	/**
-	 * used internally to know if a uniform group was used in the last render pass
-	 * @internal
-	 */
-	_touched: number;
-	/**
-	 * the resource id used internally by the renderer to build bind group keys
-	 * @internal
-	 */
-	_resourceId: number;
-	/** the underlying buffer that this resource is using */
-	buffer: Buffer$1;
-	/** the offset of the buffer this resource is using. If not provided, then it will use the offset of the buffer. */
-	readonly offset: number;
-	/** the size of the buffer this resource is using. If not provided, then it will use the size of the buffer. */
-	readonly size: number;
-	/**
-	 * A cheeky hint to the GL renderer to let it know this is a BufferResource
-	 * @internal
-	 */
-	readonly _bufferResource = true;
-	/**
-	 * Has the Buffer resource been destroyed?
-	 * @readonly
-	 */
-	destroyed: boolean;
-	/**
-	 * Create a new Buffer Resource.
-	 * @param options - The options for the buffer resource
-	 * @param options.buffer - The underlying buffer that this resource is using
-	 * @param options.offset - The offset of the buffer this resource is using.
-	 * If not provided, then it will use the offset of the buffer.
-	 * @param options.size - The size of the buffer this resource is using.
-	 * If not provided, then it will use the size of the buffer.
-	 */
-	constructor({ buffer, offset, size }: {
-		buffer: Buffer$1;
-		offset?: number;
-		size?: number;
-	});
-	protected onBufferChange(): void;
-	/**
-	 * Destroys this resource. Make sure the underlying buffer is not used anywhere else
-	 * if you want to destroy it as well, or code will explode
-	 * @param destroyBuffer - Should the underlying buffer be destroyed as well?
-	 */
-	destroy(destroyBuffer?: boolean): void;
-}
-/** @internal */
-export declare class GpuUniformBatchPipe {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGPUPipes
-		];
-		readonly name: "uniformBatch";
-	};
-	private _renderer;
-	private _bindGroupHash;
-	private readonly _batchBuffer;
-	private _buffers;
-	private _bindGroups;
-	private _bufferResources;
-	constructor(renderer: WebGPURenderer);
-	renderEnd(): void;
-	private _resetBindGroups;
-	getUniformBindGroup(group: UniformGroup<any>, duplicate: boolean): BindGroup;
-	getUboResource(group: UniformGroup<any>): BufferResource;
-	getArrayBindGroup(data: Float32Array): BindGroup;
-	getArrayBufferResource(data: Float32Array): BufferResource;
-	private _getBufferResource;
-	private _getBindGroup;
-	private _uploadBindGroups;
-	destroy(): void;
-}
-/**
- * A system that creates and manages the GPU pipelines.
  *
- * Caching Mechanism: At its core, the system employs a two-tiered caching strategy to minimize
- * the redundant creation of GPU pipelines (or "pipes"). This strategy is based on generating unique
- * keys that represent the state of the graphics settings and the specific requirements of the
- * item being rendered. By caching these pipelines, subsequent draw calls with identical configurations
- * can reuse existing pipelines instead of generating new ones.
+ * // Add the canvas to your webpage
+ * document.body.appendChild(app.canvas);
  *
- * State Management: The system differentiates between "global" state properties (like color masks
- * and stencil masks, which do not change frequently) and properties that may vary between draw calls
- * (such as geometry, shaders, and blend modes). Unique keys are generated for both these categories
- * using getStateKey for global state and getGraphicsStateKey for draw-specific settings. These keys are
- * then then used to caching the pipe. The next time we need a pipe we can check
- * the cache by first looking at the state cache and then the pipe cache.
- * @category rendering
- * @advanced
+ * // Start adding content to your application
+ * const texture = await Assets.load('your-image.png');
+ * const sprite = new Sprite(texture);
+ * app.stage.addChild(sprite);
+ * ```
+ * > [!IMPORTANT] From PixiJS v8.0.0, the application must be initialized using the async `init()` method
+ * > rather than passing options to the constructor.
+ * @category app
+ * @standard
+ * @see {@link ApplicationOptions} For all available initialization options
+ * @see {@link Container} For information about the stage container
+ * @see {@link Renderer} For details about the rendering system
  */
-export declare class PipelineSystem implements System {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGPUSystem
-		];
-		readonly name: "pipeline";
-	};
-	private readonly _renderer;
-	protected CONTEXT_UID: number;
-	private _moduleCache;
-	private _bufferLayoutsCache;
-	private readonly _bindingNamesCache;
-	private _pipeCache;
-	private readonly _pipeStateCaches;
-	private _gpu;
-	private _stencilState;
-	private _stencilMode;
-	private _colorMask;
-	private _multisampleCount;
-	private _depthStencilAttachment;
-	constructor(renderer: WebGPURenderer);
-	protected contextChange(gpu: GPU$1): void;
-	setMultisampleCount(multisampleCount: number): void;
-	setRenderTarget(renderTarget: GpuRenderTarget): void;
-	setColorMask(colorMask: number): void;
-	setStencilMode(stencilMode: STENCIL_MODES): void;
-	setPipeline(geometry: Geometry, program: GpuProgram, state: State, passEncoder: GPURenderPassEncoder): void;
-	getPipeline(geometry: Geometry, program: GpuProgram, state: State, topology?: Topology): GPURenderPipeline;
-	private _createPipeline;
-	private _getModule;
-	private _createModule;
-	private _generateBufferKey;
-	private _generateAttributeLocationsKey;
+export declare class Application<R extends Renderer = Renderer> {
 	/**
-	 * Returns a hash of buffer names mapped to bind locations.
-	 * This is used to bind the correct buffer to the correct location in the shader.
-	 * @param geometry - The geometry where to get the buffer names
-	 * @param program - The program where to get the buffer names
-	 * @returns An object of buffer names mapped to the bind location.
+	 * Collection of installed plugins.
+	 * @internal
 	 */
-	getBufferNamesToBind(geometry: Geometry, program: GpuProgram): Record<string, string>;
-	private _createVertexBufferLayouts;
-	private _updatePipeHash;
-	destroy(): void;
-}
-/**
- * The WebGPU adaptor for the render target system. Allows the Render Target System to
- * be used with the WebGPU renderer
- * @category rendering
- * @ignore
- */
-export declare class GpuRenderTargetAdaptor implements RenderTargetAdaptor<GpuRenderTarget> {
-	private _renderTargetSystem;
-	private _renderer;
-	init(renderer: WebGPURenderer, renderTargetSystem: RenderTargetSystem<GpuRenderTarget>): void;
-	copyToTexture(sourceRenderSurfaceTexture: RenderTarget, destinationTexture: Texture, originSrc: {
-		x: number;
-		y: number;
-	}, size: {
-		width: number;
-		height: number;
-	}, originDest: {
-		x: number;
-		y: number;
-	}): Texture<TextureSource<any>>;
-	startRenderPass(renderTarget: RenderTarget, clear?: CLEAR_OR_BOOL, clearColor?: RgbaArray, viewport?: Rectangle): void;
-	finishRenderPass(): void;
+	static _plugins: ApplicationPlugin[];
 	/**
-	 * returns the gpu texture for the first color texture in the render target
-	 * mainly used by the filter manager to get copy the texture for blending
-	 * @param renderTarget
-	 * @returns a gpu texture
+	 * The root display container for your application.
+	 * All visual elements should be added to this container or its children.
+	 * @example
+	 * ```js
+	 * // Create a sprite and add it to the stage
+	 * const sprite = Sprite.from('image.png');
+	 * app.stage.addChild(sprite);
+	 *
+	 * // Create a container for grouping objects
+	 * const container = new Container();
+	 * app.stage.addChild(container);
+	 * ```
 	 */
-	private _getGpuColorTexture;
-	getDescriptor(renderTarget: RenderTarget, clear: CLEAR_OR_BOOL, clearValue: RgbaArray): GPURenderPassDescriptor;
-	clear(renderTarget: RenderTarget, clear?: CLEAR_OR_BOOL, clearColor?: RgbaArray, viewport?: Rectangle): void;
-	initGpuRenderTarget(renderTarget: RenderTarget): GpuRenderTarget;
-	destroyGpuRenderTarget(gpuRenderTarget: GpuRenderTarget): void;
-	ensureDepthStencilTexture(renderTarget: RenderTarget): void;
-	resizeGpuRenderTarget(renderTarget: RenderTarget): void;
-}
-/**
- * The WebGL adaptor for the render target system. Allows the Render Target System to be used with the WebGl renderer
- * @category rendering
- * @advanced
- */
-export declare class GpuRenderTargetSystem extends RenderTargetSystem<GpuRenderTarget> {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGPUSystem
-		];
-		readonly name: "renderTarget";
-	};
-	adaptor: GpuRenderTargetAdaptor;
-	constructor(renderer: WebGPURenderer);
-}
-/**
- * Data structure for GPU program layout.
- * Contains bind group layouts and pipeline layout.
- * @category rendering
- * @advanced
- */
-export interface GPUProgramData {
-	bindGroups: GPUBindGroupLayout[];
-	pipeline: GPUPipelineLayout;
-}
-/**
- * A system that manages the rendering of GpuPrograms.
- * @category rendering
- * @advanced
- */
-export declare class GpuShaderSystem {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGPUSystem
-		];
-		readonly name: "shader";
-	};
-	private _gpu;
-	private readonly _gpuProgramData;
-	protected contextChange(gpu: GPU$1): void;
-	getProgramData(program: GpuProgram): GPUProgramData;
-	private _createGPUProgramData;
-	destroy(): void;
-}
-/**
- * System plugin to the renderer to manage WebGL state machines.
- * @category rendering
- * @advanced
- */
-export declare class GpuStateSystem implements System {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGPUSystem
-		];
-		readonly name: "state";
-	};
+	stage: Container;
 	/**
-	 * State ID
-	 * @readonly
+	 * The renderer instance that handles all drawing operations.
+	 *
+	 * Unless specified, it will automatically create a WebGL renderer if available.
+	 * If WebGPU is available and the `preference` is set to `webgpu`, it will create a WebGPU renderer.
+	 * @example
+	 * ```js
+	 * // Create a new application
+	 * const app = new Application();
+	 * await app.init({
+	 *     width: 800,
+	 *     height: 600,
+	 *     preference: 'webgl', // or 'webgpu'
+	 * });
+	 *
+	 * // Access renderer properties
+	 * console.log(app.renderer.width, app.renderer.height);
+	 * ```
 	 */
-	stateId: number;
-	/**
-	 * Polygon offset
-	 * @readonly
-	 */
-	polygonOffset: number;
-	/**
-	 * Blend mode
-	 * @default 'none'
-	 * @readonly
-	 */
-	blendMode: BLEND_MODES;
-	/** Whether current blend equation is different */
-	protected _blendEq: boolean;
-	/**
-	 * GL context
-	 * @type {WebGLRenderingContext}
-	 * @readonly
-	 */
-	protected gpu: GPU$1;
-	/**
-	 * Default WebGL State
-	 * @readonly
-	 */
-	protected defaultState: State;
+	renderer: R;
+	/** Create new Application instance */
 	constructor();
-	protected contextChange(gpu: GPU$1): void;
+	/** @deprecated since 8.0.0 */
+	constructor(options?: Partial<ApplicationOptions>);
 	/**
-	 * Gets the blend mode data for the current state
-	 * @param state - The state to get the blend mode from
+	 * Initializes the PixiJS application with the specified options.
+	 *
+	 * This method must be called after creating a new Application instance.
+	 * @param options - Configuration options for the application and renderer
+	 * @returns A promise that resolves when initialization is complete
+	 * @example
+	 * ```js
+	 * const app = new Application();
+	 *
+	 * // Initialize with custom options
+	 * await app.init({
+	 *     width: 800,
+	 *     height: 600,
+	 *     backgroundColor: 0x1099bb,
+	 *     preference: 'webgl', // or 'webgpu'
+	 * });
+	 * ```
 	 */
-	getColorTargets(state: State): GPUColorTargetState[];
-	destroy(): void;
+	init(options?: Partial<ApplicationOptions>): Promise<void>;
+	/**
+	 * Renders the current stage to the screen.
+	 *
+	 * When using the default setup with {@link TickerPlugin} (enabled by default), you typically don't need to call
+	 * this method directly as rendering is handled automatically.
+	 *
+	 * Only use this method if you've disabled the {@link TickerPlugin} or need custom
+	 * render timing control.
+	 * @example
+	 * ```js
+	 * // Example 1: Default setup (TickerPlugin handles rendering)
+	 * const app = new Application();
+	 * await app.init();
+	 * // No need to call render() - TickerPlugin handles it
+	 *
+	 * // Example 2: Custom rendering loop (if TickerPlugin is disabled)
+	 * const app = new Application();
+	 * await app.init({ autoStart: false }); // Disable automatic rendering
+	 *
+	 * function animate() {
+	 *     app.render();
+	 *     requestAnimationFrame(animate);
+	 * }
+	 * animate();
+	 * ```
+	 */
+	render(): void;
+	/**
+	 * Reference to the renderer's canvas element. This is the HTML element
+	 * that displays your application's graphics.
+	 * @readonly
+	 * @type {HTMLCanvasElement}
+	 * @example
+	 * ```js
+	 * // Create a new application
+	 * const app = new Application();
+	 * // Initialize the application
+	 * await app.init({...});
+	 * // Add canvas to the page
+	 * document.body.appendChild(app.canvas);
+	 *
+	 * // Access the canvas directly
+	 * console.log(app.canvas); // HTMLCanvasElement
+	 * ```
+	 */
+	get canvas(): R["canvas"];
+	/**
+	 * Reference to the renderer's canvas element.
+	 * @type {HTMLCanvasElement}
+	 * @deprecated since 8.0.0
+	 * @see {@link Application#canvas}
+	 */
+	get view(): R["canvas"];
+	/**
+	 * Reference to the renderer's screen rectangle. This represents the visible area of your application.
+	 *
+	 * It's commonly used for:
+	 * - Setting filter areas for full-screen effects
+	 * - Defining hit areas for screen-wide interaction
+	 * - Determining the visible bounds of your application
+	 * @readonly
+	 * @example
+	 * ```js
+	 * // Use as filter area for a full-screen effect
+	 * const blurFilter = new BlurFilter();
+	 * sprite.filterArea = app.screen;
+	 *
+	 * // Use as hit area for screen-wide interaction
+	 * const screenSprite = new Sprite();
+	 * screenSprite.hitArea = app.screen;
+	 *
+	 * // Get screen dimensions
+	 * console.log(app.screen.width, app.screen.height);
+	 * ```
+	 * @see {@link Rectangle} For all available properties and methods
+	 */
+	get screen(): Rectangle;
+	/**
+	 * Destroys the application and all of its resources.
+	 *
+	 * This method should be called when you want to completely
+	 * clean up the application and free all associated memory.
+	 * @param rendererDestroyOptions - Options for destroying the renderer:
+	 *  - `false` or `undefined`: Preserves the canvas element (default)
+	 *  - `true`: Removes the canvas element
+	 *  - `{ removeView: boolean }`: Object with removeView property to control canvas removal
+	 * @param options - Options for destroying the application:
+	 *  - `false` or `undefined`: Basic cleanup (default)
+	 *  - `true`: Complete cleanup including children
+	 *  - Detailed options object:
+	 *    - `children`: Remove children
+	 *    - `texture`: Destroy textures
+	 *    - `textureSource`: Destroy texture sources
+	 *    - `context`: Destroy WebGL context
+	 * @example
+	 * ```js
+	 * // Basic cleanup
+	 * app.destroy();
+	 *
+	 * // Remove canvas and do complete cleanup
+	 * app.destroy(true, true);
+	 *
+	 * // Remove canvas with explicit options
+	 * app.destroy({ removeView: true }, true);
+	 *
+	 * // Detailed cleanup with specific options
+	 * app.destroy(
+	 *     { removeView: true },
+	 *     {
+	 *         children: true,
+	 *         texture: true,
+	 *         textureSource: true,
+	 *         context: true
+	 *     }
+	 * );
+	 * ```
+	 * > [!WARNING] After calling destroy, the application instance should no longer be used.
+	 * > All properties will be null and further operations will throw errors.
+	 */
+	destroy(rendererDestroyOptions?: RendererDestroyOptions, options?: DestroyOptions): void;
+}
+declare global {
+	var __PIXI_APP_INIT__: undefined | ((arg: Application | Renderer, version: string) => void);
+	var __PIXI_RENDERER_INIT__: undefined | ((arg: Application | Renderer, version: string) => void);
 }
 /**
- * Data about the pixels of a texture.
- * This includes the pixel data as a Uint8ClampedArray, and the width and height of the texture.
- * @category rendering
- * @advanced
- */
-export type GetPixelsOutput = {
-	pixels: Uint8ClampedArray;
-	width: number;
-	height: number;
-};
-/** @internal */
-export interface CanvasGenerator {
-	generateCanvas(texture: Texture): ICanvas;
-	getPixels(texture: Texture): GetPixelsOutput;
-}
-/**
- * The system that handles textures for the GPU.
- * @category rendering
- * @advanced
- */
-export declare class GpuTextureSystem implements System, CanvasGenerator {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGPUSystem
-		];
-		readonly name: "texture";
-	};
-	readonly managedTextures: TextureSource[];
-	protected CONTEXT_UID: number;
-	private _gpuSources;
-	private _gpuSamplers;
-	private _bindGroupHash;
-	private _textureViewHash;
-	private readonly _uploads;
-	private _gpu;
-	private _mipmapGenerator?;
-	private readonly _renderer;
-	constructor(renderer: WebGPURenderer);
-	protected contextChange(gpu: GPU$1): void;
-	/**
-	 * Initializes a texture source, if it has already been initialized nothing will happen.
-	 * @param source - The texture source to initialize.
-	 * @returns The initialized texture source.
-	 */
-	initSource(source: TextureSource): GPUTexture;
-	private _initSource;
-	protected onSourceUpdate(source: TextureSource): void;
-	protected onSourceUnload(source: TextureSource): void;
-	protected onUpdateMipmaps(source: TextureSource): void;
-	protected onSourceDestroy(source: TextureSource): void;
-	protected onSourceResize(source: TextureSource): void;
-	private _initSampler;
-	getGpuSampler(sampler: TextureStyle): GPUSampler;
-	getGpuSource(source: TextureSource): GPUTexture;
-	/**
-	 * this returns s bind group for a specific texture, the bind group contains
-	 * - the texture source
-	 * - the texture style
-	 * - the texture matrix
-	 * This is cached so the bind group should only be created once per texture
-	 * @param texture - the texture you want the bindgroup for
-	 * @returns the bind group for the texture
-	 */
-	getTextureBindGroup(texture: Texture): BindGroup;
-	private _createTextureBindGroup;
-	getTextureView(texture: BindableTexture): GPUTextureView;
-	private _createTextureView;
-	generateCanvas(texture: Texture): ICanvas;
-	getPixels(texture: Texture): GetPixelsOutput;
-	destroy(): void;
-}
-interface System$1 {
-	extension: {
-		name: string;
-	};
-	defaultOptions?: any;
-	new (...args: any): any;
-}
-type SystemsWithExtensionList = System$1[];
-type InstanceType$1<T extends new (...args: any) => any> = T extends new (...args: any) => infer R ? R : any;
-type NameType<T extends SystemsWithExtensionList> = T[number]["extension"]["name"];
-/**
- * Create a mapped type where each property key is a 'name' value,
- * and each property value is an ElementType with a matching 'name'
+ * Calls global __PIXI_APP_INIT__ hook with the application instance, after the application is initialized.
+ * @category app
  * @internal
  */
-export type ExtractSystemTypes<T extends SystemsWithExtensionList> = {
-	[K in NameType<T>]: InstanceType$1<Extract<T[number], {
-		extension: {
-			name: K;
-		};
-	}>>;
-};
-type NotUnknown<T> = T extends unknown ? keyof T extends never ? never : T : T;
-type KnownProperties<T> = {
-	[K in keyof T as NotUnknown<T[K]> extends never ? never : K]: T[K];
-};
-type FlattenOptions<T> = T extends {
-	[K: string]: infer U;
-} ? U : never;
-type OptionsUnion<T extends SystemsWithExtensionList> = FlattenOptions<SeparateOptions<T>>;
-type DefaultOptionsTypes<T extends SystemsWithExtensionList> = {
-	[K in NameType<T>]: Extract<T[number], {
-		extension: {
-			name: K;
-		};
-	}>["defaultOptions"];
-};
-type SeparateOptions<T extends SystemsWithExtensionList> = KnownProperties<DefaultOptionsTypes<T>>;
-type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never;
-/** @internal */
-export type ExtractRendererOptions<T extends SystemsWithExtensionList> = UnionToIntersection<OptionsUnion<T>>;
+export declare class ApplicationInitHook {
+	/** @ignore */
+	static extension: ExtensionMetadata;
+	static init(): void;
+	static destroy(): void;
+}
+/**
+ * Calls global __PIXI_RENDERER_INIT__ hook with the renderer instance, after the renderer is initialized.
+ * @category rendering
+ * @internal
+ */
+export declare class RendererInitHook implements System {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGLSystem,
+			ExtensionType.WebGPUSystem
+		];
+		readonly name: "initHook";
+		readonly priority: -10;
+	};
+	private _renderer;
+	constructor(renderer: Renderer);
+	init(): void;
+	destroy(): void;
+}
 /** @internal */
 export interface BatcherAdaptor {
 	start(batchPipe: BatcherPipe, geometry: Geometry, shader: Shader): void;
@@ -9489,451 +9003,6 @@ export declare class BatcherPipe implements InstructionPipe<Batch>, BatchPipe {
 	upload(instructionSet: InstructionSet): void;
 	execute(batch: Batch): void;
 	destroy(): void;
-}
-/**
- * A BatcherAdaptor that uses WebGL to render batches.
- * @category rendering
- * @ignore
- */
-export declare class GlBatchAdaptor implements BatcherAdaptor {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGLPipesAdaptor
-		];
-		readonly name: "batch";
-	};
-	private readonly _tempState;
-	/**
-	 * We only want to sync the a batched shaders uniforms once on first use
-	 * this is a hash of shader uids to a boolean value.  When the shader is first bound
-	 * we set the value to true.  When the shader is bound again we check the value and
-	 * if it is true we know that the uniforms have already been synced and we skip it.
-	 */
-	private _didUploadHash;
-	init(batcherPipe: BatcherPipe): void;
-	contextChange(): void;
-	start(batchPipe: BatcherPipe, geometry: Geometry, shader: Shader): void;
-	execute(batchPipe: BatcherPipe, batch: Batch): void;
-}
-/**
- * The WebGL rendering context type used by the PixiJS WebGL renderer.
- * This is typically a `WebGL2RenderingContext`, which is the default for PixiJS.
- * It is used to ensure that the renderer operates with the correct context type.
- * @category rendering
- * @advanced
- */
-export type GlRenderingContext = WebGL2RenderingContext;
-/**
- * @param maxIfs
- * @param gl
- * @internal
- */
-export declare function checkMaxIfStatementsInShader(maxIfs: number, gl: GlRenderingContext): number;
-/**
- * Returns the maximum number of textures that can be batched. This uses WebGL1's `MAX_TEXTURE_IMAGE_UNITS`.
- * The response for this is that to get this info via WebGPU, we would need to make a context, which
- * would make this function async, and we want to avoid that.
- * @private
- * @deprecated Use `Renderer.limits.maxBatchableTextures` instead.
- * @returns {number} The maximum number of textures that can be batched
- */
-export declare function getMaxTexturesPerBatch(): number;
-/**
- * @param maxTextures
- * @internal
- */
-export declare function generateGPULayout(maxTextures: number): GPUBindGroupLayoutEntry[];
-/**
- * @param maxTextures
- * @internal
- */
-export declare function generateLayout(maxTextures: number): Record<string, number>;
-/**
- * @param textures
- * @param size
- * @param maxTextures
- * @internal
- */
-export declare function getTextureBatchBindGroup(textures: TextureSource[], size: number, maxTextures: number): BindGroup;
-/**
- * A BatcherAdaptor that uses the GPU to render batches.
- * @category rendering
- * @ignore
- */
-export declare class GpuBatchAdaptor implements BatcherAdaptor {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGPUPipesAdaptor
-		];
-		readonly name: "batch";
-	};
-	private _shader;
-	private _geometry;
-	start(batchPipe: BatcherPipe, geometry: Geometry, shader: Shader): void;
-	execute(batchPipe: BatcherPipe, batch: Batch): void;
-}
-/**
- * the vertex source code, an obj
- * @internal
- */
-export type Vertex = {
-	/** stick uniforms and functions in here all headers will be compiled at the top of the shader */
-	header?: string;
-	/** code will be added at the start of the shader */
-	start?: string;
-	/** code will be run here before lighting happens */
-	main?: string;
-	/** code here will to modify anything before it is passed to the fragment shader */
-	end?: string;
-};
-/** @internal */
-export type Fragment = {
-	/** stick uniforms and functions in here all headers will be compiled at the top of the shader */
-	header?: string;
-	/** code will be added at the start of the shader */
-	start?: string;
-	/** code will be run here before lighting happens */
-	main?: string;
-	/** code here will to modify anything before it is passed to the fragment shader */
-	end?: string;
-};
-/**
- * HighShaderBit is a part of a shader.
- * it is used to compile HighShaders.
- *
- * Internally shaders are made up of many of these.
- * You can even write your own and compile them in.
- * @internal
- */
-export interface HighShaderBit {
-	/** used to make the shader easier to understand! */
-	name?: string;
-	/** the snippets of vertex code */
-	vertex?: Vertex;
-	/** the snippets of fragment code */
-	fragment?: Fragment;
-}
-/**
- * source code to compile a shader. this can be directly used by pixi and should be good to go!
- * It contains the vertex and fragment source code.
- * This is the final output of the HighShader compiler.
- * It is used to create a shader program.
- * @internal
- */
-export interface HighShaderSource {
-	fragment: string;
-	vertex: string;
-}
-/**
- * @param root0
- * @param root0.bits
- * @param root0.name
- * @internal
- */
-export declare function compileHighShaderGpuProgram({ bits, name }: {
-	bits: HighShaderBit[];
-	name: string;
-}): GpuProgram;
-/**
- * @param root0
- * @param root0.bits
- * @param root0.name
- * @internal
- */
-export declare function compileHighShaderGlProgram({ bits, name }: {
-	bits: HighShaderBit[];
-	name: string;
-}): GlProgram;
-/**
- * A high template consists of vertex and fragment source
- * @internal
- */
-export interface HighShaderTemplate {
-	name?: string;
-	fragment: string;
-	vertex: string;
-}
-/** @internal */
-export interface CompileHighShaderOptions {
-	template: HighShaderTemplate;
-	bits: HighShaderBit[];
-}
-/**
- * This function will take a HighShader template, some High fragments and then merge them in to a shader source.
- * @param options
- * @param options.template
- * @param options.bits
- * @internal
- */
-export declare function compileHighShader({ template, bits }: CompileHighShaderOptions): HighShaderSource;
-/**
- * This function will take a HighShader template, some High fragments and then merge them in to a shader source.
- * It is specifically for WebGL and does not compile inputs and outputs.
- * @param options
- * @param options.template - The HighShader template containing vertex and fragment source.
- * @param options.bits - An array of HighShaderBit objects to be compiled into the shader.
- * @returns A HighShaderSource object containing the compiled vertex and fragment shaders.
- * @internal
- */
-export declare function compileHighShaderGl({ template, bits }: CompileHighShaderOptions): HighShaderSource;
-/**
- * takes the HighFragment source parts and adds them to the hook hash
- * @param srcParts - the hash of hook arrays
- * @param parts - the code to inject into the hooks
- * @param name - optional the name of the part to add
- * @internal
- */
-export declare function addBits(srcParts: Record<string, string>, parts: Record<string, string[]>, name?: string): void;
-/**
- * takes a program string and returns an hash mapping the hooks to empty arrays
- * @param programSrc - the program containing hooks
- * @internal
- */
-export declare function compileHooks(programSrc: string): Record<string, string[]>;
-/**
- * @param fragments
- * @param template
- * @param sort
- * @internal
- */
-export declare function compileInputs(fragments: any[], template: string, sort?: boolean): string;
-/**
- * @param fragments
- * @param template
- * @internal
- */
-export declare function compileOutputs(fragments: any[], template: string): string;
-/**
- * formats a shader so its more pleasant to read
- * @param shader - a glsl shader program source
- * @category utils
- * @advanced
- */
-export declare function formatShader(shader: string): string;
-/**
- * takes a shader src and replaces any hooks with the HighFragment code.
- * @param templateSrc - the program src template
- * @param fragmentParts - the fragments to inject
- * @internal
- */
-export declare function injectBits(templateSrc: string, fragmentParts: Record<string, string[]>): string;
-/** @ignore */
-export declare const vertexGPUTemplate = "\n    @in aPosition: vec2<f32>;\n    @in aUV: vec2<f32>;\n\n    @out @builtin(position) vPosition: vec4<f32>;\n    @out vUV : vec2<f32>;\n    @out vColor : vec4<f32>;\n\n    {{header}}\n\n    struct VSOutput {\n        {{struct}}\n    };\n\n    @vertex\n    fn main( {{in}} ) -> VSOutput {\n\n        var worldTransformMatrix = globalUniforms.uWorldTransformMatrix;\n        var modelMatrix = mat3x3<f32>(\n            1.0, 0.0, 0.0,\n            0.0, 1.0, 0.0,\n            0.0, 0.0, 1.0\n          );\n        var position = aPosition;\n        var uv = aUV;\n\n        {{start}}\n\n        vColor = vec4<f32>(1., 1., 1., 1.);\n\n        {{main}}\n\n        vUV = uv;\n\n        var modelViewProjectionMatrix = globalUniforms.uProjectionMatrix * worldTransformMatrix * modelMatrix;\n\n        vPosition =  vec4<f32>((modelViewProjectionMatrix *  vec3<f32>(position, 1.0)).xy, 0.0, 1.0);\n\n        vColor *= globalUniforms.uWorldColorAlpha;\n\n        {{end}}\n\n        {{return}}\n    };\n";
-/** @ignore */
-export declare const fragmentGPUTemplate = "\n    @in vUV : vec2<f32>;\n    @in vColor : vec4<f32>;\n\n    {{header}}\n\n    @fragment\n    fn main(\n        {{in}}\n      ) -> @location(0) vec4<f32> {\n\n        {{start}}\n\n        var outColor:vec4<f32>;\n\n        {{main}}\n\n        var finalColor:vec4<f32> = outColor * vColor;\n\n        {{end}}\n\n        return finalColor;\n      };\n";
-/** @ignore */
-export declare const vertexGlTemplate = "\n    in vec2 aPosition;\n    in vec2 aUV;\n\n    out vec4 vColor;\n    out vec2 vUV;\n\n    {{header}}\n\n    void main(void){\n\n        mat3 worldTransformMatrix = uWorldTransformMatrix;\n        mat3 modelMatrix = mat3(\n            1.0, 0.0, 0.0,\n            0.0, 1.0, 0.0,\n            0.0, 0.0, 1.0\n          );\n        vec2 position = aPosition;\n        vec2 uv = aUV;\n\n        {{start}}\n\n        vColor = vec4(1.);\n\n        {{main}}\n\n        vUV = uv;\n\n        mat3 modelViewProjectionMatrix = uProjectionMatrix * worldTransformMatrix * modelMatrix;\n\n        gl_Position = vec4((modelViewProjectionMatrix * vec3(position, 1.0)).xy, 0.0, 1.0);\n\n        vColor *= uWorldColorAlpha;\n\n        {{end}}\n    }\n";
-/** @ignore */
-export declare const fragmentGlTemplate = "\n\n    in vec4 vColor;\n    in vec2 vUV;\n\n    out vec4 finalColor;\n\n    {{header}}\n\n    void main(void) {\n\n        {{start}}\n\n        vec4 outColor;\n\n        {{main}}\n\n        finalColor = outColor * vColor;\n\n        {{end}}\n    }\n";
-/** @internal */
-export declare const colorBit: {
-	name: string;
-	vertex: {
-		header: string;
-		main: string;
-	};
-};
-/** @internal */
-export declare const colorBitGl: {
-	name: string;
-	vertex: {
-		header: string;
-		main: string;
-	};
-};
-/**
- * @param maxTextures
- * @internal
- */
-export declare function generateTextureBatchBit(maxTextures: number): HighShaderBit;
-/**
- * @param maxTextures
- * @internal
- */
-export declare function generateTextureBatchBitGl(maxTextures: number): HighShaderBit;
-/** @internal */
-export declare const globalUniformsBit: {
-	name: string;
-	vertex: {
-		header: string;
-	};
-};
-/** @internal */
-export declare const globalUniformsUBOBitGl: {
-	name: string;
-	vertex: {
-		header: string;
-	};
-};
-/** @internal */
-export declare const globalUniformsBitGl: {
-	name: string;
-	vertex: {
-		header: string;
-	};
-};
-/** @internal */
-export declare const localUniformBit: {
-	name: string;
-	vertex: {
-		header: string;
-		main: string;
-		end: string;
-	};
-};
-/** @internal */
-export declare const localUniformBitGroup2: {
-	vertex: {
-		header: string;
-		main: string;
-		end: string;
-	};
-	name: string;
-};
-/** @internal */
-export declare const localUniformBitGl: {
-	name: string;
-	vertex: {
-		header: string;
-		main: string;
-		end: string;
-	};
-};
-/** @internal */
-export declare const roundPixelsBit: {
-	name: string;
-	vertex: {
-		header: string;
-	};
-};
-/** @internal */
-export declare const roundPixelsBitGl: {
-	name: string;
-	vertex: {
-		header: string;
-	};
-};
-/** @internal */
-export declare const textureBit: {
-	name: string;
-	vertex: {
-		header: string;
-		main: string;
-	};
-	fragment: {
-		header: string;
-		main: string;
-	};
-};
-/** @internal */
-export declare const textureBitGl: {
-	name: string;
-	vertex: {
-		header: string;
-		main: string;
-	};
-	fragment: {
-		header: string;
-		main: string;
-	};
-};
-/**
- * A generic class for managing a pool of items.
- * @template T The type of items in the pool. Must implement {@link PoolItem}.
- * @category utils
- * @advanced
- */
-export declare class Pool<T extends PoolItem> {
-	/** @internal */
-	readonly _classType: PoolItemConstructor<T>;
-	private readonly _pool;
-	private _count;
-	private _index;
-	/**
-	 * Constructs a new Pool.
-	 * @param ClassType - The constructor of the items in the pool.
-	 * @param {number} [initialSize] - The initial size of the pool.
-	 */
-	constructor(ClassType: PoolItemConstructor<T>, initialSize?: number);
-	/**
-	 * Prepopulates the pool with a given number of items.
-	 * @param total - The number of items to add to the pool.
-	 */
-	prepopulate(total: number): void;
-	/**
-	 * Gets an item from the pool. Calls the item's `init` method if it exists.
-	 * If there are no items left in the pool, a new one will be created.
-	 * @param {unknown} [data] - Optional data to pass to the item's constructor.
-	 * @returns {T} The item from the pool.
-	 */
-	get(data?: unknown): T;
-	/**
-	 * Returns an item to the pool. Calls the item's `reset` method if it exists.
-	 * @param {T} item - The item to return to the pool.
-	 */
-	return(item: T): void;
-	/**
-	 * Gets the number of items in the pool.
-	 * @readonly
-	 */
-	get totalSize(): number;
-	/**
-	 * Gets the number of items in the pool that are free to use without needing to create more.
-	 * @readonly
-	 */
-	get totalFree(): number;
-	/**
-	 * Gets the number of items in the pool that are currently in use.
-	 * @readonly
-	 */
-	get totalUsed(): number;
-	/** clears the pool */
-	clear(): void;
-}
-/**
- * An object that can be stored in a {@link Pool}.
- * @category utils
- * @advanced
- */
-export type PoolItem = {
-	init?: (data?: any) => void;
-	reset?: () => void;
-	destroy?: () => void;
-	[key: string]: any;
-};
-/**
- * The constructor of an object that can be stored in a {@link Pool}.
- * @typeParam K - The type of the object that can be stored in a {@link Pool}.
- * @category utils
- * @advanced
- */
-export type PoolItemConstructor<K extends PoolItem> = new () => K;
-/**
- * AlphaMask is an effect that applies a mask to a container using the alpha channel of a sprite.
- * It can be used to create complex masking effects by using a sprite as the mask.
- * The mask can be inverted, and it can render the mask to a texture if the mask is not a sprite.
- * @category rendering
- * @advanced
- */
-export declare class AlphaMask implements Effect, PoolItem {
-	static extension: ExtensionMetadata;
-	priority: number;
-	mask: Container;
-	inverse: boolean;
-	pipe: string;
-	renderMaskToTexture: boolean;
-	constructor(options?: {
-		mask: Container;
-	});
-	init(mask: Container): void;
-	reset(): void;
-	addBounds(bounds: Bounds, skipUpdateTransform?: boolean): void;
-	addLocalBounds(bounds: Bounds, localRoot: Container): void;
-	containsPoint(point: Point, hitTestFn: (container: Container, point: Point) => boolean): boolean;
-	destroy(): void;
-	static test(mask: any): boolean;
 }
 /**
  * The filter pipeline is responsible for applying filters scene items!
@@ -10314,6 +9383,102 @@ export declare class FilterEffect implements Effect {
 	priority: number;
 	destroy(): void;
 }
+/**
+ * A generic class for managing a pool of items.
+ * @template T The type of items in the pool. Must implement {@link PoolItem}.
+ * @category utils
+ * @advanced
+ */
+export declare class Pool<T extends PoolItem> {
+	/** @internal */
+	readonly _classType: PoolItemConstructor<T>;
+	private readonly _pool;
+	private _count;
+	private _index;
+	/**
+	 * Constructs a new Pool.
+	 * @param ClassType - The constructor of the items in the pool.
+	 * @param {number} [initialSize] - The initial size of the pool.
+	 */
+	constructor(ClassType: PoolItemConstructor<T>, initialSize?: number);
+	/**
+	 * Prepopulates the pool with a given number of items.
+	 * @param total - The number of items to add to the pool.
+	 */
+	prepopulate(total: number): void;
+	/**
+	 * Gets an item from the pool. Calls the item's `init` method if it exists.
+	 * If there are no items left in the pool, a new one will be created.
+	 * @param {unknown} [data] - Optional data to pass to the item's constructor.
+	 * @returns {T} The item from the pool.
+	 */
+	get(data?: unknown): T;
+	/**
+	 * Returns an item to the pool. Calls the item's `reset` method if it exists.
+	 * @param {T} item - The item to return to the pool.
+	 */
+	return(item: T): void;
+	/**
+	 * Gets the number of items in the pool.
+	 * @readonly
+	 */
+	get totalSize(): number;
+	/**
+	 * Gets the number of items in the pool that are free to use without needing to create more.
+	 * @readonly
+	 */
+	get totalFree(): number;
+	/**
+	 * Gets the number of items in the pool that are currently in use.
+	 * @readonly
+	 */
+	get totalUsed(): number;
+	/** clears the pool */
+	clear(): void;
+}
+/**
+ * An object that can be stored in a {@link Pool}.
+ * @category utils
+ * @advanced
+ */
+export type PoolItem = {
+	init?: (data?: any) => void;
+	reset?: () => void;
+	destroy?: () => void;
+	[key: string]: any;
+};
+/**
+ * The constructor of an object that can be stored in a {@link Pool}.
+ * @typeParam K - The type of the object that can be stored in a {@link Pool}.
+ * @category utils
+ * @advanced
+ */
+export type PoolItemConstructor<K extends PoolItem> = new () => K;
+/**
+ * AlphaMask is an effect that applies a mask to a container using the alpha channel of a sprite.
+ * It can be used to create complex masking effects by using a sprite as the mask.
+ * The mask can be inverted, and it can render the mask to a texture if the mask is not a sprite.
+ * @category rendering
+ * @advanced
+ */
+export declare class AlphaMask implements Effect, PoolItem {
+	static extension: ExtensionMetadata;
+	priority: number;
+	mask: Container;
+	inverse: boolean;
+	pipe: string;
+	renderMaskToTexture: boolean;
+	constructor(options?: {
+		mask: Container;
+	});
+	init(mask: Container): void;
+	reset(): void;
+	addBounds(bounds: Bounds, skipUpdateTransform?: boolean): void;
+	addLocalBounds(bounds: Bounds, localRoot: Container): void;
+	containsPoint(point: Point, hitTestFn: (container: Container, point: Point) => boolean): boolean;
+	destroy(): void;
+	static test(mask: any): boolean;
+}
 type MaskMode = "pushMaskBegin" | "pushMaskEnd" | "popMaskBegin" | "popMaskEnd";
 declare class AlphaMaskEffect extends FilterEffect implements PoolItem {
 	constructor();
@@ -10358,25 +9523,6 @@ export declare class AlphaMaskPipe implements InstructionPipe<AlphaMaskInstructi
 	execute(instruction: AlphaMaskInstruction): void;
 	destroy(): void;
 }
-/**
- * The ColorMask effect allows you to apply a color mask to the rendering process.
- * This can be useful for selectively rendering certain colors or for creating
- * effects based on color values.
- * @category rendering
- * @advanced
- */
-export declare class ColorMask implements Effect, PoolItem {
-	static extension: ExtensionMetadata;
-	priority: number;
-	mask: number;
-	pipe: string;
-	constructor(options: {
-		mask: number;
-	});
-	init(mask: number): void;
-	destroy(): void;
-	static test(mask: any): boolean;
-}
 /** @internal */
 export interface ColorMaskInstruction extends Instruction {
 	renderPipeId: "colorMask";
@@ -10402,60 +9548,6 @@ export declare class ColorMaskPipe implements InstructionPipe<ColorMaskInstructi
 	push(mask: Effect, _container: Container, instructionSet: InstructionSet): void;
 	pop(_mask: Effect, _container: Container, instructionSet: InstructionSet): void;
 	execute(instruction: ColorMaskInstruction): void;
-	destroy(): void;
-}
-interface MaskConversionTest {
-	test: (item: any) => boolean;
-	maskClass: new (item: any) => Effect & PoolItem;
-}
-/**
- * Represents a mask effect that can be applied to a container.
- * @category rendering
- * @advanced
- */
-export type MaskEffect = {
-	mask: unknown;
-} & Effect;
-/**
- * A class that manages the conversion of masks to mask effects.
- * @category rendering
- * @ignore
- */
-export declare class MaskEffectManagerClass {
-	/** @private */
-	readonly _effectClasses: EffectConstructor[];
-	private readonly _tests;
-	private _initialized;
-	init(): void;
-	add(test: MaskConversionTest): void;
-	getMaskEffect(item: any): MaskEffect;
-	returnMaskEffect(effect: Effect & PoolItem): void;
-}
-/**
- * A class that manages the conversion of masks to mask effects.
- * @class
- * @category rendering
- * @advanced
- */
-export declare const MaskEffectManager: MaskEffectManagerClass;
-/**
- * ScissorMask is an effect that applies a scissor mask to a container.
- * It restricts rendering to the area defined by the mask.
- * The mask is a Container that defines the area to be rendered.
- * The mask must be a Container that is not renderable or measurable.
- * This effect is used to create clipping regions in the rendering process.
- * @category rendering
- * @advanced
- */
-export declare class ScissorMask implements Effect {
-	priority: number;
-	mask: Container;
-	pipe: string;
-	constructor(mask: Container);
-	addBounds(bounds: Bounds, skipUpdateTransform?: boolean): void;
-	addLocalBounds(bounds: Bounds, localRoot: Container): void;
-	containsPoint(point: Point, hitTestFn: (container: Container, point: Point) => boolean): boolean;
-	reset(): void;
 	destroy(): void;
 }
 /**
@@ -10508,1880 +9600,6 @@ export declare class StencilMaskPipe implements InstructionPipe<StencilMaskInstr
 	pop(mask: Effect, _container: Container, instructionSet: InstructionSet): void;
 	execute(instruction: StencilMaskInstruction): void;
 	destroy(): void;
-}
-/**
- * @param mask
- * @param bounds
- * @param skipUpdateTransform
- * @internal
- */
-export declare function addMaskBounds(mask: Container, bounds: Bounds, skipUpdateTransform: boolean): void;
-/**
- * @param mask
- * @param bounds
- * @param localRoot
- * @internal
- */
-export declare function addMaskLocalBounds(mask: Container, bounds: Bounds, localRoot: Container): void;
-/**
- * Constants for various buffer types in Pixi
- * @category rendering
- * @advanced
- */
-export declare enum BUFFER_TYPE {
-	/** buffer type for using as an index buffer */
-	ELEMENT_ARRAY_BUFFER = 34963,
-	/** buffer type for using attribute data */
-	ARRAY_BUFFER = 34962,
-	/** the buffer type is for uniform buffer objects */
-	UNIFORM_BUFFER = 35345
-}
-/** @internal */
-export declare class GlBuffer {
-	buffer: WebGLBuffer;
-	updateID: number;
-	byteLength: number;
-	type: number;
-	_lastBindBaseLocation: number;
-	_lastBindCallId: number;
-	constructor(buffer: WebGLBuffer, type: BUFFER_TYPE);
-}
-/**
- * System plugin to the renderer to manage buffers.
- *
- * WebGL uses Buffers as a way to store objects to the GPU.
- * This system makes working with them a lot easier.
- *
- * Buffers are used in three main places in WebGL
- * - geometry information
- * - Uniform information (via uniform buffer objects - a WebGL 2 only feature)
- * - Transform feedback information. (WebGL 2 only feature)
- *
- * This system will handle the binding of buffers to the GPU as well as uploading
- * them. With this system, you never need to work directly with GPU buffers, but instead work with
- * the Buffer class.
- * @class
- * @category rendering
- * @advanced
- */
-export declare class GlBufferSystem implements System {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGLSystem
-		];
-		readonly name: "buffer";
-	};
-	private _gl;
-	private _gpuBuffers;
-	/** Cache keeping track of the base bound buffer bases */
-	private _boundBufferBases;
-	private _renderer;
-	private _minBaseLocation;
-	private _maxBindings;
-	private _nextBindBaseIndex;
-	private _bindCallId;
-	/**
-	 * @param {Renderer} renderer - The renderer this System works for.
-	 */
-	constructor(renderer: WebGLRenderer);
-	/** @ignore */
-	destroy(): void;
-	/** Sets up the renderer context and necessary buffers. */
-	protected contextChange(): void;
-	getGlBuffer(buffer: Buffer$1): GlBuffer;
-	/**
-	 * This binds specified buffer. On first run, it will create the webGL buffers for the context too
-	 * @param buffer - the buffer to bind to the renderer
-	 */
-	bind(buffer: Buffer$1): void;
-	/**
-	 * Binds an uniform buffer to at the given index.
-	 *
-	 * A cache is used so a buffer will not be bound again if already bound.
-	 * @param glBuffer - the buffer to bind
-	 * @param index - the base index to bind it to.
-	 */
-	bindBufferBase(glBuffer: GlBuffer, index: number): void;
-	nextBindBase(hasTransformFeedback: boolean): void;
-	freeLocationForBufferBase(glBuffer: GlBuffer): number;
-	getLastBindBaseLocation(glBuffer: GlBuffer): number;
-	/**
-	 * Binds a buffer whilst also binding its range.
-	 * This will make the buffer start from the offset supplied rather than 0 when it is read.
-	 * @param glBuffer - the buffer to bind
-	 * @param index - the base index to bind at, defaults to 0
-	 * @param offset - the offset to bind at (this is blocks of 256). 0 = 0, 1 = 256, 2 = 512 etc
-	 * @param size - the size to bind at (this is blocks of 256).
-	 */
-	bindBufferRange(glBuffer: GlBuffer, index?: number, offset?: number, size?: number): void;
-	/**
-	 * Will ensure the data in the buffer is uploaded to the GPU.
-	 * @param {Buffer} buffer - the buffer to update
-	 */
-	updateBuffer(buffer: Buffer$1): GlBuffer;
-	/** dispose all WebGL resources of all managed buffers */
-	destroyAll(): void;
-	/**
-	 * Disposes buffer
-	 * @param {Buffer} buffer - buffer with data
-	 * @param {boolean} [contextLost=false] - If context was lost, we suppress deleteVertexArray
-	 */
-	protected onBufferDestroy(buffer: Buffer$1, contextLost?: boolean): void;
-	/**
-	 * creates and attaches a GLBuffer object tied to the current context.
-	 * @param buffer
-	 * @protected
-	 */
-	protected createGLBuffer(buffer: Buffer$1): GlBuffer;
-	resetState(): void;
-}
-/**
- * WebGL extensions for compressed textures using the PVRTC format.
- * @category rendering
- * @advanced
- */
-interface WEBGL_compressed_texture_pvrtc$1 {
-	COMPRESSED_RGB_PVRTC_4BPPV1_IMG: number;
-	COMPRESSED_RGBA_PVRTC_4BPPV1_IMG: number;
-	COMPRESSED_RGB_PVRTC_2BPPV1_IMG: number;
-	COMPRESSED_RGBA_PVRTC_2BPPV1_IMG: number;
-}
-/**
- * WebGL extensions for texture compression using the ETC format.
- * @category rendering
- * @advanced
- */
-interface WEBGL_compressed_texture_etc$1 {
-	COMPRESSED_R11_EAC: number;
-	COMPRESSED_SIGNED_R11_EAC: number;
-	COMPRESSED_RG11_EAC: number;
-	COMPRESSED_SIGNED_RG11_EAC: number;
-	COMPRESSED_RGB8_ETC2: number;
-	COMPRESSED_RGBA8_ETC2_EAC: number;
-	COMPRESSED_SRGB8_ETC2: number;
-	COMPRESSED_SRGB8_ALPHA8_ETC2_EAC: number;
-	COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2: number;
-	COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2: number;
-}
-/**
- * WebGL extensions for texture compression using the ETC1 format.
- * @category rendering
- * @advanced
- */
-interface WEBGL_compressed_texture_etc1$1 {
-	COMPRESSED_RGB_ETC1_WEBGL: number;
-}
-/**
- * WebGL extensions for texture compression using the ATC format.
- * @category rendering
- * @advanced
- */
-export interface WEBGL_compressed_texture_atc {
-	COMPRESSED_RGB_ATC_WEBGL: number;
-	COMPRESSED_RGBA_ATC_EXPLICIT_ALPHA_WEBGL: number;
-	COMPRESSED_RGBA_ATC_INTERPOLATED_ALPHA_WEBGL: number;
-}
-/**
- * WebGL extensions for texture compression using the BPTC format.
- * @category rendering
- * @advanced
- */
-interface EXT_texture_compression_bptc$1 {
-	COMPRESSED_RGBA_BPTC_UNORM_EXT: number;
-	COMPRESSED_RGB_BPTC_SIGNED_FLOAT_EXT: number;
-	COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT_EXT: number;
-	COMPRESSED_SRGB_ALPHA_BPTC_UNORM_EXT: number;
-}
-/**
- * WebGL extensions for texture compression using the RGTC format.
- * @category rendering
- * @advanced
- */
-interface EXT_texture_compression_rgtc$1 {
-	COMPRESSED_RED_RGTC1_EXT: number;
-	COMPRESSED_SIGNED_RED_RGTC1_EXT: number;
-	COMPRESSED_RED_GREEN_RGTC2_EXT: number;
-	COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT: number;
-}
-/**
- * WebGL extensions that are available in the current context.
- * @category rendering
- * @advanced
- */
-export interface WebGLExtensions {
-	drawBuffers?: WEBGL_draw_buffers;
-	depthTexture?: OES_texture_float;
-	loseContext?: WEBGL_lose_context;
-	vertexArrayObject?: OES_vertex_array_object;
-	anisotropicFiltering?: EXT_texture_filter_anisotropic;
-	uint32ElementIndex?: OES_element_index_uint;
-	floatTexture?: OES_texture_float;
-	floatTextureLinear?: OES_texture_float_linear;
-	textureHalfFloat?: OES_texture_half_float;
-	textureHalfFloatLinear?: OES_texture_half_float_linear;
-	colorBufferFloat?: EXT_color_buffer_float;
-	vertexAttribDivisorANGLE?: ANGLE_instanced_arrays;
-	s3tc?: WEBGL_compressed_texture_s3tc;
-	s3tc_sRGB?: WEBGL_compressed_texture_s3tc_srgb;
-	etc?: WEBGL_compressed_texture_etc$1;
-	etc1?: WEBGL_compressed_texture_etc1$1;
-	pvrtc?: WEBGL_compressed_texture_pvrtc$1;
-	atc?: WEBGL_compressed_texture_atc;
-	astc?: WEBGL_compressed_texture_astc;
-	bptc?: EXT_texture_compression_bptc$1;
-	rgtc?: EXT_texture_compression_rgtc$1;
-	srgb?: EXT_sRGB;
-}
-/**
- * Options for the context system.
- * @category rendering
- * @advanced
- * @property {WebGL2RenderingContext | null} [context=null] - User-provided WebGL rendering context object.
- * @property {GpuPowerPreference} [powerPreference='default'] - An optional hint indicating what configuration
- * of GPU is suitable for the WebGL context, can be `'high-performance'` or `'low-power'`. Setting to `'high-performance'`
- * will prioritize rendering performance over power consumption, while setting to `'low-power'` will prioritize power saving
- * over rendering performance.
- * @property {boolean} [premultipliedAlpha=true] - Whether the compositor will assume the drawing buffer contains
- * colors with premultiplied alpha.
- * @property {boolean} [preserveDrawingBuffer=false] - Whether to enable drawing buffer preservation.
- * If enabled, the drawing buffer will preserve
- * its value until cleared or overwritten. Enable this if you need to call `toDataUrl` on the WebGL context.
- * @property {boolean} [antialias] - Whether to enable antialiasing.
- * @property {1 | 2} [preferWebGLVersion=2] - The preferred WebGL version to use.
- */
-export interface ContextSystemOptions {
-	/**
-	 * User-provided WebGL rendering context object.
-	 * @default null
-	 */
-	context: WebGL2RenderingContext | null;
-	/**
-	 * An optional hint indicating what configuration of GPU is suitable for the WebGL context,
-	 * can be `'high-performance'` or `'low-power'`.
-	 * Setting to `'high-performance'` will prioritize rendering performance over power consumption,
-	 * while setting to `'low-power'` will prioritize power saving over rendering performance.
-	 * @default undefined
-	 */
-	powerPreference?: GpuPowerPreference;
-	/**
-	 * Whether the compositor will assume the drawing buffer contains colors with premultiplied alpha.
-	 * @default true
-	 */
-	premultipliedAlpha: boolean;
-	/**
-	 * Whether to enable drawing buffer preservation. If enabled, the drawing buffer will preserve
-	 * its value until cleared or overwritten. Enable this if you need to call `toDataUrl` on the WebGL context.
-	 * @default false
-	 */
-	preserveDrawingBuffer: boolean;
-	antialias?: boolean;
-	/**
-	 * The preferred WebGL version to use.
-	 * @default 2
-	 */
-	preferWebGLVersion?: 1 | 2;
-	/**
-	 * Whether to enable multi-view rendering. Set to true when rendering to multiple
-	 * canvases on the dom.
-	 * @default false
-	 */
-	multiView: boolean;
-}
-/**
- * System plugin to the renderer to manage the context
- * @category rendering
- * @advanced
- */
-export declare class GlContextSystem implements System<ContextSystemOptions> {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGLSystem
-		];
-		readonly name: "context";
-	};
-	/** The default options for the system. */
-	static defaultOptions: ContextSystemOptions;
-	protected CONTEXT_UID: number;
-	protected gl: WebGL2RenderingContext;
-	/**
-	 * Features supported by current renderer.
-	 * @type {object}
-	 * @readonly
-	 */
-	supports: {
-		/** Support for 32-bit indices buffer. */
-		uint32Indices: boolean;
-		/** Support for UniformBufferObjects */
-		uniformBufferObject: boolean;
-		/** Support for VertexArrayObjects */
-		vertexArrayObject: boolean;
-		/** Support for SRGB texture format */
-		srgbTextures: boolean;
-		/** Support for wrapping modes if a texture is non-power of two */
-		nonPowOf2wrapping: boolean;
-		/** Support for MSAA (antialiasing of dynamic textures) */
-		msaa: boolean;
-		/** Support for mipmaps if a texture is non-power of two */
-		nonPowOf2mipmaps: boolean;
-	};
-	/**
-	 * Extensions available.
-	 * @type {object}
-	 * @readonly
-	 * @property {WEBGL_draw_buffers} drawBuffers - WebGL v1 extension
-	 * @property {WEBGL_depth_texture} depthTexture - WebGL v1 extension
-	 * @property {OES_texture_float} floatTexture - WebGL v1 extension
-	 * @property {WEBGL_lose_context} loseContext - WebGL v1 extension
-	 * @property {OES_vertex_array_object} vertexArrayObject - WebGL v1 extension
-	 * @property {EXT_texture_filter_anisotropic} anisotropicFiltering - WebGL v1 and v2 extension
-	 */
-	extensions: WebGLExtensions;
-	webGLVersion: 1 | 2;
-	/**
-	 * Whether to enable multi-view rendering. Set to true when rendering to multiple
-	 * canvases on the dom.
-	 * @default false
-	 */
-	multiView: boolean;
-	/**
-	 * The canvas that the WebGL Context is rendering to.
-	 * This will be the view canvas. But if multiView is enabled, this canvas will not be attached to the DOM.
-	 * It will be rendered to and then copied to the target canvas.
-	 * @readonly
-	 */
-	canvas: ICanvas;
-	private _renderer;
-	private _contextLossForced;
-	/** @param renderer - The renderer this System works for. */
-	constructor(renderer: WebGLRenderer);
-	/**
-	 * `true` if the context is lost
-	 * @readonly
-	 */
-	get isLost(): boolean;
-	/**
-	 * Handles the context change event.
-	 * @param {WebGLRenderingContext} gl - New WebGL context.
-	 */
-	protected contextChange(gl: WebGL2RenderingContext): void;
-	init(options: ContextSystemOptions): void;
-	ensureCanvasSize(targetCanvas: ICanvas): void;
-	/**
-	 * Initializes the context.
-	 * @protected
-	 * @param {WebGLRenderingContext} gl - WebGL context
-	 */
-	protected initFromContext(gl: WebGL2RenderingContext): void;
-	/**
-	 * Initialize from context options
-	 * @protected
-	 * @see https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/getContext
-	 * @param preferWebGLVersion
-	 * @param {object} options - context attributes
-	 */
-	protected createContext(preferWebGLVersion: 1 | 2, options: WebGLContextAttributes): void;
-	/** Auto-populate the {@link GlContextSystem.extensions extensions}. */
-	protected getExtensions(): void;
-	/**
-	 * Handles a lost webgl context
-	 * @param {WebGLContextEvent} event - The context lost event.
-	 */
-	protected handleContextLost(event: WebGLContextEvent): void;
-	/** Handles a restored webgl context. */
-	protected handleContextRestored(): void;
-	destroy(): void;
-	/**
-	 * this function can be called to force a webGL context loss
-	 * this will release all resources on the GPU.
-	 * Useful if you need to put Pixi to sleep, and save some GPU memory
-	 *
-	 * As soon as render is called - all resources will be created again.
-	 */
-	forceContextLoss(): void;
-	/**
-	 * Validate context.
-	 * @param {WebGLRenderingContext} gl - Render context.
-	 */
-	protected validateContext(gl: WebGL2RenderingContext): void;
-}
-/**
- * System plugin to the renderer to manage geometry.
- * @category rendering
- * @advanced
- */
-export declare class GlGeometrySystem implements System {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGLSystem
-		];
-		readonly name: "geometry";
-	};
-	/**
-	 * `true` if we has `*_vertex_array_object` extension.
-	 * @readonly
-	 */
-	hasVao: boolean;
-	/**
-	 * `true` if has `ANGLE_instanced_arrays` extension.
-	 * @readonly
-	 */
-	hasInstance: boolean;
-	protected gl: GlRenderingContext;
-	protected _activeGeometry: Geometry;
-	protected _activeVao: WebGLVertexArrayObject;
-	protected _geometryVaoHash: Record<number, Record<string, WebGLVertexArrayObject>>;
-	/** Renderer that owns this {@link GeometrySystem}. */
-	private _renderer;
-	/** @param renderer - The renderer this System works for. */
-	constructor(renderer: WebGLRenderer);
-	/** Sets up the renderer context and necessary buffers. */
-	protected contextChange(): void;
-	/**
-	 * Binds geometry so that is can be drawn. Creating a Vao if required
-	 * @param geometry - Instance of geometry to bind.
-	 * @param program - Instance of program to use vao for.
-	 */
-	bind(geometry?: Geometry, program?: GlProgram): void;
-	/** Reset and unbind any active VAO and geometry. */
-	resetState(): void;
-	/** Update buffers of the currently bound geometry. */
-	updateBuffers(): void;
-	/**
-	 * Check compatibility between a geometry and a program
-	 * @param geometry - Geometry instance.
-	 * @param program - Program instance.
-	 */
-	protected checkCompatibility(geometry: Geometry, program: GlProgram): void;
-	/**
-	 * Takes a geometry and program and generates a unique signature for them.
-	 * @param geometry - To get signature from.
-	 * @param program - To test geometry against.
-	 * @returns - Unique signature of the geometry and program
-	 */
-	protected getSignature(geometry: Geometry, program: GlProgram): string;
-	protected getVao(geometry: Geometry, program: GlProgram): WebGLVertexArrayObject;
-	/**
-	 * Creates or gets Vao with the same structure as the geometry and stores it on the geometry.
-	 * If vao is created, it is bound automatically. We use a shader to infer what and how to set up the
-	 * attribute locations.
-	 * @param geometry - Instance of geometry to to generate Vao for.
-	 * @param program
-	 * @param _incRefCount - Increment refCount of all geometry buffers.
-	 */
-	protected initGeometryVao(geometry: Geometry, program: GlProgram, _incRefCount?: boolean): WebGLVertexArrayObject;
-	/**
-	 * Disposes geometry.
-	 * @param geometry - Geometry with buffers. Only VAO will be disposed
-	 * @param [contextLost=false] - If context was lost, we suppress deleteVertexArray
-	 */
-	protected onGeometryDestroy(geometry: Geometry, contextLost?: boolean): void;
-	/**
-	 * Dispose all WebGL resources of all managed geometries.
-	 * @param [contextLost=false] - If context was lost, we suppress `gl.delete` calls
-	 */
-	destroyAll(contextLost?: boolean): void;
-	/**
-	 * Activate vertex array object.
-	 * @param geometry - Geometry instance.
-	 * @param program - Shader program instance.
-	 */
-	protected activateVao(geometry: Geometry, program: GlProgram): void;
-	/**
-	 * Draws the currently bound geometry.
-	 * @param topology - The type primitive to render.
-	 * @param size - The number of elements to be rendered. If not specified, all vertices after the
-	 *  starting vertex will be drawn.
-	 * @param start - The starting vertex in the geometry to start drawing from. If not specified,
-	 *  drawing will start from the first vertex.
-	 * @param instanceCount - The number of instances of the set of elements to execute. If not specified,
-	 *  all instances will be drawn.
-	 * @returns This instance of the geometry system.
-	 */
-	draw(topology?: Topology, size?: number, start?: number, instanceCount?: number): this;
-	/** Unbind/reset everything. */
-	protected unbind(): void;
-	destroy(): void;
-}
-/**
- * @param format
- * @internal
- */
-export declare function getGlTypeFromFormat(format: VertexFormat): number;
-/**
- * The options for the back buffer system.
- * @category rendering
- * @property {boolean} [useBackBuffer=false] - if true will use the back buffer where required
- * @property {boolean} [antialias=false] - if true will ensure the texture is antialiased
- * @advanced
- */
-export interface GlBackBufferOptions {
-	/**
-	 * if true will use the back buffer where required
-	 * @default false
-	 */
-	useBackBuffer?: boolean;
-	/** if true will ensure the texture is antialiased */
-	antialias?: boolean;
-}
-/**
- * For blend modes you need to know what pixels you are actually drawing to. For this to be possible in WebGL
- * we need to render to a texture and then present that texture to the screen. This system manages that process.
- *
- * As the main scene is rendered to a texture, it means we can sample it and copy its pixels,
- * something not possible on the main canvas.
- *
- * If antialiasing is set to to true and useBackBuffer is set to true, then the back buffer will be antialiased.
- * and the main gl context will not.
- *
- * You only need to activate this back buffer if you are using a blend mode that requires it.
- *
- * to activate is simple, you pass `useBackBuffer:true` to your render options
- * @category rendering
- * @advanced
- */
-export declare class GlBackBufferSystem implements System<GlBackBufferOptions> {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGLSystem
-		];
-		readonly name: "backBuffer";
-		readonly priority: 1;
-	};
-	/** default options for the back buffer system */
-	static defaultOptions: GlBackBufferOptions;
-	/** if true, the back buffer is used */
-	useBackBuffer: boolean;
-	private _backBufferTexture;
-	private readonly _renderer;
-	private _targetTexture;
-	private _useBackBufferThisRender;
-	private _antialias;
-	private _state;
-	private _bigTriangleShader;
-	constructor(renderer: WebGLRenderer);
-	init(options?: GlBackBufferOptions): void;
-	/**
-	 * This is called before the RenderTargetSystem is started. This is where
-	 * we replace the target with the back buffer if required.
-	 * @param options - The options for this render.
-	 */
-	protected renderStart(options: RenderOptions): void;
-	protected renderEnd(): void;
-	private _presentBackBuffer;
-	private _getBackBufferTexture;
-	/** destroys the back buffer */
-	destroy(): void;
-}
-/**
- * The system that handles color masking for the WebGL.
- * @category rendering
- * @advanced
- */
-export declare class GlColorMaskSystem implements System {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGLSystem
-		];
-		readonly name: "colorMask";
-	};
-	private readonly _renderer;
-	private _colorMaskCache;
-	constructor(renderer: WebGLRenderer);
-	setMask(colorMask: number): void;
-	destroy?: () => void;
-}
-/**
- * The system that handles encoding commands for the WebGL.
- * @category rendering
- * @advanced
- */
-export declare class GlEncoderSystem implements System {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGLSystem
-		];
-		readonly name: "encoder";
-	};
-	readonly commandFinished: Promise<void>;
-	private readonly _renderer;
-	constructor(renderer: WebGLRenderer);
-	setGeometry(geometry: Geometry, shader?: Shader): void;
-	finishRenderPass(): void;
-	draw(options: {
-		geometry: Geometry;
-		shader: Shader;
-		state?: State;
-		topology?: Topology;
-		size?: number;
-		start?: number;
-		instanceCount?: number;
-		skipSync?: boolean;
-	}): void;
-	destroy(): void;
-}
-/**
- * The GpuLimitsSystem provides information about the capabilities and limitations of the underlying GPU.
- * These limits, such as the maximum number of textures that can be used in a shader
- * (`maxTextures`) or the maximum number of textures that can be batched together (`maxBatchableTextures`),
- * are determined by the specific graphics hardware and driver.
- *
- * The values for these limits are not available immediately upon instantiation of the class.
- * They are populated when the GL rendering context is successfully initialized and ready,
- * which occurs after the `renderer.init()` method has completed.
- * Attempting to access these properties before the context is ready will result in undefined or default values.
- *
- * This system allows the renderer to adapt its behavior and resource allocation strategies
- * to stay within the supported boundaries of the GPU, ensuring optimal performance and stability.
- * @example
- * ```ts
- * const renderer = new WebGlRenderer();
- * await renderer.init();
- *
- * console.log(renderer.limits.maxTextures);
- * ```
- * @category rendering
- * @advanced
- */
-export declare class GlLimitsSystem implements System {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGLSystem
-		];
-		readonly name: "limits";
-	};
-	/** The maximum number of textures that can be used by a shader */
-	maxTextures: number;
-	/** The maximum number of batchable textures */
-	maxBatchableTextures: number;
-	/** The maximum number of uniform bindings */
-	maxUniformBindings: number;
-	private readonly _renderer;
-	constructor(renderer: WebGLRenderer);
-	contextChange(): void;
-	destroy(): void;
-}
-/**
- * This manages the stencil buffer. Used primarily for masking
- * @category rendering
- * @advanced
- */
-export declare class GlStencilSystem implements System {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGLSystem
-		];
-		readonly name: "stencil";
-	};
-	private _gl;
-	private readonly _stencilCache;
-	private _renderTargetStencilState;
-	private _stencilOpsMapping;
-	private _comparisonFuncMapping;
-	private _activeRenderTarget;
-	constructor(renderer: WebGLRenderer);
-	protected contextChange(gl: WebGLRenderingContext): void;
-	protected onRenderTargetChange(renderTarget: RenderTarget): void;
-	resetState(): void;
-	setStencilMode(stencilMode: STENCIL_MODES, stencilReference: number): void;
-	destroy?: () => void;
-}
-/**
- * System plugin to the renderer to manage uniform buffers. But with an WGSL adaptor.
- * @category rendering
- * @advanced
- */
-export declare class GlUboSystem extends UboSystem {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGLSystem
-		];
-		readonly name: "ubo";
-	};
-	constructor();
-}
-/**
- * The WebGL adaptor for the render target system. Allows the Render Target System to be used with the WebGL renderer
- * @category rendering
- * @ignore
- */
-export declare class GlRenderTargetAdaptor implements RenderTargetAdaptor<GlRenderTarget> {
-	private _renderTargetSystem;
-	private _renderer;
-	private _clearColorCache;
-	private _viewPortCache;
-	init(renderer: WebGLRenderer, renderTargetSystem: RenderTargetSystem<GlRenderTarget>): void;
-	contextChange(): void;
-	copyToTexture(sourceRenderSurfaceTexture: RenderTarget, destinationTexture: Texture, originSrc: {
-		x: number;
-		y: number;
-	}, size: {
-		width: number;
-		height: number;
-	}, originDest: {
-		x: number;
-		y: number;
-	}): Texture<TextureSource<any>>;
-	startRenderPass(renderTarget: RenderTarget, clear?: CLEAR_OR_BOOL, clearColor?: RgbaArray, viewport?: Rectangle): void;
-	finishRenderPass(renderTarget?: RenderTarget): void;
-	initGpuRenderTarget(renderTarget: RenderTarget): GlRenderTarget;
-	destroyGpuRenderTarget(gpuRenderTarget: GlRenderTarget): void;
-	clear(_renderTarget: RenderTarget, clear: CLEAR_OR_BOOL, clearColor?: RgbaArray): void;
-	resizeGpuRenderTarget(renderTarget: RenderTarget): void;
-	private _initColor;
-	private _resizeColor;
-	private _initStencil;
-	private _resizeStencil;
-	prerender(renderTarget: RenderTarget): void;
-	postrender(renderTarget: RenderTarget): void;
-}
-/**
- * The WebGL adaptor for the render target system. Allows the Render Target System to be used with the WebGl renderer
- * @category rendering
- * @advanced
- */
-export declare class GlRenderTargetSystem extends RenderTargetSystem<GlRenderTarget> {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGLSystem
-		];
-		readonly name: "renderTarget";
-	};
-	adaptor: GlRenderTargetAdaptor;
-	constructor(renderer: WebGLRenderer);
-}
-/**
- * The precision types available in WebGL shaders.
- *
- * These types define the precision of floating-point calculations in shaders.
- * - `highp`: High precision, typically 32-bit floating-point.
- * - `mediump`: Medium precision, typically 16-bit floating-point.
- * - `lowp`: Low precision, typically 8-bit floating-point.
- * @category rendering
- * @advanced
- */
-export type PRECISION = `highp` | `mediump` | `lowp`;
-/** @private */
-export declare class IGLUniformData {
-	location: WebGLUniformLocation;
-	value: number | boolean | Float32Array | Int32Array | Uint32Array | boolean[];
-}
-/**
- * Helper class to create a WebGL Program
- * @private
- */
-export declare class GlProgramData {
-	/** The shader program. */
-	program: WebGLProgram;
-	/**
-	 * Holds the uniform data which contains uniform locations
-	 * and current uniform values used for caching and preventing unneeded GPU commands.
-	 */
-	uniformData: Record<string, any>;
-	/**
-	 * UniformGroups holds the various upload functions for the shader. Each uniform group
-	 * and program have a unique upload function generated.
-	 */
-	uniformGroups: Record<string, any>;
-	/** A hash that stores where UBOs are bound to on the program. */
-	uniformBlockBindings: Record<string, any>;
-	/** A hash for lazily-generated uniform uploading functions. */
-	uniformSync: Record<string, any>;
-	/**
-	 * A place where dirty ticks are stored for groups
-	 * If a tick here does not match with the Higher level Programs tick, it means
-	 * we should re upload the data.
-	 */
-	uniformDirtyGroups: Record<string, any>;
-	/**
-	 * Makes a new Pixi program.
-	 * @param program - webgl program
-	 * @param uniformData - uniforms
-	 */
-	constructor(program: WebGLProgram, uniformData: {
-		[key: string]: IGLUniformData;
-	});
-	/** Destroys this program. */
-	destroy(): void;
-}
-/** @internal */
-export interface ShaderSyncData {
-	textureCount: number;
-	blockIndex: number;
-}
-/** @internal */
-export type ShaderSyncFunction = (renderer: WebGLRenderer, shader: Shader, syncData: ShaderSyncData) => void;
-/**
- * System plugin to the renderer to manage the shaders for WebGL.
- * @category rendering
- * @advanced
- */
-export declare class GlShaderSystem {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGLSystem
-		];
-		readonly name: "shader";
-	};
-	/** @internal */
-	_activeProgram: GlProgram;
-	private _programDataHash;
-	private readonly _renderer;
-	/** @internal */
-	_gl: WebGL2RenderingContext;
-	private _shaderSyncFunctions;
-	constructor(renderer: WebGLRenderer);
-	protected contextChange(gl: GlRenderingContext): void;
-	/**
-	 * Changes the current shader to the one given in parameter.
-	 * @param shader - the new shader
-	 * @param skipSync - false if the shader should automatically sync its uniforms.
-	 * @returns the glProgram that belongs to the shader.
-	 */
-	bind(shader: Shader, skipSync?: boolean): void;
-	/**
-	 * Updates the uniform group.
-	 * @param uniformGroup - the uniform group to update
-	 */
-	updateUniformGroup(uniformGroup: UniformGroup): void;
-	/**
-	 * Binds a uniform block to the shader.
-	 * @param uniformGroup - the uniform group to bind
-	 * @param name - the name of the uniform block
-	 * @param index - the index of the uniform block
-	 */
-	bindUniformBlock(uniformGroup: UniformGroup | BufferResource, name: string, index?: number): void;
-	private _setProgram;
-	/**
-	 * @param program - the program to get the data for
-	 * @internal
-	 */
-	_getProgramData(program: GlProgram): GlProgramData;
-	private _createProgramData;
-	destroy(): void;
-	/**
-	 * Creates a function that can be executed that will sync the shader as efficiently as possible.
-	 * Overridden by the unsafe eval package if you don't want eval used in your project.
-	 * @param shader - the shader to generate the sync function for
-	 * @param shaderSystem - the shader system to use
-	 * @returns - the generated sync function
-	 * @ignore
-	 */
-	_generateShaderSync(shader: Shader, shaderSystem: GlShaderSystem): ShaderSyncFunction;
-	resetState(): void;
-}
-/**
- * Generates the a function that will efficiently sync shader resources with the GPU.
- * @param shader - The shader to generate the code for
- * @param shaderSystem - An instance of the shader system
- * @internal
- */
-export declare function generateShaderSyncCode(shader: Shader, shaderSystem: GlShaderSystem): ShaderSyncFunction;
-/**
- * Automatically generates a uniform group that holds the texture samplers for a shader.
- * This is used mainly by the shaders that batch textures!
- * @param maxTextures - the number of textures that this uniform group will contain.
- * @returns a uniform group that holds the texture samplers.
- * @internal
- */
-export declare function getBatchSamplersUniformGroup(maxTextures: number): UniformGroup<any>;
-/**
- * System plugin to the renderer to manage shaders.
- * @category rendering
- * @advanced
- */
-export declare class GlUniformGroupSystem implements System {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGLSystem
-		];
-		readonly name: "uniformGroup";
-	};
-	/**
-	 * The current WebGL rendering context.
-	 * @type {WebGLRenderingContext}
-	 */
-	protected gl: GlRenderingContext;
-	/** Cache to holds the generated functions. Stored against UniformObjects unique signature. */
-	private _cache;
-	private _renderer;
-	private _uniformGroupSyncHash;
-	/** @param renderer - The renderer this System works for. */
-	constructor(renderer: WebGLRenderer);
-	protected contextChange(gl: GlRenderingContext): void;
-	/**
-	 * Uploads the uniforms values to the currently bound shader.
-	 * @param group - the uniforms values that be applied to the current shader
-	 * @param program
-	 * @param syncData
-	 * @param syncData.textureCount
-	 */
-	updateUniformGroup(group: UniformGroup, program: GlProgram, syncData: {
-		textureCount: number;
-	}): void;
-	/**
-	 * Overridable by the pixi.js/unsafe-eval package to use static syncUniforms instead.
-	 * @param group
-	 * @param program
-	 */
-	private _getUniformSyncFunction;
-	private _createUniformSyncFunction;
-	private _generateUniformsSync;
-	/**
-	 * Takes a uniform group and data and generates a unique signature for them.
-	 * @param group - The uniform group to get signature of
-	 * @param group.uniforms
-	 * @param uniformData - Uniform information generated by the shader
-	 * @param preFix
-	 * @returns Unique signature of the uniform group
-	 */
-	private _getSignature;
-	/** Destroys this System and removes all its textures. */
-	destroy(): void;
-}
-/**
- * @param fragmentShader
- * @internal
- */
-export declare function migrateFragmentFromV7toV8(fragmentShader: string): string;
-/**
- * @private
- * @param {WebGLRenderingContext} gl - The current WebGL context {WebGLProgram}
- * @param {number} type - the type, can be either VERTEX_SHADER or FRAGMENT_SHADER
- * @param {string} src - The vertex shader source as an array of strings.
- * @returns {WebGLShader} the shader
- */
-export declare function compileShader(gl: WebGLRenderingContextBase, type: number, src: string): WebGLShader;
-/**
- * @param {string} type - Type of value
- * @param {number} size
- * @private
- */
-export declare function defaultValue(type: string, size: number): number | Float32Array | Int32Array | Uint32Array | boolean | boolean[];
-/**
- * This function looks at the attribute information provided to the geometry and attempts
- * to fill in any gaps. We do this by looking at the extracted data from the shader and
- * making best guesses.
- *
- * Most of the time users don't need to provide all the attribute info beyond the data itself, so we
- * can fill in the gaps for them. If you are using attributes in a more advanced way,
- * don't forget to add all the info at creation!
- * @param geometry - the geometry to ensure attributes for
- * @param extractedData - the extracted data from the shader
- * @internal
- */
-export declare function ensureAttributes(geometry: Geometry, extractedData: Record<string, ExtractedAttributeData>): void;
-/**
- * generates a WebGL Program object from a high level Pixi Program.
- * @param gl - a rendering context on which to generate the program
- * @param program - the high level Pixi Program.
- * @private
- */
-export declare function generateProgram(gl: GlRenderingContext, program: GlProgram): GlProgramData;
-/** @internal */
-export declare function getMaxFragmentPrecision(): PRECISION;
-/**
- * returns a little WebGL context to use for program inspection.
- * @private
- * @returns {WebGLRenderingContext} a gl context to test with
- */
-export declare function getTestContext(): GlRenderingContext;
-/**
- * returns the uniform block data from the program
- * @private
- * @param program - the webgl program
- * @param gl - the WebGL context
- * @returns {object} the uniform data for this program
- */
-export declare function getUboData(program: WebGLProgram, gl: WebGL2RenderingContext): Record<string, GlUniformBlockData>;
-/**
- * returns the uniform data from the program
- * @private
- * @param program - the webgl program
- * @param gl - the WebGL context
- * @returns {object} the uniform data for this program
- */
-export declare function getUniformData(program: WebGLProgram, gl: WebGLRenderingContextBase): {
-	[key: string]: GlUniformData;
-};
-/**
- *
- * logs out any program errors
- * @param gl - The current WebGL context
- * @param program - the WebGL program to display errors for
- * @param vertexShader  - the fragment WebGL shader program
- * @param fragmentShader - the vertex WebGL shader program
- * @private
- */
-export declare function logProgramError(gl: WebGLRenderingContext, program: WebGLProgram, vertexShader: WebGLShader, fragmentShader: WebGLShader): void;
-/**
- * @private
- * @param {string} type
- */
-export declare function mapSize(type: string): number;
-/**
- * @param gl
- * @param type
- * @internal
- */
-export declare function mapType(gl: any, type: number): string;
-/**
- * @param gl
- * @param type
- * @internal
- */
-export declare function mapGlToVertexFormat(gl: any, type: number): VertexFormat;
-/**
- * @param src
- * @param isES300
- * @param isFragment
- * @internal
- */
-export declare function addProgramDefines(src: string, isES300: boolean, isFragment?: boolean): string;
-interface EnsurePrecisionOptions {
-	requestedVertexPrecision: PRECISION;
-	requestedFragmentPrecision: PRECISION;
-	maxSupportedVertexPrecision: PRECISION;
-	maxSupportedFragmentPrecision: PRECISION;
-}
-/**
- * Sets the float precision on the shader, ensuring the device supports the request precision.
- * If the precision is already present, it just ensures that the device is able to handle it.
- * @param src
- * @param options
- * @param options.requestedVertexPrecision
- * @param options.requestedFragmentPrecision
- * @param options.maxSupportedVertexPrecision
- * @param options.maxSupportedFragmentPrecision
- * @param isFragment
- * @private
- */
-export declare function ensurePrecision(src: string, options: EnsurePrecisionOptions, isFragment: boolean): string;
-/**
- * @param src
- * @param isES300
- * @internal
- */
-export declare function insertVersion(src: string, isES300: boolean): string;
-/**
- * @param src
- * @param root0
- * @param root0.name
- * @param isFragment
- * @internal
- */
-export declare function setProgramName(src: string, { name }: {
-	name: string;
-}, isFragment?: boolean): string;
-/**
- * @param src
- * @param isES300
- * @internal
- */
-export declare function stripVersion(src: string, isES300: boolean): string;
-/** @internal */
-export declare const WGSL_TO_STD40_SIZE: Record<string, number>;
-/**
- * @param uniformData
- * @internal
- */
-export declare function createUboElementsSTD40(uniformData: UniformData[]): UboLayout;
-/**
- * @param uboElements
- * @internal
- */
-export declare function createUboSyncFunctionSTD40(uboElements: UboElement[]): UniformsSyncCallback;
-/**
- * This generates a function that will sync an array to the uniform buffer
- * following the std140 layout
- * @param uboElement - the element to generate the array sync for
- * @param offsetToAdd - the offset to append at the start of the code
- * @returns - the generated code
- * @internal
- */
-export declare function generateArraySyncSTD40(uboElement: UboElement, offsetToAdd: number): string;
-/**
- * @param group
- * @param uniformData
- * @internal
- */
-export declare function generateUniformsSync(group: UniformGroup, uniformData: Record<string, any>): UniformsSyncCallback;
-/** @internal */
-export declare const UNIFORM_TO_SINGLE_SETTERS: Record<UNIFORM_TYPES | string, string>;
-/** @internal */
-export declare const UNIFORM_TO_ARRAY_SETTERS: Record<UNIFORM_TYPES | string, string>;
-/**
- * System plugin to the renderer to manage WebGL state machines
- * @category rendering
- * @advanced
- */
-export declare class GlStateSystem implements System {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGLSystem
-		];
-		readonly name: "state";
-	};
-	/**
-	 * State ID
-	 * @readonly
-	 */
-	stateId: number;
-	/**
-	 * Polygon offset
-	 * @readonly
-	 */
-	polygonOffset: number;
-	/**
-	 * Blend mode
-	 * @default 'none'
-	 * @readonly
-	 */
-	blendMode: BLEND_MODES;
-	/** Whether current blend equation is different */
-	protected _blendEq: boolean;
-	/**
-	 * GL context
-	 * @type {WebGLRenderingContext}
-	 * @readonly
-	 */
-	protected gl: GlRenderingContext;
-	protected blendModesMap: Record<BLEND_MODES, number[]>;
-	/**
-	 * Collection of calls
-	 * @type {Function[]}
-	 */
-	protected readonly map: ((value: boolean) => void)[];
-	/**
-	 * Collection of check calls
-	 * @type {Function[]}
-	 */
-	protected readonly checks: ((system: this, state: State) => void)[];
-	/**
-	 * Default WebGL State
-	 * @readonly
-	 */
-	protected defaultState: State;
-	/**
-	 * Whether to invert the front face when rendering
-	 * This is used for render textures where the Y-coordinate is flipped
-	 * @default false
-	 */
-	private _invertFrontFace;
-	private _glFrontFace;
-	private _cullFace;
-	private _frontFaceDirty;
-	private _frontFace;
-	constructor(renderer: WebGLRenderer);
-	protected onRenderTargetChange(renderTarget: RenderTarget): void;
-	protected contextChange(gl: GlRenderingContext): void;
-	/**
-	 * Sets the current state
-	 * @param {*} state - The state to set.
-	 */
-	set(state: State): void;
-	/**
-	 * Sets the state, when previous state is unknown.
-	 * @param {*} state - The state to set
-	 */
-	forceState(state: State): void;
-	/**
-	 * Sets whether to enable or disable blending.
-	 * @param value - Turn on or off WebGl blending.
-	 */
-	setBlend(value: boolean): void;
-	/**
-	 * Sets whether to enable or disable polygon offset fill.
-	 * @param value - Turn on or off webgl polygon offset testing.
-	 */
-	setOffset(value: boolean): void;
-	/**
-	 * Sets whether to enable or disable depth test.
-	 * @param value - Turn on or off webgl depth testing.
-	 */
-	setDepthTest(value: boolean): void;
-	/**
-	 * Sets whether to enable or disable depth mask.
-	 * @param value - Turn on or off webgl depth mask.
-	 */
-	setDepthMask(value: boolean): void;
-	/**
-	 * Sets whether to enable or disable cull face.
-	 * @param {boolean} value - Turn on or off webgl cull face.
-	 */
-	setCullFace(value: boolean): void;
-	/**
-	 * Sets the gl front face.
-	 * @param {boolean} value - true is clockwise and false is counter-clockwise
-	 */
-	setFrontFace(value: boolean): void;
-	/**
-	 * Sets the blend mode.
-	 * @param {number} value - The blend mode to set to.
-	 */
-	setBlendMode(value: BLEND_MODES): void;
-	/**
-	 * Sets the polygon offset.
-	 * @param {number} value - the polygon offset
-	 * @param {number} scale - the polygon offset scale
-	 */
-	setPolygonOffset(value: number, scale: number): void;
-	/** Resets all the logic and disables the VAOs. */
-	resetState(): void;
-	/**
-	 * Checks to see which updates should be checked based on which settings have been activated.
-	 *
-	 * For example, if blend is enabled then we should check the blend modes each time the state is changed
-	 * or if polygon fill is activated then we need to check if the polygon offset changes.
-	 * The idea is that we only check what we have too.
-	 * @param func - the checking function to add or remove
-	 * @param value - should the check function be added or removed.
-	 */
-	private _updateCheck;
-	/**
-	 * A private little wrapper function that we call to check the blend mode.
-	 * @param system - the System to perform the state check on
-	 * @param state - the state that the blendMode will pulled from
-	 */
-	private static _checkBlendMode;
-	/**
-	 * A private little wrapper function that we call to check the polygon offset.
-	 * @param system - the System to perform the state check on
-	 * @param state - the state that the blendMode will pulled from
-	 */
-	private static _checkPolygonOffset;
-	/** @ignore */
-	destroy(): void;
-}
-/**
- * Maps gl blend combinations to WebGL.
- * @param gl
- * @returns {object} Map of gl blend combinations to WebGL.
- * @internal
- */
-export declare function mapWebGLBlendModesToPixi(gl: GlRenderingContext): Record<BLEND_MODES, number[]>;
-/**
- * Various GL texture/resources formats.
- * @category rendering
- * @advanced
- */
-export declare enum GL_FORMATS {
-	RGBA = 6408,
-	RGB = 6407,
-	RG = 33319,
-	RED = 6403,
-	RGBA_INTEGER = 36249,
-	RGB_INTEGER = 36248,
-	RG_INTEGER = 33320,
-	RED_INTEGER = 36244,
-	ALPHA = 6406,
-	LUMINANCE = 6409,
-	LUMINANCE_ALPHA = 6410,
-	DEPTH_COMPONENT = 6402,
-	DEPTH_STENCIL = 34041
-}
-/**
- * Various GL target types.
- * @category rendering
- * @advanced
- */
-export declare enum GL_TARGETS {
-	TEXTURE_2D = 3553,
-	TEXTURE_CUBE_MAP = 34067,
-	TEXTURE_2D_ARRAY = 35866,
-	TEXTURE_CUBE_MAP_POSITIVE_X = 34069,
-	TEXTURE_CUBE_MAP_NEGATIVE_X = 34070,
-	TEXTURE_CUBE_MAP_POSITIVE_Y = 34071,
-	TEXTURE_CUBE_MAP_NEGATIVE_Y = 34072,
-	TEXTURE_CUBE_MAP_POSITIVE_Z = 34073,
-	TEXTURE_CUBE_MAP_NEGATIVE_Z = 34074
-}
-/**
- * The wrap modes that are supported by pixi.
- *
- * The {@link WRAP_MODE} wrap mode affects the default wrapping mode of future operations.
- * It can be re-assigned to either CLAMP or REPEAT, depending upon suitability.
- * If the texture is non power of two then clamp will be used regardless as WebGL can
- * only use REPEAT if the texture is po2.
- *
- * This property only affects WebGL.
- * @category rendering
- * @advanced
- */
-export declare enum GL_WRAP_MODES {
-	/**
-	 * The textures uvs are clamped
-	 * @default 33071
-	 */
-	CLAMP = 33071,
-	/**
-	 * The texture uvs tile and repeat
-	 * @default 10497
-	 */
-	REPEAT = 10497,
-	/**
-	 * The texture uvs tile and repeat with mirroring
-	 * @default 33648
-	 */
-	MIRRORED_REPEAT = 33648
-}
-/** @internal */
-export declare enum GL_TYPES {
-	/**
-	 * 8 bits per channel for gl.RGBA
-	 * @default 5121
-	 */
-	UNSIGNED_BYTE = 5121,
-	/** @default 5123 */
-	UNSIGNED_SHORT = 5123,
-	/**
-	 * 5 red bits, 6 green bits, 5 blue bits.
-	 * @default 33635
-	 */
-	UNSIGNED_SHORT_5_6_5 = 33635,
-	/**
-	 * 4 red bits, 4 green bits, 4 blue bits, 4 alpha bits.
-	 * @default 32819
-	 */
-	UNSIGNED_SHORT_4_4_4_4 = 32819,
-	/**
-	 * 5 red bits, 5 green bits, 5 blue bits, 1 alpha bit.
-	 * @default 32820
-	 */
-	UNSIGNED_SHORT_5_5_5_1 = 32820,
-	/** @default 5125 */
-	UNSIGNED_INT = 5125,
-	/** @default 35899 */
-	UNSIGNED_INT_10F_11F_11F_REV = 35899,
-	/** @default 33640 */
-	UNSIGNED_INT_2_10_10_10_REV = 33640,
-	/** @default 34042 */
-	UNSIGNED_INT_24_8 = 34042,
-	/** @default 35902 */
-	UNSIGNED_INT_5_9_9_9_REV = 35902,
-	/** @default 5120 */
-	BYTE = 5120,
-	/** @default 5122 */
-	SHORT = 5122,
-	/** @default 5124 */
-	INT = 5124,
-	/** @default 5126 */
-	FLOAT = 5126,
-	/** @default 36269 */
-	FLOAT_32_UNSIGNED_INT_24_8_REV = 36269,
-	/** @default 36193 */
-	HALF_FLOAT = 36193
-}
-/**
- * Internal texture for WebGL context
- * @category rendering
- * @ignore
- */
-export declare class GlTexture {
-	target: GL_TARGETS;
-	/** The WebGL texture. */
-	texture: WebGLTexture;
-	/** Width of texture that was used in texImage2D. */
-	width: number;
-	/** Height of texture that was used in texImage2D. */
-	height: number;
-	/** Whether mip levels has to be generated. */
-	mipmap: boolean;
-	/** Type copied from texture source. */
-	type: number;
-	/** Type copied from texture source. */
-	internalFormat: number;
-	/** Type of sampler corresponding to this texture. See {@link SAMPLER_TYPES} */
-	samplerType: number;
-	format: GL_FORMATS;
-	constructor(texture: WebGLTexture);
-}
-/**
- * The system for managing textures in WebGL.
- * @category rendering
- * @advanced
- */
-export declare class GlTextureSystem implements System, CanvasGenerator {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGLSystem
-		];
-		readonly name: "texture";
-	};
-	readonly managedTextures: TextureSource[];
-	private readonly _renderer;
-	private _glTextures;
-	private _glSamplers;
-	private _boundTextures;
-	private _activeTextureLocation;
-	private _boundSamplers;
-	private readonly _uploads;
-	private _gl;
-	private _mapFormatToInternalFormat;
-	private _mapFormatToType;
-	private _mapFormatToFormat;
-	private _premultiplyAlpha;
-	private readonly _useSeparateSamplers;
-	constructor(renderer: WebGLRenderer);
-	protected contextChange(gl: GlRenderingContext): void;
-	/**
-	 * Initializes a texture source, if it has already been initialized nothing will happen.
-	 * @param source - The texture source to initialize.
-	 * @returns The initialized texture source.
-	 */
-	initSource(source: TextureSource): void;
-	bind(texture: BindableTexture, location?: number): void;
-	bindSource(source: TextureSource, location?: number): void;
-	private _bindSampler;
-	unbind(texture: BindableTexture): void;
-	private _activateLocation;
-	private _initSource;
-	protected onStyleChange(source: TextureSource): void;
-	protected updateStyle(source: TextureSource, firstCreation: boolean): void;
-	protected onSourceUnload(source: TextureSource): void;
-	protected onSourceUpdate(source: TextureSource): void;
-	protected onUpdateMipmaps(source: TextureSource, bind?: boolean): void;
-	protected onSourceDestroy(source: TextureSource): void;
-	private _initSampler;
-	private _getGlSampler;
-	getGlSource(source: TextureSource): GlTexture;
-	generateCanvas(texture: Texture): ICanvas;
-	getPixels(texture: Texture): GetPixelsOutput;
-	destroy(): void;
-	resetState(): void;
-}
-/** @internal */
-export interface GLTextureUploader {
-	id: string;
-	upload(source: TextureSource, glTexture: GlTexture, gl: GlRenderingContext, webGLVersion: number): void;
-}
-/** @internal */
-export declare const glUploadBufferImageResource: GLTextureUploader;
-/** @internal */
-export declare const glUploadCompressedTextureResource: GLTextureUploader;
-/** @internal */
-export declare const glUploadImageResource: GLTextureUploader;
-/** @internal */
-export declare const glUploadVideoResource: GLTextureUploader;
-/**
- * @param style
- * @param gl
- * @param mipmaps
- * @param anisotropicExt
- * @param glFunctionName
- * @param firstParam
- * @param forceClamp
- * @param firstCreation
- * @internal
- */
-export declare function applyStyleParams(style: TextureStyle, gl: WebGL2RenderingContext, mipmaps: boolean, anisotropicExt: EXT_texture_filter_anisotropic, glFunctionName: "samplerParameteri" | "texParameteri", firstParam: 3553 | WebGLSampler, forceClamp: boolean, 
-/** if true we can skip setting certain values if the values is the same as the default gl values */
-firstCreation: boolean): void;
-/** @internal */
-export declare function getSupportedGlCompressedTextureFormats(): TEXTURE_FORMATS[];
-/**
- * Returns a lookup table that maps each type-format pair to a compatible internal format.
- * @function mapTypeAndFormatToInternalFormat
- * @private
- * @param {WebGLRenderingContext} gl - The rendering context.
- * @returns Lookup table.
- */
-export declare function mapFormatToGlFormat(gl: GlRenderingContext): Record<string, number>;
-/**
- * Returns a lookup table that maps each type-format pair to a compatible internal format.
- * @function mapTypeAndFormatToInternalFormat
- * @private
- * @param gl - The rendering context.
- * @param extensions - The WebGL extensions.
- * @returns Lookup table.
- */
-export declare function mapFormatToGlInternalFormat(gl: GlRenderingContext, extensions: WebGLExtensions): Record<string, number>;
-/**
- * Returns a lookup table that maps each type-format pair to a compatible internal format.
- * @function mapTypeAndFormatToInternalFormat
- * @private
- * @param {WebGLRenderingContext} gl - The rendering context.
- * @returns Lookup table.
- */
-export declare function mapFormatToGlType(gl: GlRenderingContext): Record<string, number>;
-/** @internal */
-export declare const scaleModeToGlFilter: {
-	linear: number;
-	nearest: number;
-};
-/** @internal */
-export declare const mipmapScaleModeToGlFilter: {
-	linear: {
-		linear: number;
-		nearest: number;
-	};
-	nearest: {
-		linear: number;
-		nearest: number;
-	};
-};
-/** @internal */
-export declare const wrapModeToGlAddress: {
-	"clamp-to-edge": number;
-	repeat: number;
-	"mirror-repeat": number;
-};
-/** @internal */
-export declare const compareModeToGlCompare: {
-	never: number;
-	less: number;
-	equal: number;
-	"less-equal": number;
-	greater: number;
-	"not-equal": number;
-	"greater-equal": number;
-	always: number;
-};
-/**
- * @param pixels
- * @internal
- */
-export declare function unpremultiplyAlpha(pixels: Uint8Array | Uint8ClampedArray): void;
-/** @internal */
-export declare class UboBatch {
-	data: Float32Array;
-	private readonly _minUniformOffsetAlignment;
-	byteIndex: number;
-	constructor({ minUniformOffsetAlignment }: {
-		minUniformOffsetAlignment: number;
-	});
-	clear(): void;
-	addEmptyGroup(size: number): number;
-	addGroup(array: Float32Array): number;
-	destroy(): void;
-}
-/**
- * @param pm
- * @param x
- * @param y
- * @param width
- * @param height
- * @param flipY
- * @internal
- */
-export declare function calculateProjection(pm: Matrix, x: number, y: number, width: number, height: number, flipY: boolean): Matrix;
-/** @internal */
-export declare const WGSL_ALIGN_SIZE_DATA: Record<UNIFORM_TYPES | string, {
-	align: number;
-	size: number;
-}>;
-/**
- * @param uniformData
- * @internal
- */
-export declare function createUboElementsWGSL(uniformData: UniformData[]): UboLayout;
-/**
- * @param uboElements
- * @internal
- */
-export declare function createUboSyncFunctionWGSL(uboElements: UboElement[]): UniformsSyncCallback;
-/**
- * @param root0
- * @param root0.source
- * @param root0.entryPoint
- * @internal
- */
-export declare function extractAttributesFromGpuProgram({ source, entryPoint }: ProgramSource): Record<string, ExtractedAttributeData>;
-/**
- * This generates a function that will sync an array to the uniform buffer
- * following the wgsl layout
- * @param uboElement - the element to generate the array sync for
- * @param offsetToAdd - the offset to append at the start of the code
- * @returns - the generated code
- * @internal
- */
-export declare function generateArraySyncWGSL(uboElement: UboElement, offsetToAdd: number): string;
-/**
- * @param root0
- * @param root0.groups
- * @internal
- */
-export declare function generateGpuLayoutGroups({ groups }: StructsAndGroups): ProgramPipelineLayoutDescription;
-/**
- * @param root0
- * @param root0.groups
- * @internal
- */
-export declare function generateLayoutHash({ groups }: StructsAndGroups): ProgramLayout;
-/**
- * @param vertexStructsAndGroups
- * @param fragmentStructsAndGroups
- * @internal
- */
-export declare function removeStructAndGroupDuplicates(vertexStructsAndGroups: StructsAndGroups, fragmentStructsAndGroups: StructsAndGroups): {
-	structs: {
-		name: string;
-		members: Record<string, string>;
-	}[];
-	groups: {
-		group: number;
-		binding: number;
-		name: string;
-		isUniform: boolean;
-		type: string;
-	}[];
-};
-/** @internal */
-export declare const GpuBlendModesToPixi: Partial<Record<BLEND_MODES, GPUBlendState>>;
-/**
- * The stencil state for the GPU renderer.
- * This is used to define how the stencil buffer should be configured.
- * @category rendering
- * @advanced
- */
-export interface StencilState {
-	stencilWriteMask?: number;
-	stencilReadMask?: number;
-	stencilFront?: {
-		compare: "always" | "equal" | "not-equal";
-		passOp: "increment-clamp" | "decrement-clamp" | "keep" | "replace";
-	};
-	stencilBack?: {
-		compare: "always" | "equal" | "not-equal";
-		passOp: "increment-clamp" | "decrement-clamp" | "keep" | "replace";
-	};
-}
-/** @internal */
-export declare const GpuStencilModesToPixi: StencilState[];
-/** @internal */
-export interface GpuTextureUploader<T extends TextureSource = TextureSource> {
-	type: string;
-	upload(source: T, gpuTexture: GPUTexture, gpu: GPU$1): void;
-}
-/** @internal */
-export declare const gpuUploadBufferImageResource: GpuTextureUploader<BufferImageSource>;
-/**
- * A texture source that uses a compressed resource, such as an array of Uint8Arrays.
- * It is used for compressed textures that can be uploaded to the GPU.
- * @category rendering
- * @advanced
- */
-export declare class CompressedSource extends TextureSource<Uint8Array[]> {
-	readonly uploadMethodId = "compressed";
-	constructor(options: TextureSourceOptions);
-}
-/** @internal */
-export declare const blockDataMap: Record<string, {
-	blockBytes: number;
-	blockWidth: number;
-	blockHeight: number;
-}>;
-/** @internal */
-export declare const gpuUploadCompressedTextureResource: GpuTextureUploader<CompressedSource>;
-/** @internal */
-export declare const gpuUploadImageResource: GpuTextureUploader<TextureSource<any>>;
-/**
- * A utility type that represents a tuple of length L containing elements of type T.
- * @category utils
- * @advanced
- */
-export type ArrayFixed<T, L extends number> = [
-	T,
-	...Array<T>
-] & {
-	length: L;
-};
-/**
- * A dictionary type that maps string keys to values of type T.
- * @category utils
- * @advanced
- */
-export type Dict<T> = {
-	[key: string]: T;
-};
-/**
- * The type of resource used for video textures.
- * This is typically an HTMLVideoElement.
- * @category rendering
- * @advanced
- */
-export type VideoResource = HTMLVideoElement;
-/**
- * Options for video sources.
- * @category rendering
- * @advanced
- */
-export interface VideoSourceOptions extends TextureSourceOptions<VideoResource> {
-	/** If true, the video will start loading immediately. */
-	autoLoad?: boolean;
-	/** If true, the video will start playing as soon as it is loaded. */
-	autoPlay?: boolean;
-	/** The number of times a second to update the texture from the video. Leave at 0 to update at every render. */
-	updateFPS?: number;
-	/** If true, the video will be loaded with the `crossorigin` attribute. */
-	crossorigin?: boolean | string;
-	/** If true, the video will loop when it ends. */
-	loop?: boolean;
-	/** If true, the video will be muted. */
-	muted?: boolean;
-	/** If true, the video will play inline. */
-	playsinline?: boolean;
-	/** If true, the video will be preloaded. */
-	preload?: boolean;
-	/** The time in milliseconds to wait for the video to preload before timing out. */
-	preloadTimeoutMs?: number;
-	/** The alpha mode of the video. */
-	alphaMode?: ALPHA_MODES;
-}
-/**
- * A texture source that uses a video as its resource.
- * It automatically resizes the texture based on the video dimensions.
- * It also provides methods to control playback and handle video events.
- * This class supports automatic loading, playback, and frame updates.
- * It can also handle cross-origin videos and provides options for looping, muting, and inline playback.
- * @category rendering
- * @advanced
- */
-export declare class VideoSource extends TextureSource<VideoResource> {
-	static extension: ExtensionMetadata;
-	/** The default options for video sources. */
-	static defaultOptions: VideoSourceOptions;
-	/** Whether or not the video is ready to play. */
-	isReady: boolean;
-	/** The upload method for this texture. */
-	uploadMethodId: string;
-	/**
-	 * When set to true will automatically play videos used by this texture once
-	 * they are loaded. If false, it will not modify the playing state.
-	 * @default true
-	 */
-	protected autoPlay: boolean;
-	/**
-	 * `true` to use Ticker.shared to auto update the base texture.
-	 * @default true
-	 */
-	private _autoUpdate;
-	/**
-	 * `true` if the instance is currently connected to Ticker.shared to auto update the base texture.
-	 * @default false
-	 */
-	private _isConnectedToTicker;
-	/**
-	 * Promise when loading.
-	 * @default null
-	 */
-	private _load;
-	private _msToNextUpdate;
-	private _preloadTimeout;
-	/** Callback when completed with load. */
-	private _resolve;
-	private _reject;
-	private _updateFPS;
-	private _videoFrameRequestCallbackHandle;
-	constructor(options: VideoSourceOptions);
-	/** Update the video frame if the source is not destroyed and meets certain conditions. */
-	protected updateFrame(): void;
-	/** Callback to update the video frame and potentially request the next frame update. */
-	private _videoFrameRequestCallback;
-	/**
-	 * Checks if the resource has valid dimensions.
-	 * @returns {boolean} True if width and height are set, otherwise false.
-	 */
-	get isValid(): boolean;
-	/**
-	 * Start preloading the video resource.
-	 * @returns {Promise<this>} Handle the validate event
-	 */
-	load(): Promise<this>;
-	/**
-	 * Handle video error events.
-	 * @param event - The error event
-	 */
-	private _onError;
-	/**
-	 * Checks if the underlying source is playing.
-	 * @returns True if playing.
-	 */
-	private _isSourcePlaying;
-	/**
-	 * Checks if the underlying source is ready for playing.
-	 * @returns True if ready.
-	 */
-	private _isSourceReady;
-	/** Runs the update loop when the video is ready to play. */
-	private _onPlayStart;
-	/** Stops the update loop when a pause event is triggered. */
-	private _onPlayStop;
-	/** Handles behavior when the video completes seeking to the current playback position. */
-	private _onSeeked;
-	private _onCanPlay;
-	private _onCanPlayThrough;
-	/** Fired when the video is loaded and ready to play. */
-	private _mediaReady;
-	/** Cleans up resources and event listeners associated with this texture. */
-	destroy(): void;
-	/** Should the base texture automatically update itself, set to true by default. */
-	get autoUpdate(): boolean;
-	set autoUpdate(value: boolean);
-	/**
-	 * How many times a second to update the texture from the video.
-	 * Leave at 0 to update at every render.
-	 * A lower fps can help performance, as updating the texture at 60fps on a 30ps video may not be efficient.
-	 */
-	get updateFPS(): number;
-	set updateFPS(value: number);
-	/**
-	 * Configures the updating mechanism based on the current state and settings.
-	 *
-	 * This method decides between using the browser's native video frame callback or a custom ticker
-	 * for updating the video frame. It ensures optimal performance and responsiveness
-	 * based on the video's state, playback status, and the desired frames-per-second setting.
-	 *
-	 * - If `_autoUpdate` is enabled and the video source is playing:
-	 *   - It will prefer the native video frame callback if available and no specific FPS is set.
-	 *   - Otherwise, it will use a custom ticker for manual updates.
-	 * - If `_autoUpdate` is disabled or the video isn't playing, any active update mechanisms are halted.
-	 */
-	private _configureAutoUpdate;
-	/**
-	 * Map of video MIME types that can't be directly derived from file extensions.
-	 * @readonly
-	 */
-	static MIME_TYPES: Dict<string>;
-	static test(resource: any): resource is VideoResource;
-}
-/** @internal */
-export declare const gpuUploadVideoResource: GpuTextureUploader<VideoSource>;
-/** @internal */
-export declare function getSupportedGPUCompressedTextureFormats(): Promise<TEXTURE_FORMATS[]>;
-/**
- * A class which generates mipmaps for a GPUTexture.
- * Thanks to toji for the original implementation
- * https://github.com/toji/web-texture-tool/blob/main/src/webgpu-mipmap-generator.js
- * @category rendering
- * @ignore
- */
-export declare class GpuMipmapGenerator {
-	device: GPUDevice;
-	sampler: GPUSampler;
-	pipelines: Record<string, GPURenderPipeline>;
-	mipmapShaderModule: any;
-	constructor(device: GPUDevice);
-	private _getMipmapPipeline;
-	/**
-	 * Generates mipmaps for the given GPUTexture from the data in level 0.
-	 * @param {module:External.GPUTexture} texture - Texture to generate mipmaps for.
-	 * @returns {module:External.GPUTexture} - The originally passed texture
-	 */
-	generateMipmap(texture: GPUTexture): GPUTexture;
 }
 interface AdvancedBlendInstruction extends Instruction {
 	renderPipeId: "blendMode";
@@ -12458,15 +9676,6 @@ export declare class BlendModePipe implements InstructionPipe<AdvancedBlendInstr
 	/** @internal */
 	destroy(): void;
 }
-/**
- * Copies from one buffer to another.
- * This is an optimised function that will use `Float64Array` window.
- * This means it can copy twice as fast!
- * @param sourceBuffer - the array buffer to copy from
- * @param destinationBuffer - the array buffer to copy to
- * @private
- */
-export declare function fastCopy(sourceBuffer: ArrayBuffer, destinationBuffer: ArrayBuffer): void;
 declare const imageTypes: {
 	png: string;
 	jpg: string;
@@ -13147,6 +10356,1995 @@ export declare class ExtractSystem implements System {
 	destroy(): void;
 }
 /**
+ * A BatcherAdaptor that uses WebGL to render batches.
+ * @category rendering
+ * @ignore
+ */
+export declare class GlBatchAdaptor implements BatcherAdaptor {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGLPipesAdaptor
+		];
+		readonly name: "batch";
+	};
+	private readonly _tempState;
+	/**
+	 * We only want to sync the a batched shaders uniforms once on first use
+	 * this is a hash of shader uids to a boolean value.  When the shader is first bound
+	 * we set the value to true.  When the shader is bound again we check the value and
+	 * if it is true we know that the uniforms have already been synced and we skip it.
+	 */
+	private _didUploadHash;
+	init(batcherPipe: BatcherPipe): void;
+	contextChange(): void;
+	start(batchPipe: BatcherPipe, geometry: Geometry, shader: Shader): void;
+	execute(batchPipe: BatcherPipe, batch: Batch): void;
+}
+/**
+ * @param maxIfs
+ * @param gl
+ * @internal
+ */
+export declare function checkMaxIfStatementsInShader(maxIfs: number, gl: GlRenderingContext): number;
+/**
+ * Returns the maximum number of textures that can be batched. This uses WebGL1's `MAX_TEXTURE_IMAGE_UNITS`.
+ * The response for this is that to get this info via WebGPU, we would need to make a context, which
+ * would make this function async, and we want to avoid that.
+ * @private
+ * @deprecated Use `Renderer.limits.maxBatchableTextures` instead.
+ * @returns {number} The maximum number of textures that can be batched
+ */
+export declare function getMaxTexturesPerBatch(): number;
+/**
+ * @param maxTextures
+ * @internal
+ */
+export declare function generateGPULayout(maxTextures: number): GPUBindGroupLayoutEntry[];
+/**
+ * @param maxTextures
+ * @internal
+ */
+export declare function generateLayout(maxTextures: number): Record<string, number>;
+/**
+ * @param textures
+ * @param size
+ * @param maxTextures
+ * @internal
+ */
+export declare function getTextureBatchBindGroup(textures: TextureSource[], size: number, maxTextures: number): BindGroup;
+/**
+ * A BatcherAdaptor that uses the GPU to render batches.
+ * @category rendering
+ * @ignore
+ */
+export declare class GpuBatchAdaptor implements BatcherAdaptor {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGPUPipesAdaptor
+		];
+		readonly name: "batch";
+	};
+	private _shader;
+	private _geometry;
+	start(batchPipe: BatcherPipe, geometry: Geometry, shader: Shader): void;
+	execute(batchPipe: BatcherPipe, batch: Batch): void;
+}
+/**
+ * the vertex source code, an obj
+ * @internal
+ */
+export type Vertex = {
+	/** stick uniforms and functions in here all headers will be compiled at the top of the shader */
+	header?: string;
+	/** code will be added at the start of the shader */
+	start?: string;
+	/** code will be run here before lighting happens */
+	main?: string;
+	/** code here will to modify anything before it is passed to the fragment shader */
+	end?: string;
+};
+/** @internal */
+export type Fragment = {
+	/** stick uniforms and functions in here all headers will be compiled at the top of the shader */
+	header?: string;
+	/** code will be added at the start of the shader */
+	start?: string;
+	/** code will be run here before lighting happens */
+	main?: string;
+	/** code here will to modify anything before it is passed to the fragment shader */
+	end?: string;
+};
+/**
+ * HighShaderBit is a part of a shader.
+ * it is used to compile HighShaders.
+ *
+ * Internally shaders are made up of many of these.
+ * You can even write your own and compile them in.
+ * @internal
+ */
+export interface HighShaderBit {
+	/** used to make the shader easier to understand! */
+	name?: string;
+	/** the snippets of vertex code */
+	vertex?: Vertex;
+	/** the snippets of fragment code */
+	fragment?: Fragment;
+}
+/**
+ * source code to compile a shader. this can be directly used by pixi and should be good to go!
+ * It contains the vertex and fragment source code.
+ * This is the final output of the HighShader compiler.
+ * It is used to create a shader program.
+ * @internal
+ */
+export interface HighShaderSource {
+	fragment: string;
+	vertex: string;
+}
+/**
+ * @param root0
+ * @param root0.bits
+ * @param root0.name
+ * @internal
+ */
+export declare function compileHighShaderGpuProgram({ bits, name }: {
+	bits: HighShaderBit[];
+	name: string;
+}): GpuProgram;
+/**
+ * @param root0
+ * @param root0.bits
+ * @param root0.name
+ * @internal
+ */
+export declare function compileHighShaderGlProgram({ bits, name }: {
+	bits: HighShaderBit[];
+	name: string;
+}): GlProgram;
+/**
+ * A high template consists of vertex and fragment source
+ * @internal
+ */
+export interface HighShaderTemplate {
+	name?: string;
+	fragment: string;
+	vertex: string;
+}
+/** @internal */
+export interface CompileHighShaderOptions {
+	template: HighShaderTemplate;
+	bits: HighShaderBit[];
+}
+/**
+ * This function will take a HighShader template, some High fragments and then merge them in to a shader source.
+ * @param options
+ * @param options.template
+ * @param options.bits
+ * @internal
+ */
+export declare function compileHighShader({ template, bits }: CompileHighShaderOptions): HighShaderSource;
+/**
+ * This function will take a HighShader template, some High fragments and then merge them in to a shader source.
+ * It is specifically for WebGL and does not compile inputs and outputs.
+ * @param options
+ * @param options.template - The HighShader template containing vertex and fragment source.
+ * @param options.bits - An array of HighShaderBit objects to be compiled into the shader.
+ * @returns A HighShaderSource object containing the compiled vertex and fragment shaders.
+ * @internal
+ */
+export declare function compileHighShaderGl({ template, bits }: CompileHighShaderOptions): HighShaderSource;
+/**
+ * takes the HighFragment source parts and adds them to the hook hash
+ * @param srcParts - the hash of hook arrays
+ * @param parts - the code to inject into the hooks
+ * @param name - optional the name of the part to add
+ * @internal
+ */
+export declare function addBits(srcParts: Record<string, string>, parts: Record<string, string[]>, name?: string): void;
+/**
+ * takes a program string and returns an hash mapping the hooks to empty arrays
+ * @param programSrc - the program containing hooks
+ * @internal
+ */
+export declare function compileHooks(programSrc: string): Record<string, string[]>;
+/**
+ * @param fragments
+ * @param template
+ * @param sort
+ * @internal
+ */
+export declare function compileInputs(fragments: any[], template: string, sort?: boolean): string;
+/**
+ * @param fragments
+ * @param template
+ * @internal
+ */
+export declare function compileOutputs(fragments: any[], template: string): string;
+/**
+ * formats a shader so its more pleasant to read
+ * @param shader - a glsl shader program source
+ * @category utils
+ * @advanced
+ */
+export declare function formatShader(shader: string): string;
+/**
+ * takes a shader src and replaces any hooks with the HighFragment code.
+ * @param templateSrc - the program src template
+ * @param fragmentParts - the fragments to inject
+ * @internal
+ */
+export declare function injectBits(templateSrc: string, fragmentParts: Record<string, string[]>): string;
+/** @ignore */
+export declare const vertexGPUTemplate = "\n    @in aPosition: vec2<f32>;\n    @in aUV: vec2<f32>;\n\n    @out @builtin(position) vPosition: vec4<f32>;\n    @out vUV : vec2<f32>;\n    @out vColor : vec4<f32>;\n\n    {{header}}\n\n    struct VSOutput {\n        {{struct}}\n    };\n\n    @vertex\n    fn main( {{in}} ) -> VSOutput {\n\n        var worldTransformMatrix = globalUniforms.uWorldTransformMatrix;\n        var modelMatrix = mat3x3<f32>(\n            1.0, 0.0, 0.0,\n            0.0, 1.0, 0.0,\n            0.0, 0.0, 1.0\n          );\n        var position = aPosition;\n        var uv = aUV;\n\n        {{start}}\n\n        vColor = vec4<f32>(1., 1., 1., 1.);\n\n        {{main}}\n\n        vUV = uv;\n\n        var modelViewProjectionMatrix = globalUniforms.uProjectionMatrix * worldTransformMatrix * modelMatrix;\n\n        vPosition =  vec4<f32>((modelViewProjectionMatrix *  vec3<f32>(position, 1.0)).xy, 0.0, 1.0);\n\n        vColor *= globalUniforms.uWorldColorAlpha;\n\n        {{end}}\n\n        {{return}}\n    };\n";
+/** @ignore */
+export declare const fragmentGPUTemplate = "\n    @in vUV : vec2<f32>;\n    @in vColor : vec4<f32>;\n\n    {{header}}\n\n    @fragment\n    fn main(\n        {{in}}\n      ) -> @location(0) vec4<f32> {\n\n        {{start}}\n\n        var outColor:vec4<f32>;\n\n        {{main}}\n\n        var finalColor:vec4<f32> = outColor * vColor;\n\n        {{end}}\n\n        return finalColor;\n      };\n";
+/** @ignore */
+export declare const vertexGlTemplate = "\n    in vec2 aPosition;\n    in vec2 aUV;\n\n    out vec4 vColor;\n    out vec2 vUV;\n\n    {{header}}\n\n    void main(void){\n\n        mat3 worldTransformMatrix = uWorldTransformMatrix;\n        mat3 modelMatrix = mat3(\n            1.0, 0.0, 0.0,\n            0.0, 1.0, 0.0,\n            0.0, 0.0, 1.0\n          );\n        vec2 position = aPosition;\n        vec2 uv = aUV;\n\n        {{start}}\n\n        vColor = vec4(1.);\n\n        {{main}}\n\n        vUV = uv;\n\n        mat3 modelViewProjectionMatrix = uProjectionMatrix * worldTransformMatrix * modelMatrix;\n\n        gl_Position = vec4((modelViewProjectionMatrix * vec3(position, 1.0)).xy, 0.0, 1.0);\n\n        vColor *= uWorldColorAlpha;\n\n        {{end}}\n    }\n";
+/** @ignore */
+export declare const fragmentGlTemplate = "\n\n    in vec4 vColor;\n    in vec2 vUV;\n\n    out vec4 finalColor;\n\n    {{header}}\n\n    void main(void) {\n\n        {{start}}\n\n        vec4 outColor;\n\n        {{main}}\n\n        finalColor = outColor * vColor;\n\n        {{end}}\n    }\n";
+/** @internal */
+export declare const colorBit: {
+	name: string;
+	vertex: {
+		header: string;
+		main: string;
+	};
+};
+/** @internal */
+export declare const colorBitGl: {
+	name: string;
+	vertex: {
+		header: string;
+		main: string;
+	};
+};
+/**
+ * @param maxTextures
+ * @internal
+ */
+export declare function generateTextureBatchBit(maxTextures: number): HighShaderBit;
+/**
+ * @param maxTextures
+ * @internal
+ */
+export declare function generateTextureBatchBitGl(maxTextures: number): HighShaderBit;
+/** @internal */
+export declare const globalUniformsBit: {
+	name: string;
+	vertex: {
+		header: string;
+	};
+};
+/** @internal */
+export declare const globalUniformsUBOBitGl: {
+	name: string;
+	vertex: {
+		header: string;
+	};
+};
+/** @internal */
+export declare const globalUniformsBitGl: {
+	name: string;
+	vertex: {
+		header: string;
+	};
+};
+/** @internal */
+export declare const localUniformBit: {
+	name: string;
+	vertex: {
+		header: string;
+		main: string;
+		end: string;
+	};
+};
+/** @internal */
+export declare const localUniformBitGroup2: {
+	vertex: {
+		header: string;
+		main: string;
+		end: string;
+	};
+	name: string;
+};
+/** @internal */
+export declare const localUniformBitGl: {
+	name: string;
+	vertex: {
+		header: string;
+		main: string;
+		end: string;
+	};
+};
+/** @internal */
+export declare const roundPixelsBit: {
+	name: string;
+	vertex: {
+		header: string;
+	};
+};
+/** @internal */
+export declare const roundPixelsBitGl: {
+	name: string;
+	vertex: {
+		header: string;
+	};
+};
+/** @internal */
+export declare const textureBit: {
+	name: string;
+	vertex: {
+		header: string;
+		main: string;
+	};
+	fragment: {
+		header: string;
+		main: string;
+	};
+};
+/** @internal */
+export declare const textureBitGl: {
+	name: string;
+	vertex: {
+		header: string;
+		main: string;
+	};
+	fragment: {
+		header: string;
+		main: string;
+	};
+};
+/**
+ * The ColorMask effect allows you to apply a color mask to the rendering process.
+ * This can be useful for selectively rendering certain colors or for creating
+ * effects based on color values.
+ * @category rendering
+ * @advanced
+ */
+export declare class ColorMask implements Effect, PoolItem {
+	static extension: ExtensionMetadata;
+	priority: number;
+	mask: number;
+	pipe: string;
+	constructor(options: {
+		mask: number;
+	});
+	init(mask: number): void;
+	destroy(): void;
+	static test(mask: any): boolean;
+}
+interface MaskConversionTest {
+	test: (item: any) => boolean;
+	maskClass: new (item: any) => Effect & PoolItem;
+}
+/**
+ * Represents a mask effect that can be applied to a container.
+ * @category rendering
+ * @advanced
+ */
+export type MaskEffect = {
+	mask: unknown;
+} & Effect;
+/**
+ * A class that manages the conversion of masks to mask effects.
+ * @category rendering
+ * @ignore
+ */
+export declare class MaskEffectManagerClass {
+	/** @private */
+	readonly _effectClasses: EffectConstructor[];
+	private readonly _tests;
+	private _initialized;
+	init(): void;
+	add(test: MaskConversionTest): void;
+	getMaskEffect(item: any): MaskEffect;
+	returnMaskEffect(effect: Effect & PoolItem): void;
+}
+/**
+ * A class that manages the conversion of masks to mask effects.
+ * @class
+ * @category rendering
+ * @advanced
+ */
+export declare const MaskEffectManager: MaskEffectManagerClass;
+/**
+ * ScissorMask is an effect that applies a scissor mask to a container.
+ * It restricts rendering to the area defined by the mask.
+ * The mask is a Container that defines the area to be rendered.
+ * The mask must be a Container that is not renderable or measurable.
+ * This effect is used to create clipping regions in the rendering process.
+ * @category rendering
+ * @advanced
+ */
+export declare class ScissorMask implements Effect {
+	priority: number;
+	mask: Container;
+	pipe: string;
+	constructor(mask: Container);
+	addBounds(bounds: Bounds, skipUpdateTransform?: boolean): void;
+	addLocalBounds(bounds: Bounds, localRoot: Container): void;
+	containsPoint(point: Point, hitTestFn: (container: Container, point: Point) => boolean): boolean;
+	reset(): void;
+	destroy(): void;
+}
+/**
+ * @param mask
+ * @param bounds
+ * @param skipUpdateTransform
+ * @internal
+ */
+export declare function addMaskBounds(mask: Container, bounds: Bounds, skipUpdateTransform: boolean): void;
+/**
+ * @param mask
+ * @param bounds
+ * @param localRoot
+ * @internal
+ */
+export declare function addMaskLocalBounds(mask: Container, bounds: Bounds, localRoot: Container): void;
+/**
+ * System plugin to the renderer to manage buffers.
+ *
+ * WebGL uses Buffers as a way to store objects to the GPU.
+ * This system makes working with them a lot easier.
+ *
+ * Buffers are used in three main places in WebGL
+ * - geometry information
+ * - Uniform information (via uniform buffer objects - a WebGL 2 only feature)
+ * - Transform feedback information. (WebGL 2 only feature)
+ *
+ * This system will handle the binding of buffers to the GPU as well as uploading
+ * them. With this system, you never need to work directly with GPU buffers, but instead work with
+ * the Buffer class.
+ * @class
+ * @category rendering
+ * @advanced
+ */
+export declare class GlBufferSystem implements System {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGLSystem
+		];
+		readonly name: "buffer";
+	};
+	/** @internal */
+	_gl: GlRenderingContext;
+	protected _managedBuffers: GCManagedHash<Buffer$1>;
+	/** Cache keeping track of the base bound buffer bases */
+	private _boundBufferBases;
+	private _renderer;
+	private _minBaseLocation;
+	private _maxBindings;
+	private _nextBindBaseIndex;
+	private _bindCallId;
+	/**
+	 * @param {Renderer} renderer - The renderer this System works for.
+	 */
+	constructor(renderer: WebGLRenderer);
+	/** @ignore */
+	destroy(): void;
+	/** Sets up the renderer context and necessary buffers. */
+	protected contextChange(): void;
+	getGlBuffer(buffer: Buffer$1): GlBuffer;
+	/**
+	 * This binds specified buffer. On first run, it will create the webGL buffers for the context too
+	 * @param buffer - the buffer to bind to the renderer
+	 */
+	bind(buffer: Buffer$1): void;
+	/**
+	 * Binds an uniform buffer to at the given index.
+	 *
+	 * A cache is used so a buffer will not be bound again if already bound.
+	 * @param glBuffer - the buffer to bind
+	 * @param index - the base index to bind it to.
+	 */
+	bindBufferBase(glBuffer: GlBuffer, index: number): void;
+	nextBindBase(hasTransformFeedback: boolean): void;
+	freeLocationForBufferBase(glBuffer: GlBuffer): number;
+	getLastBindBaseLocation(glBuffer: GlBuffer): number;
+	/**
+	 * Binds a buffer whilst also binding its range.
+	 * This will make the buffer start from the offset supplied rather than 0 when it is read.
+	 * @param glBuffer - the buffer to bind
+	 * @param index - the base index to bind at, defaults to 0
+	 * @param offset - the offset to bind at (this is blocks of 256). 0 = 0, 1 = 256, 2 = 512 etc
+	 * @param size - the size to bind at (this is blocks of 256).
+	 */
+	bindBufferRange(glBuffer: GlBuffer, index?: number, offset?: number, size?: number): void;
+	/**
+	 * Will ensure the data in the buffer is uploaded to the GPU.
+	 * @param {Buffer} buffer - the buffer to update
+	 */
+	updateBuffer(buffer: Buffer$1): GlBuffer;
+	/**
+	 * dispose all WebGL resources of all managed buffers
+	 * @param contextLost
+	 */
+	destroyAll(contextLost?: boolean): void;
+	protected onBufferUnload(buffer: Buffer$1, contextLost?: boolean): void;
+	/**
+	 * creates and attaches a GLBuffer object tied to the current context.
+	 * @param buffer
+	 * @protected
+	 */
+	protected createGLBuffer(buffer: Buffer$1): GlBuffer;
+	resetState(): void;
+}
+/**
+ * WebGL extensions for compressed textures using the PVRTC format.
+ * @category rendering
+ * @advanced
+ */
+interface WEBGL_compressed_texture_pvrtc$1 {
+	COMPRESSED_RGB_PVRTC_4BPPV1_IMG: number;
+	COMPRESSED_RGBA_PVRTC_4BPPV1_IMG: number;
+	COMPRESSED_RGB_PVRTC_2BPPV1_IMG: number;
+	COMPRESSED_RGBA_PVRTC_2BPPV1_IMG: number;
+}
+/**
+ * WebGL extensions for texture compression using the ETC format.
+ * @category rendering
+ * @advanced
+ */
+interface WEBGL_compressed_texture_etc$1 {
+	COMPRESSED_R11_EAC: number;
+	COMPRESSED_SIGNED_R11_EAC: number;
+	COMPRESSED_RG11_EAC: number;
+	COMPRESSED_SIGNED_RG11_EAC: number;
+	COMPRESSED_RGB8_ETC2: number;
+	COMPRESSED_RGBA8_ETC2_EAC: number;
+	COMPRESSED_SRGB8_ETC2: number;
+	COMPRESSED_SRGB8_ALPHA8_ETC2_EAC: number;
+	COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2: number;
+	COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2: number;
+}
+/**
+ * WebGL extensions for texture compression using the ETC1 format.
+ * @category rendering
+ * @advanced
+ */
+interface WEBGL_compressed_texture_etc1$1 {
+	COMPRESSED_RGB_ETC1_WEBGL: number;
+}
+/**
+ * WebGL extensions for texture compression using the ATC format.
+ * @category rendering
+ * @advanced
+ */
+export interface WEBGL_compressed_texture_atc {
+	COMPRESSED_RGB_ATC_WEBGL: number;
+	COMPRESSED_RGBA_ATC_EXPLICIT_ALPHA_WEBGL: number;
+	COMPRESSED_RGBA_ATC_INTERPOLATED_ALPHA_WEBGL: number;
+}
+/**
+ * WebGL extensions for texture compression using the BPTC format.
+ * @category rendering
+ * @advanced
+ */
+interface EXT_texture_compression_bptc$1 {
+	COMPRESSED_RGBA_BPTC_UNORM_EXT: number;
+	COMPRESSED_RGB_BPTC_SIGNED_FLOAT_EXT: number;
+	COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT_EXT: number;
+	COMPRESSED_SRGB_ALPHA_BPTC_UNORM_EXT: number;
+}
+/**
+ * WebGL extensions for texture compression using the RGTC format.
+ * @category rendering
+ * @advanced
+ */
+interface EXT_texture_compression_rgtc$1 {
+	COMPRESSED_RED_RGTC1_EXT: number;
+	COMPRESSED_SIGNED_RED_RGTC1_EXT: number;
+	COMPRESSED_RED_GREEN_RGTC2_EXT: number;
+	COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT: number;
+}
+/**
+ * WebGL extensions that are available in the current context.
+ * @category rendering
+ * @advanced
+ */
+export interface WebGLExtensions {
+	drawBuffers?: WEBGL_draw_buffers;
+	depthTexture?: OES_texture_float;
+	loseContext?: WEBGL_lose_context;
+	vertexArrayObject?: OES_vertex_array_object;
+	anisotropicFiltering?: EXT_texture_filter_anisotropic;
+	uint32ElementIndex?: OES_element_index_uint;
+	floatTexture?: OES_texture_float;
+	floatTextureLinear?: OES_texture_float_linear;
+	textureHalfFloat?: OES_texture_half_float;
+	textureHalfFloatLinear?: OES_texture_half_float_linear;
+	colorBufferFloat?: EXT_color_buffer_float;
+	vertexAttribDivisorANGLE?: ANGLE_instanced_arrays;
+	s3tc?: WEBGL_compressed_texture_s3tc;
+	s3tc_sRGB?: WEBGL_compressed_texture_s3tc_srgb;
+	etc?: WEBGL_compressed_texture_etc$1;
+	etc1?: WEBGL_compressed_texture_etc1$1;
+	pvrtc?: WEBGL_compressed_texture_pvrtc$1;
+	atc?: WEBGL_compressed_texture_atc;
+	astc?: WEBGL_compressed_texture_astc;
+	bptc?: EXT_texture_compression_bptc$1;
+	rgtc?: EXT_texture_compression_rgtc$1;
+	srgb?: EXT_sRGB;
+}
+/**
+ * Options for the context system.
+ * @category rendering
+ * @advanced
+ * @property {WebGL2RenderingContext | null} [context=null] - User-provided WebGL rendering context object.
+ * @property {GpuPowerPreference} [powerPreference='default'] - An optional hint indicating what configuration
+ * of GPU is suitable for the WebGL context, can be `'high-performance'` or `'low-power'`. Setting to `'high-performance'`
+ * will prioritize rendering performance over power consumption, while setting to `'low-power'` will prioritize power saving
+ * over rendering performance.
+ * @property {boolean} [premultipliedAlpha=true] - Whether the compositor will assume the drawing buffer contains
+ * colors with premultiplied alpha.
+ * @property {boolean} [preserveDrawingBuffer=false] - Whether to enable drawing buffer preservation.
+ * If enabled, the drawing buffer will preserve
+ * its value until cleared or overwritten. Enable this if you need to call `toDataUrl` on the WebGL context.
+ * @property {boolean} [antialias] - Whether to enable antialiasing.
+ * @property {1 | 2} [preferWebGLVersion=2] - The preferred WebGL version to use.
+ */
+export interface ContextSystemOptions {
+	/**
+	 * User-provided WebGL rendering context object.
+	 * @default null
+	 */
+	context: WebGL2RenderingContext | null;
+	/**
+	 * An optional hint indicating what configuration of GPU is suitable for the WebGL context,
+	 * can be `'high-performance'` or `'low-power'`.
+	 * Setting to `'high-performance'` will prioritize rendering performance over power consumption,
+	 * while setting to `'low-power'` will prioritize power saving over rendering performance.
+	 * @default undefined
+	 */
+	powerPreference?: GpuPowerPreference;
+	/**
+	 * Whether the compositor will assume the drawing buffer contains colors with premultiplied alpha.
+	 * @default true
+	 */
+	premultipliedAlpha: boolean;
+	/**
+	 * Whether to enable drawing buffer preservation. If enabled, the drawing buffer will preserve
+	 * its value until cleared or overwritten. Enable this if you need to call `toDataUrl` on the WebGL context.
+	 * @default false
+	 */
+	preserveDrawingBuffer: boolean;
+	antialias?: boolean;
+	/**
+	 * The preferred WebGL version to use.
+	 * @default 2
+	 */
+	preferWebGLVersion?: 1 | 2;
+	/**
+	 * Whether to enable multi-view rendering. Set to true when rendering to multiple
+	 * canvases on the dom.
+	 * @default false
+	 */
+	multiView: boolean;
+}
+/**
+ * System plugin to the renderer to manage the context
+ * @category rendering
+ * @advanced
+ */
+export declare class GlContextSystem implements System<ContextSystemOptions> {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGLSystem
+		];
+		readonly name: "context";
+	};
+	/** The default options for the system. */
+	static defaultOptions: ContextSystemOptions;
+	protected CONTEXT_UID: number;
+	protected gl: WebGL2RenderingContext;
+	/**
+	 * Features supported by current renderer.
+	 * @type {object}
+	 * @readonly
+	 */
+	supports: {
+		/** Support for 32-bit indices buffer. */
+		uint32Indices: boolean;
+		/** Support for UniformBufferObjects */
+		uniformBufferObject: boolean;
+		/** Support for VertexArrayObjects */
+		vertexArrayObject: boolean;
+		/** Support for SRGB texture format */
+		srgbTextures: boolean;
+		/** Support for wrapping modes if a texture is non-power of two */
+		nonPowOf2wrapping: boolean;
+		/** Support for MSAA (antialiasing of dynamic textures) */
+		msaa: boolean;
+		/** Support for mipmaps if a texture is non-power of two */
+		nonPowOf2mipmaps: boolean;
+	};
+	/**
+	 * Extensions available.
+	 * @type {object}
+	 * @readonly
+	 * @property {WEBGL_draw_buffers} drawBuffers - WebGL v1 extension
+	 * @property {WEBGL_depth_texture} depthTexture - WebGL v1 extension
+	 * @property {OES_texture_float} floatTexture - WebGL v1 extension
+	 * @property {WEBGL_lose_context} loseContext - WebGL v1 extension
+	 * @property {OES_vertex_array_object} vertexArrayObject - WebGL v1 extension
+	 * @property {EXT_texture_filter_anisotropic} anisotropicFiltering - WebGL v1 and v2 extension
+	 */
+	extensions: WebGLExtensions;
+	webGLVersion: 1 | 2;
+	/**
+	 * Whether to enable multi-view rendering. Set to true when rendering to multiple
+	 * canvases on the dom.
+	 * @default false
+	 */
+	multiView: boolean;
+	/**
+	 * The canvas that the WebGL Context is rendering to.
+	 * This will be the view canvas. But if multiView is enabled, this canvas will not be attached to the DOM.
+	 * It will be rendered to and then copied to the target canvas.
+	 * @readonly
+	 */
+	canvas: ICanvas;
+	private _renderer;
+	private _contextLossForced;
+	/** @param renderer - The renderer this System works for. */
+	constructor(renderer: WebGLRenderer);
+	/**
+	 * `true` if the context is lost
+	 * @readonly
+	 */
+	get isLost(): boolean;
+	/**
+	 * Handles the context change event.
+	 * @param {WebGLRenderingContext} gl - New WebGL context.
+	 */
+	protected contextChange(gl: WebGL2RenderingContext): void;
+	init(options: ContextSystemOptions): void;
+	ensureCanvasSize(targetCanvas: ICanvas): void;
+	/**
+	 * Initializes the context.
+	 * @protected
+	 * @param {WebGLRenderingContext} gl - WebGL context
+	 */
+	protected initFromContext(gl: WebGL2RenderingContext): void;
+	/**
+	 * Initialize from context options
+	 * @protected
+	 * @see https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/getContext
+	 * @param preferWebGLVersion
+	 * @param {object} options - context attributes
+	 */
+	protected createContext(preferWebGLVersion: 1 | 2, options: WebGLContextAttributes): void;
+	/** Auto-populate the {@link GlContextSystem.extensions extensions}. */
+	protected getExtensions(): void;
+	/**
+	 * Handles a lost webgl context
+	 * @param {WebGLContextEvent} event - The context lost event.
+	 */
+	protected handleContextLost(event: WebGLContextEvent): void;
+	/** Handles a restored webgl context. */
+	protected handleContextRestored(): void;
+	destroy(): void;
+	/**
+	 * this function can be called to force a webGL context loss
+	 * this will release all resources on the GPU.
+	 * Useful if you need to put Pixi to sleep, and save some GPU memory
+	 *
+	 * As soon as render is called - all resources will be created again.
+	 */
+	forceContextLoss(): void;
+	/**
+	 * Validate context.
+	 * @param {WebGLRenderingContext} gl - Render context.
+	 */
+	protected validateContext(gl: WebGL2RenderingContext): void;
+}
+/**
+ * @param format
+ * @internal
+ */
+export declare function getGlTypeFromFormat(format: VertexFormat): number;
+/**
+ * The options for the back buffer system.
+ * @category rendering
+ * @property {boolean} [useBackBuffer=false] - if true will use the back buffer where required
+ * @property {boolean} [antialias=false] - if true will ensure the texture is antialiased
+ * @advanced
+ */
+export interface GlBackBufferOptions {
+	/**
+	 * if true will use the back buffer where required
+	 * @default false
+	 */
+	useBackBuffer?: boolean;
+	/** if true will ensure the texture is antialiased */
+	antialias?: boolean;
+}
+/**
+ * For blend modes you need to know what pixels you are actually drawing to. For this to be possible in WebGL
+ * we need to render to a texture and then present that texture to the screen. This system manages that process.
+ *
+ * As the main scene is rendered to a texture, it means we can sample it and copy its pixels,
+ * something not possible on the main canvas.
+ *
+ * If antialiasing is set to to true and useBackBuffer is set to true, then the back buffer will be antialiased.
+ * and the main gl context will not.
+ *
+ * You only need to activate this back buffer if you are using a blend mode that requires it.
+ *
+ * to activate is simple, you pass `useBackBuffer:true` to your render options
+ * @category rendering
+ * @advanced
+ */
+export declare class GlBackBufferSystem implements System<GlBackBufferOptions> {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGLSystem
+		];
+		readonly name: "backBuffer";
+		readonly priority: 1;
+	};
+	/** default options for the back buffer system */
+	static defaultOptions: GlBackBufferOptions;
+	/** if true, the back buffer is used */
+	useBackBuffer: boolean;
+	private _backBufferTexture;
+	private readonly _renderer;
+	private _targetTexture;
+	private _useBackBufferThisRender;
+	private _antialias;
+	private _state;
+	private _bigTriangleShader;
+	constructor(renderer: WebGLRenderer);
+	init(options?: GlBackBufferOptions): void;
+	/**
+	 * This is called before the RenderTargetSystem is started. This is where
+	 * we replace the target with the back buffer if required.
+	 * @param options - The options for this render.
+	 */
+	protected renderStart(options: RenderOptions): void;
+	protected renderEnd(): void;
+	private _presentBackBuffer;
+	private _getBackBufferTexture;
+	/** destroys the back buffer */
+	destroy(): void;
+}
+/**
+ * The system that handles color masking for the WebGL.
+ * @category rendering
+ * @advanced
+ */
+export declare class GlColorMaskSystem implements System {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGLSystem
+		];
+		readonly name: "colorMask";
+	};
+	private readonly _renderer;
+	private _colorMaskCache;
+	constructor(renderer: WebGLRenderer);
+	setMask(colorMask: number): void;
+	destroy?: () => void;
+}
+/**
+ * The system that handles encoding commands for the WebGL.
+ * @category rendering
+ * @advanced
+ */
+export declare class GlEncoderSystem implements System {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGLSystem
+		];
+		readonly name: "encoder";
+	};
+	readonly commandFinished: Promise<void>;
+	private readonly _renderer;
+	constructor(renderer: WebGLRenderer);
+	setGeometry(geometry: Geometry, shader?: Shader): void;
+	finishRenderPass(): void;
+	draw(options: {
+		geometry: Geometry;
+		shader: Shader;
+		state?: State;
+		topology?: Topology;
+		size?: number;
+		start?: number;
+		instanceCount?: number;
+		skipSync?: boolean;
+	}): void;
+	destroy(): void;
+}
+/**
+ * The GpuLimitsSystem provides information about the capabilities and limitations of the underlying GPU.
+ * These limits, such as the maximum number of textures that can be used in a shader
+ * (`maxTextures`) or the maximum number of textures that can be batched together (`maxBatchableTextures`),
+ * are determined by the specific graphics hardware and driver.
+ *
+ * The values for these limits are not available immediately upon instantiation of the class.
+ * They are populated when the GL rendering context is successfully initialized and ready,
+ * which occurs after the `renderer.init()` method has completed.
+ * Attempting to access these properties before the context is ready will result in undefined or default values.
+ *
+ * This system allows the renderer to adapt its behavior and resource allocation strategies
+ * to stay within the supported boundaries of the GPU, ensuring optimal performance and stability.
+ * @example
+ * ```ts
+ * const renderer = new WebGlRenderer();
+ * await renderer.init();
+ *
+ * console.log(renderer.limits.maxTextures);
+ * ```
+ * @category rendering
+ * @advanced
+ */
+export declare class GlLimitsSystem implements System {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGLSystem
+		];
+		readonly name: "limits";
+	};
+	/** The maximum number of textures that can be used by a shader */
+	maxTextures: number;
+	/** The maximum number of batchable textures */
+	maxBatchableTextures: number;
+	/** The maximum number of uniform bindings */
+	maxUniformBindings: number;
+	private readonly _renderer;
+	constructor(renderer: WebGLRenderer);
+	contextChange(): void;
+	destroy(): void;
+}
+/**
+ * This manages the stencil buffer. Used primarily for masking
+ * @category rendering
+ * @advanced
+ */
+export declare class GlStencilSystem implements System {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGLSystem
+		];
+		readonly name: "stencil";
+	};
+	private _gl;
+	private readonly _stencilCache;
+	private _renderTargetStencilState;
+	private _stencilOpsMapping;
+	private _comparisonFuncMapping;
+	private _activeRenderTarget;
+	constructor(renderer: WebGLRenderer);
+	protected contextChange(gl: WebGLRenderingContext): void;
+	protected onRenderTargetChange(renderTarget: RenderTarget): void;
+	resetState(): void;
+	setStencilMode(stencilMode: STENCIL_MODES, stencilReference: number): void;
+	destroy?: () => void;
+}
+/**
+ * System plugin to the renderer to manage uniform buffers. But with an WGSL adaptor.
+ * @category rendering
+ * @advanced
+ */
+export declare class GlUboSystem extends UboSystem {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGLSystem
+		];
+		readonly name: "ubo";
+	};
+	constructor();
+}
+/**
+ * The precision types available in WebGL shaders.
+ *
+ * These types define the precision of floating-point calculations in shaders.
+ * - `highp`: High precision, typically 32-bit floating-point.
+ * - `mediump`: Medium precision, typically 16-bit floating-point.
+ * - `lowp`: Low precision, typically 8-bit floating-point.
+ * @category rendering
+ * @advanced
+ */
+export type PRECISION = `highp` | `mediump` | `lowp`;
+/** @private */
+export declare class IGLUniformData {
+	location: WebGLUniformLocation;
+	value: number | boolean | Float32Array | Int32Array | Uint32Array | boolean[];
+}
+/**
+ * Helper class to create a WebGL Program
+ * @private
+ */
+export declare class GlProgramData {
+	/** The shader program. */
+	program: WebGLProgram;
+	/**
+	 * Holds the uniform data which contains uniform locations
+	 * and current uniform values used for caching and preventing unneeded GPU commands.
+	 */
+	uniformData: Record<string, any>;
+	/**
+	 * UniformGroups holds the various upload functions for the shader. Each uniform group
+	 * and program have a unique upload function generated.
+	 */
+	uniformGroups: Record<string, any>;
+	/** A hash that stores where UBOs are bound to on the program. */
+	uniformBlockBindings: Record<string, any>;
+	/** A hash for lazily-generated uniform uploading functions. */
+	uniformSync: Record<string, any>;
+	/**
+	 * A place where dirty ticks are stored for groups
+	 * If a tick here does not match with the Higher level Programs tick, it means
+	 * we should re upload the data.
+	 */
+	uniformDirtyGroups: Record<string, any>;
+	/**
+	 * Makes a new Pixi program.
+	 * @param program - webgl program
+	 * @param uniformData - uniforms
+	 */
+	constructor(program: WebGLProgram, uniformData: {
+		[key: string]: IGLUniformData;
+	});
+	/** Destroys this program. */
+	destroy(): void;
+}
+/** @internal */
+export interface ShaderSyncData {
+	textureCount: number;
+	blockIndex: number;
+}
+/** @internal */
+export type ShaderSyncFunction = (renderer: WebGLRenderer, shader: Shader, syncData: ShaderSyncData) => void;
+/**
+ * System plugin to the renderer to manage the shaders for WebGL.
+ * @category rendering
+ * @advanced
+ */
+export declare class GlShaderSystem {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGLSystem
+		];
+		readonly name: "shader";
+	};
+	/** @internal */
+	_activeProgram: GlProgram;
+	private _programDataHash;
+	private readonly _renderer;
+	/** @internal */
+	_gl: WebGL2RenderingContext;
+	private _shaderSyncFunctions;
+	constructor(renderer: WebGLRenderer);
+	protected contextChange(gl: GlRenderingContext): void;
+	/**
+	 * Changes the current shader to the one given in parameter.
+	 * @param shader - the new shader
+	 * @param skipSync - false if the shader should automatically sync its uniforms.
+	 * @returns the glProgram that belongs to the shader.
+	 */
+	bind(shader: Shader, skipSync?: boolean): void;
+	/**
+	 * Updates the uniform group.
+	 * @param uniformGroup - the uniform group to update
+	 */
+	updateUniformGroup(uniformGroup: UniformGroup): void;
+	/**
+	 * Binds a uniform block to the shader.
+	 * @param uniformGroup - the uniform group to bind
+	 * @param name - the name of the uniform block
+	 * @param index - the index of the uniform block
+	 */
+	bindUniformBlock(uniformGroup: UniformGroup | BufferResource, name: string, index?: number): void;
+	private _setProgram;
+	/**
+	 * @param program - the program to get the data for
+	 * @internal
+	 */
+	_getProgramData(program: GlProgram): GlProgramData;
+	private _createProgramData;
+	destroy(): void;
+	/**
+	 * Creates a function that can be executed that will sync the shader as efficiently as possible.
+	 * Overridden by the unsafe eval package if you don't want eval used in your project.
+	 * @param shader - the shader to generate the sync function for
+	 * @param shaderSystem - the shader system to use
+	 * @returns - the generated sync function
+	 * @ignore
+	 */
+	_generateShaderSync(shader: Shader, shaderSystem: GlShaderSystem): ShaderSyncFunction;
+	resetState(): void;
+}
+/**
+ * Generates the a function that will efficiently sync shader resources with the GPU.
+ * @param shader - The shader to generate the code for
+ * @param shaderSystem - An instance of the shader system
+ * @internal
+ */
+export declare function generateShaderSyncCode(shader: Shader, shaderSystem: GlShaderSystem): ShaderSyncFunction;
+/**
+ * Automatically generates a uniform group that holds the texture samplers for a shader.
+ * This is used mainly by the shaders that batch textures!
+ * @param maxTextures - the number of textures that this uniform group will contain.
+ * @returns a uniform group that holds the texture samplers.
+ * @internal
+ */
+export declare function getBatchSamplersUniformGroup(maxTextures: number): UniformGroup<any>;
+/**
+ * System plugin to the renderer to manage shaders.
+ * @category rendering
+ * @advanced
+ */
+export declare class GlUniformGroupSystem implements System {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGLSystem
+		];
+		readonly name: "uniformGroup";
+	};
+	/**
+	 * The current WebGL rendering context.
+	 * @type {WebGLRenderingContext}
+	 */
+	protected gl: GlRenderingContext;
+	/** Cache to holds the generated functions. Stored against UniformObjects unique signature. */
+	private _cache;
+	private _renderer;
+	private _uniformGroupSyncHash;
+	/** @param renderer - The renderer this System works for. */
+	constructor(renderer: WebGLRenderer);
+	protected contextChange(gl: GlRenderingContext): void;
+	/**
+	 * Uploads the uniforms values to the currently bound shader.
+	 * @param group - the uniforms values that be applied to the current shader
+	 * @param program
+	 * @param syncData
+	 * @param syncData.textureCount
+	 */
+	updateUniformGroup(group: UniformGroup, program: GlProgram, syncData: {
+		textureCount: number;
+	}): void;
+	/**
+	 * Overridable by the pixi.js/unsafe-eval package to use static syncUniforms instead.
+	 * @param group
+	 * @param program
+	 */
+	private _getUniformSyncFunction;
+	private _createUniformSyncFunction;
+	private _generateUniformsSync;
+	/**
+	 * Takes a uniform group and data and generates a unique signature for them.
+	 * @param group - The uniform group to get signature of
+	 * @param group.uniforms
+	 * @param uniformData - Uniform information generated by the shader
+	 * @param preFix
+	 * @returns Unique signature of the uniform group
+	 */
+	private _getSignature;
+	/** Destroys this System and removes all its textures. */
+	destroy(): void;
+}
+/**
+ * @param fragmentShader
+ * @internal
+ */
+export declare function migrateFragmentFromV7toV8(fragmentShader: string): string;
+/**
+ * @private
+ * @param {WebGLRenderingContext} gl - The current WebGL context {WebGLProgram}
+ * @param {number} type - the type, can be either VERTEX_SHADER or FRAGMENT_SHADER
+ * @param {string} src - The vertex shader source as an array of strings.
+ * @returns {WebGLShader} the shader
+ */
+export declare function compileShader(gl: WebGLRenderingContextBase, type: number, src: string): WebGLShader;
+/**
+ * @param {string} type - Type of value
+ * @param {number} size
+ * @private
+ */
+export declare function defaultValue(type: string, size: number): number | Float32Array | Int32Array | Uint32Array | boolean | boolean[];
+/**
+ * This function looks at the attribute information provided to the geometry and attempts
+ * to fill in any gaps. We do this by looking at the extracted data from the shader and
+ * making best guesses.
+ *
+ * Most of the time users don't need to provide all the attribute info beyond the data itself, so we
+ * can fill in the gaps for them. If you are using attributes in a more advanced way,
+ * don't forget to add all the info at creation!
+ * @param geometry - the geometry to ensure attributes for
+ * @param extractedData - the extracted data from the shader
+ * @internal
+ */
+export declare function ensureAttributes(geometry: Geometry, extractedData: Record<string, ExtractedAttributeData>): void;
+/**
+ * generates a WebGL Program object from a high level Pixi Program.
+ * @param gl - a rendering context on which to generate the program
+ * @param program - the high level Pixi Program.
+ * @private
+ */
+export declare function generateProgram(gl: GlRenderingContext, program: GlProgram): GlProgramData;
+/** @internal */
+export declare function getMaxFragmentPrecision(): PRECISION;
+/**
+ * returns a little WebGL context to use for program inspection.
+ * @private
+ * @returns {WebGLRenderingContext} a gl context to test with
+ */
+export declare function getTestContext(): GlRenderingContext;
+/**
+ * returns the uniform block data from the program
+ * @private
+ * @param program - the webgl program
+ * @param gl - the WebGL context
+ * @returns {object} the uniform data for this program
+ */
+export declare function getUboData(program: WebGLProgram, gl: WebGL2RenderingContext): Record<string, GlUniformBlockData>;
+/**
+ * returns the uniform data from the program
+ * @private
+ * @param program - the webgl program
+ * @param gl - the WebGL context
+ * @returns {object} the uniform data for this program
+ */
+export declare function getUniformData(program: WebGLProgram, gl: WebGLRenderingContextBase): {
+	[key: string]: GlUniformData;
+};
+/**
+ *
+ * logs out any program errors
+ * @param gl - The current WebGL context
+ * @param program - the WebGL program to display errors for
+ * @param vertexShader  - the fragment WebGL shader program
+ * @param fragmentShader - the vertex WebGL shader program
+ * @private
+ */
+export declare function logProgramError(gl: WebGLRenderingContext, program: WebGLProgram, vertexShader: WebGLShader, fragmentShader: WebGLShader): void;
+/**
+ * @private
+ * @param {string} type
+ */
+export declare function mapSize(type: string): number;
+/**
+ * @param gl
+ * @param type
+ * @internal
+ */
+export declare function mapType(gl: any, type: number): string;
+/**
+ * @param gl
+ * @param type
+ * @internal
+ */
+export declare function mapGlToVertexFormat(gl: any, type: number): VertexFormat;
+/**
+ * @param src
+ * @param isES300
+ * @param isFragment
+ * @internal
+ */
+export declare function addProgramDefines(src: string, isES300: boolean, isFragment?: boolean): string;
+interface EnsurePrecisionOptions {
+	requestedVertexPrecision: PRECISION;
+	requestedFragmentPrecision: PRECISION;
+	maxSupportedVertexPrecision: PRECISION;
+	maxSupportedFragmentPrecision: PRECISION;
+}
+/**
+ * Sets the float precision on the shader, ensuring the device supports the request precision.
+ * If the precision is already present, it just ensures that the device is able to handle it.
+ * @param src
+ * @param options
+ * @param options.requestedVertexPrecision
+ * @param options.requestedFragmentPrecision
+ * @param options.maxSupportedVertexPrecision
+ * @param options.maxSupportedFragmentPrecision
+ * @param isFragment
+ * @private
+ */
+export declare function ensurePrecision(src: string, options: EnsurePrecisionOptions, isFragment: boolean): string;
+/**
+ * @param src
+ * @param isES300
+ * @internal
+ */
+export declare function insertVersion(src: string, isES300: boolean): string;
+/**
+ * @param src
+ * @param root0
+ * @param root0.name
+ * @param isFragment
+ * @internal
+ */
+export declare function setProgramName(src: string, { name }: {
+	name: string;
+}, isFragment?: boolean): string;
+/**
+ * @param src
+ * @param isES300
+ * @internal
+ */
+export declare function stripVersion(src: string, isES300: boolean): string;
+/** @internal */
+export declare const WGSL_TO_STD40_SIZE: Record<string, number>;
+/**
+ * @param uniformData
+ * @internal
+ */
+export declare function createUboElementsSTD40(uniformData: UniformData[]): UboLayout;
+/**
+ * @param uboElements
+ * @internal
+ */
+export declare function createUboSyncFunctionSTD40(uboElements: UboElement[]): UniformsSyncCallback;
+/**
+ * This generates a function that will sync an array to the uniform buffer
+ * following the std140 layout
+ * @param uboElement - the element to generate the array sync for
+ * @param offsetToAdd - the offset to append at the start of the code
+ * @returns - the generated code
+ * @internal
+ */
+export declare function generateArraySyncSTD40(uboElement: UboElement, offsetToAdd: number): string;
+/**
+ * @param group
+ * @param uniformData
+ * @internal
+ */
+export declare function generateUniformsSync(group: UniformGroup, uniformData: Record<string, any>): UniformsSyncCallback;
+/** @internal */
+export declare const UNIFORM_TO_SINGLE_SETTERS: Record<UNIFORM_TYPES | string, string>;
+/** @internal */
+export declare const UNIFORM_TO_ARRAY_SETTERS: Record<UNIFORM_TYPES | string, string>;
+/**
+ * System plugin to the renderer to manage WebGL state machines
+ * @category rendering
+ * @advanced
+ */
+export declare class GlStateSystem implements System {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGLSystem
+		];
+		readonly name: "state";
+	};
+	/**
+	 * State ID
+	 * @readonly
+	 */
+	stateId: number;
+	/**
+	 * Polygon offset
+	 * @readonly
+	 */
+	polygonOffset: number;
+	/**
+	 * Blend mode
+	 * @default 'none'
+	 * @readonly
+	 */
+	blendMode: BLEND_MODES;
+	/** Whether current blend equation is different */
+	protected _blendEq: boolean;
+	/**
+	 * GL context
+	 * @type {WebGLRenderingContext}
+	 * @readonly
+	 */
+	protected gl: GlRenderingContext;
+	protected blendModesMap: Record<BLEND_MODES, number[]>;
+	/**
+	 * Collection of calls
+	 * @type {Function[]}
+	 */
+	protected readonly map: ((value: boolean) => void)[];
+	/**
+	 * Collection of check calls
+	 * @type {Function[]}
+	 */
+	protected readonly checks: ((system: this, state: State) => void)[];
+	/**
+	 * Default WebGL State
+	 * @readonly
+	 */
+	protected defaultState: State;
+	/**
+	 * Whether to invert the front face when rendering
+	 * This is used for render textures where the Y-coordinate is flipped
+	 * @default false
+	 */
+	private _invertFrontFace;
+	private _glFrontFace;
+	private _cullFace;
+	private _frontFaceDirty;
+	private _frontFace;
+	constructor(renderer: WebGLRenderer);
+	protected onRenderTargetChange(renderTarget: RenderTarget): void;
+	protected contextChange(gl: GlRenderingContext): void;
+	/**
+	 * Sets the current state
+	 * @param {*} state - The state to set.
+	 */
+	set(state: State): void;
+	/**
+	 * Sets the state, when previous state is unknown.
+	 * @param {*} state - The state to set
+	 */
+	forceState(state: State): void;
+	/**
+	 * Sets whether to enable or disable blending.
+	 * @param value - Turn on or off WebGl blending.
+	 */
+	setBlend(value: boolean): void;
+	/**
+	 * Sets whether to enable or disable polygon offset fill.
+	 * @param value - Turn on or off webgl polygon offset testing.
+	 */
+	setOffset(value: boolean): void;
+	/**
+	 * Sets whether to enable or disable depth test.
+	 * @param value - Turn on or off webgl depth testing.
+	 */
+	setDepthTest(value: boolean): void;
+	/**
+	 * Sets whether to enable or disable depth mask.
+	 * @param value - Turn on or off webgl depth mask.
+	 */
+	setDepthMask(value: boolean): void;
+	/**
+	 * Sets whether to enable or disable cull face.
+	 * @param {boolean} value - Turn on or off webgl cull face.
+	 */
+	setCullFace(value: boolean): void;
+	/**
+	 * Sets the gl front face.
+	 * @param {boolean} value - true is clockwise and false is counter-clockwise
+	 */
+	setFrontFace(value: boolean): void;
+	/**
+	 * Sets the blend mode.
+	 * @param {number} value - The blend mode to set to.
+	 */
+	setBlendMode(value: BLEND_MODES): void;
+	/**
+	 * Sets the polygon offset.
+	 * @param {number} value - the polygon offset
+	 * @param {number} scale - the polygon offset scale
+	 */
+	setPolygonOffset(value: number, scale: number): void;
+	/** Resets all the logic and disables the VAOs. */
+	resetState(): void;
+	/**
+	 * Checks to see which updates should be checked based on which settings have been activated.
+	 *
+	 * For example, if blend is enabled then we should check the blend modes each time the state is changed
+	 * or if polygon fill is activated then we need to check if the polygon offset changes.
+	 * The idea is that we only check what we have too.
+	 * @param func - the checking function to add or remove
+	 * @param value - should the check function be added or removed.
+	 */
+	private _updateCheck;
+	/**
+	 * A private little wrapper function that we call to check the blend mode.
+	 * @param system - the System to perform the state check on
+	 * @param state - the state that the blendMode will pulled from
+	 */
+	private static _checkBlendMode;
+	/**
+	 * A private little wrapper function that we call to check the polygon offset.
+	 * @param system - the System to perform the state check on
+	 * @param state - the state that the blendMode will pulled from
+	 */
+	private static _checkPolygonOffset;
+	/** @ignore */
+	destroy(): void;
+}
+/**
+ * Maps gl blend combinations to WebGL.
+ * @param gl
+ * @returns {object} Map of gl blend combinations to WebGL.
+ * @internal
+ */
+export declare function mapWebGLBlendModesToPixi(gl: GlRenderingContext): Record<BLEND_MODES, number[]>;
+/**
+ * The system for managing textures in WebGL.
+ * @category rendering
+ * @advanced
+ */
+export declare class GlTextureSystem implements System, CanvasGenerator {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGLSystem
+		];
+		readonly name: "texture";
+	};
+	private readonly _renderer;
+	private readonly _managedTextures;
+	/**
+	 * @deprecated since 8.15.0
+	 */
+	get managedTextures(): Readonly<TextureSource[]>;
+	private _glSamplers;
+	private _boundTextures;
+	private _activeTextureLocation;
+	private _boundSamplers;
+	private readonly _uploads;
+	private _gl;
+	private _mapFormatToInternalFormat;
+	private _mapFormatToType;
+	private _mapFormatToFormat;
+	private _premultiplyAlpha;
+	private readonly _useSeparateSamplers;
+	constructor(renderer: WebGLRenderer);
+	protected contextChange(gl: GlRenderingContext): void;
+	/**
+	 * Initializes a texture source, if it has already been initialized nothing will happen.
+	 * @param source - The texture source to initialize.
+	 * @returns The initialized texture source.
+	 */
+	initSource(source: TextureSource): void;
+	bind(texture: BindableTexture, location?: number): void;
+	bindSource(source: TextureSource, location?: number): void;
+	private _bindSampler;
+	unbind(texture: BindableTexture): void;
+	private _activateLocation;
+	private _initSource;
+	protected onStyleChange(source: TextureSource): void;
+	protected updateStyle(source: TextureSource, firstCreation: boolean): void;
+	protected onSourceUnload(source: TextureSource, contextLost?: boolean): void;
+	protected onSourceUpdate(source: TextureSource): void;
+	protected onUpdateMipmaps(source: TextureSource, bind?: boolean): void;
+	private _initSampler;
+	private _getGlSampler;
+	getGlSource(source: TextureSource): GlTexture;
+	generateCanvas(texture: Texture): ICanvas;
+	getPixels(texture: Texture): GetPixelsOutput;
+	destroy(): void;
+	resetState(): void;
+}
+/** @internal */
+export interface GLTextureUploader {
+	id: string;
+	upload(source: TextureSource, glTexture: GlTexture, gl: GlRenderingContext, webGLVersion: number): void;
+}
+/** @internal */
+export declare const glUploadBufferImageResource: GLTextureUploader;
+/** @internal */
+export declare const glUploadCompressedTextureResource: GLTextureUploader;
+/** @internal */
+export declare const glUploadImageResource: GLTextureUploader;
+/** @internal */
+export declare const glUploadVideoResource: GLTextureUploader;
+/**
+ * @param style
+ * @param gl
+ * @param mipmaps
+ * @param anisotropicExt
+ * @param glFunctionName
+ * @param firstParam
+ * @param forceClamp
+ * @param firstCreation
+ * @internal
+ */
+export declare function applyStyleParams(style: TextureStyle, gl: WebGL2RenderingContext, mipmaps: boolean, anisotropicExt: EXT_texture_filter_anisotropic, glFunctionName: "samplerParameteri" | "texParameteri", firstParam: 3553 | WebGLSampler, forceClamp: boolean, 
+/** if true we can skip setting certain values if the values is the same as the default gl values */
+firstCreation: boolean): void;
+/** @internal */
+export declare function getSupportedGlCompressedTextureFormats(): TEXTURE_FORMATS[];
+/**
+ * Returns a lookup table that maps each type-format pair to a compatible internal format.
+ * @function mapTypeAndFormatToInternalFormat
+ * @private
+ * @param {WebGLRenderingContext} gl - The rendering context.
+ * @returns Lookup table.
+ */
+export declare function mapFormatToGlFormat(gl: GlRenderingContext): Record<string, number>;
+/**
+ * Returns a lookup table that maps each type-format pair to a compatible internal format.
+ * @function mapTypeAndFormatToInternalFormat
+ * @private
+ * @param gl - The rendering context.
+ * @param extensions - The WebGL extensions.
+ * @returns Lookup table.
+ */
+export declare function mapFormatToGlInternalFormat(gl: GlRenderingContext, extensions: WebGLExtensions): Record<string, number>;
+/**
+ * Returns a lookup table that maps each type-format pair to a compatible internal format.
+ * @function mapTypeAndFormatToInternalFormat
+ * @private
+ * @param {WebGLRenderingContext} gl - The rendering context.
+ * @returns Lookup table.
+ */
+export declare function mapFormatToGlType(gl: GlRenderingContext): Record<string, number>;
+/** @internal */
+export declare const scaleModeToGlFilter: {
+	linear: number;
+	nearest: number;
+};
+/** @internal */
+export declare const mipmapScaleModeToGlFilter: {
+	linear: {
+		linear: number;
+		nearest: number;
+	};
+	nearest: {
+		linear: number;
+		nearest: number;
+	};
+};
+/** @internal */
+export declare const wrapModeToGlAddress: {
+	"clamp-to-edge": number;
+	repeat: number;
+	"mirror-repeat": number;
+};
+/** @internal */
+export declare const compareModeToGlCompare: {
+	never: number;
+	less: number;
+	equal: number;
+	"less-equal": number;
+	greater: number;
+	"not-equal": number;
+	"greater-equal": number;
+	always: number;
+};
+/**
+ * @param pixels
+ * @internal
+ */
+export declare function unpremultiplyAlpha(pixels: Uint8Array | Uint8ClampedArray): void;
+/** @internal */
+export declare class UboBatch {
+	data: Float32Array;
+	private readonly _minUniformOffsetAlignment;
+	byteIndex: number;
+	constructor({ minUniformOffsetAlignment }: {
+		minUniformOffsetAlignment: number;
+	});
+	clear(): void;
+	addEmptyGroup(size: number): number;
+	addGroup(array: Float32Array): number;
+	destroy(): void;
+}
+/**
+ * @param pm
+ * @param x
+ * @param y
+ * @param width
+ * @param height
+ * @param flipY
+ * @internal
+ */
+export declare function calculateProjection(pm: Matrix, x: number, y: number, width: number, height: number, flipY: boolean): Matrix;
+/** @internal */
+export declare const WGSL_ALIGN_SIZE_DATA: Record<UNIFORM_TYPES | string, {
+	align: number;
+	size: number;
+}>;
+/**
+ * @param uniformData
+ * @internal
+ */
+export declare function createUboElementsWGSL(uniformData: UniformData[]): UboLayout;
+/**
+ * @param uboElements
+ * @internal
+ */
+export declare function createUboSyncFunctionWGSL(uboElements: UboElement[]): UniformsSyncCallback;
+/**
+ * @param root0
+ * @param root0.source
+ * @param root0.entryPoint
+ * @internal
+ */
+export declare function extractAttributesFromGpuProgram({ source, entryPoint }: ProgramSource): Record<string, ExtractedAttributeData>;
+/**
+ * This generates a function that will sync an array to the uniform buffer
+ * following the wgsl layout
+ * @param uboElement - the element to generate the array sync for
+ * @param offsetToAdd - the offset to append at the start of the code
+ * @returns - the generated code
+ * @internal
+ */
+export declare function generateArraySyncWGSL(uboElement: UboElement, offsetToAdd: number): string;
+/**
+ * @param root0
+ * @param root0.groups
+ * @internal
+ */
+export declare function generateGpuLayoutGroups({ groups }: StructsAndGroups): ProgramPipelineLayoutDescription;
+/**
+ * @param root0
+ * @param root0.groups
+ * @internal
+ */
+export declare function generateLayoutHash({ groups }: StructsAndGroups): ProgramLayout;
+/**
+ * @param vertexStructsAndGroups
+ * @param fragmentStructsAndGroups
+ * @internal
+ */
+export declare function removeStructAndGroupDuplicates(vertexStructsAndGroups: StructsAndGroups, fragmentStructsAndGroups: StructsAndGroups): {
+	structs: {
+		name: string;
+		members: Record<string, string>;
+	}[];
+	groups: {
+		group: number;
+		binding: number;
+		name: string;
+		isUniform: boolean;
+		type: string;
+	}[];
+};
+/** @internal */
+export declare const GpuBlendModesToPixi: Partial<Record<BLEND_MODES, GPUBlendState>>;
+/**
+ * The stencil state for the GPU renderer.
+ * This is used to define how the stencil buffer should be configured.
+ * @category rendering
+ * @advanced
+ */
+export interface StencilState {
+	stencilWriteMask?: number;
+	stencilReadMask?: number;
+	stencilFront?: {
+		compare: "always" | "equal" | "not-equal";
+		passOp: "increment-clamp" | "decrement-clamp" | "keep" | "replace";
+	};
+	stencilBack?: {
+		compare: "always" | "equal" | "not-equal";
+		passOp: "increment-clamp" | "decrement-clamp" | "keep" | "replace";
+	};
+}
+/** @internal */
+export declare const GpuStencilModesToPixi: StencilState[];
+/** @internal */
+export interface GpuTextureUploader<T extends TextureSource = TextureSource> {
+	type: string;
+	upload(source: T, gpuTexture: GPUTexture, gpu: GPU$1): void;
+}
+/** @internal */
+export declare const gpuUploadBufferImageResource: GpuTextureUploader<BufferImageSource>;
+/**
+ * A texture source that uses a compressed resource, such as an array of Uint8Arrays.
+ * It is used for compressed textures that can be uploaded to the GPU.
+ * @category rendering
+ * @advanced
+ */
+export declare class CompressedSource extends TextureSource<Uint8Array[]> {
+	readonly uploadMethodId = "compressed";
+	constructor(options: TextureSourceOptions);
+}
+/** @internal */
+export declare const blockDataMap: Record<string, {
+	blockBytes: number;
+	blockWidth: number;
+	blockHeight: number;
+}>;
+/** @internal */
+export declare const gpuUploadCompressedTextureResource: GpuTextureUploader<CompressedSource>;
+/** @internal */
+export declare const gpuUploadImageResource: GpuTextureUploader<TextureSource<any>>;
+/**
+ * A utility type that represents a tuple of length L containing elements of type T.
+ * @category utils
+ * @advanced
+ */
+export type ArrayFixed<T, L extends number> = [
+	T,
+	...Array<T>
+] & {
+	length: L;
+};
+/**
+ * A dictionary type that maps string keys to values of type T.
+ * @category utils
+ * @advanced
+ */
+export type Dict<T> = {
+	[key: string]: T;
+};
+/**
+ * The type of resource used for video textures.
+ * This is typically an HTMLVideoElement.
+ * @category rendering
+ * @advanced
+ */
+export type VideoResource = HTMLVideoElement;
+/**
+ * Options for video sources.
+ * @category rendering
+ * @advanced
+ */
+export interface VideoSourceOptions extends TextureSourceOptions<VideoResource> {
+	/** If true, the video will start loading immediately. */
+	autoLoad?: boolean;
+	/** If true, the video will start playing as soon as it is loaded. */
+	autoPlay?: boolean;
+	/** The number of times a second to update the texture from the video. Leave at 0 to update at every render. */
+	updateFPS?: number;
+	/** If true, the video will be loaded with the `crossorigin` attribute. */
+	crossorigin?: boolean | string;
+	/** If true, the video will loop when it ends. */
+	loop?: boolean;
+	/** If true, the video will be muted. */
+	muted?: boolean;
+	/** If true, the video will play inline. */
+	playsinline?: boolean;
+	/** If true, the video will be preloaded. */
+	preload?: boolean;
+	/** The time in milliseconds to wait for the video to preload before timing out. */
+	preloadTimeoutMs?: number;
+	/** The alpha mode of the video. */
+	alphaMode?: ALPHA_MODES;
+}
+/**
+ * A texture source that uses a video as its resource.
+ * It automatically resizes the texture based on the video dimensions.
+ * It also provides methods to control playback and handle video events.
+ * This class supports automatic loading, playback, and frame updates.
+ * It can also handle cross-origin videos and provides options for looping, muting, and inline playback.
+ * @category rendering
+ * @advanced
+ */
+export declare class VideoSource extends TextureSource<VideoResource> {
+	static extension: ExtensionMetadata;
+	/** The default options for video sources. */
+	static defaultOptions: VideoSourceOptions;
+	/** Whether or not the video is ready to play. */
+	isReady: boolean;
+	/** The upload method for this texture. */
+	uploadMethodId: string;
+	/**
+	 * When set to true will automatically play videos used by this texture once
+	 * they are loaded. If false, it will not modify the playing state.
+	 * @default true
+	 */
+	protected autoPlay: boolean;
+	/**
+	 * `true` to use Ticker.shared to auto update the base texture.
+	 * @default true
+	 */
+	private _autoUpdate;
+	/**
+	 * `true` if the instance is currently connected to Ticker.shared to auto update the base texture.
+	 * @default false
+	 */
+	private _isConnectedToTicker;
+	/**
+	 * Promise when loading.
+	 * @default null
+	 */
+	private _load;
+	private _msToNextUpdate;
+	private _preloadTimeout;
+	/** Callback when completed with load. */
+	private _resolve;
+	private _reject;
+	private _updateFPS;
+	private _videoFrameRequestCallbackHandle;
+	constructor(options: VideoSourceOptions);
+	/** Update the video frame if the source is not destroyed and meets certain conditions. */
+	protected updateFrame(): void;
+	/** Callback to update the video frame and potentially request the next frame update. */
+	private _videoFrameRequestCallback;
+	/**
+	 * Checks if the resource has valid dimensions.
+	 * @returns {boolean} True if width and height are set, otherwise false.
+	 */
+	get isValid(): boolean;
+	/**
+	 * Start preloading the video resource.
+	 * @returns {Promise<this>} Handle the validate event
+	 */
+	load(): Promise<this>;
+	/**
+	 * Handle video error events.
+	 * @param event - The error event
+	 */
+	private _onError;
+	/**
+	 * Checks if the underlying source is playing.
+	 * @returns True if playing.
+	 */
+	private _isSourcePlaying;
+	/**
+	 * Checks if the underlying source is ready for playing.
+	 * @returns True if ready.
+	 */
+	private _isSourceReady;
+	/** Runs the update loop when the video is ready to play. */
+	private _onPlayStart;
+	/** Stops the update loop when a pause event is triggered. */
+	private _onPlayStop;
+	/** Handles behavior when the video completes seeking to the current playback position. */
+	private _onSeeked;
+	private _onCanPlay;
+	private _onCanPlayThrough;
+	/** Fired when the video is loaded and ready to play. */
+	private _mediaReady;
+	/** Cleans up resources and event listeners associated with this texture. */
+	destroy(): void;
+	/** Should the base texture automatically update itself, set to true by default. */
+	get autoUpdate(): boolean;
+	set autoUpdate(value: boolean);
+	/**
+	 * How many times a second to update the texture from the video.
+	 * Leave at 0 to update at every render.
+	 * A lower fps can help performance, as updating the texture at 60fps on a 30ps video may not be efficient.
+	 */
+	get updateFPS(): number;
+	set updateFPS(value: number);
+	/**
+	 * Configures the updating mechanism based on the current state and settings.
+	 *
+	 * This method decides between using the browser's native video frame callback or a custom ticker
+	 * for updating the video frame. It ensures optimal performance and responsiveness
+	 * based on the video's state, playback status, and the desired frames-per-second setting.
+	 *
+	 * - If `_autoUpdate` is enabled and the video source is playing:
+	 *   - It will prefer the native video frame callback if available and no specific FPS is set.
+	 *   - Otherwise, it will use a custom ticker for manual updates.
+	 * - If `_autoUpdate` is disabled or the video isn't playing, any active update mechanisms are halted.
+	 */
+	private _configureAutoUpdate;
+	/**
+	 * Map of video MIME types that can't be directly derived from file extensions.
+	 * @readonly
+	 */
+	static MIME_TYPES: Dict<string>;
+	static test(resource: any): resource is VideoResource;
+}
+/** @internal */
+export declare const gpuUploadVideoResource: GpuTextureUploader<VideoSource>;
+/** @internal */
+export declare function getSupportedGPUCompressedTextureFormats(): Promise<TEXTURE_FORMATS[]>;
+/**
+ * A class which generates mipmaps for a GPUTexture.
+ * Thanks to toji for the original implementation
+ * https://github.com/toji/web-texture-tool/blob/main/src/webgpu-mipmap-generator.js
+ * @category rendering
+ * @ignore
+ */
+export declare class GpuMipmapGenerator {
+	device: GPUDevice;
+	sampler: GPUSampler;
+	pipelines: Record<string, GPURenderPipeline>;
+	mipmapShaderModule: any;
+	constructor(device: GPUDevice);
+	private _getMipmapPipeline;
+	/**
+	 * Generates mipmaps for the given GPUTexture from the data in level 0.
+	 * @param {module:External.GPUTexture} texture - Texture to generate mipmaps for.
+	 * @returns {module:External.GPUTexture} - The originally passed texture
+	 */
+	generateMipmap(texture: GPUTexture): GPUTexture;
+}
+/**
+ * Copies from one buffer to another.
+ * This is an optimised function that will use `Float64Array` window.
+ * This means it can copy twice as fast!
+ * @param sourceBuffer - the array buffer to copy from
+ * @param destinationBuffer - the array buffer to copy to
+ * @private
+ */
+export declare function fastCopy(sourceBuffer: ArrayBuffer, destinationBuffer: ArrayBuffer): void;
+/**
  * Takes a vertices array and a matrix and transforms the vertices based on the matrix.
  * this out put is written to the uvs array
  * @param vertices - the vertices to calculate uvs from
@@ -13208,99 +12406,6 @@ export declare function getGeometryBounds(geometry: Geometry, attributeId: strin
  * @internal
  */
 export declare function transformVertices(vertices: number[], m: Matrix, offset?: number, stride?: number, size?: number): void;
-/**
- * Type definition for the global uniforms used in the renderer.
- * This includes projection matrix, world transform matrix, world color, and resolution.
- * @category rendering
- * @advanced
- */
-export type GlobalUniformGroup = UniformGroup<{
-	uProjectionMatrix: {
-		value: Matrix;
-		type: "mat3x3<f32>";
-	};
-	uWorldTransformMatrix: {
-		value: Matrix;
-		type: "mat3x3<f32>";
-	};
-	uWorldColorAlpha: {
-		value: Float32Array;
-		type: "vec4<f32>";
-	};
-	uResolution: {
-		value: number[];
-		type: "vec2<f32>";
-	};
-}>;
-/**
- * Options for the global uniforms system.
- * This includes size, projection matrix, world transform matrix, world color, and offset.
- * @category rendering
- * @advanced
- */
-export interface GlobalUniformOptions {
-	size?: number[];
-	projectionMatrix?: Matrix;
-	worldTransformMatrix?: Matrix;
-	worldColor?: number;
-	offset?: PointData;
-}
-/**
- * Data structure for the global uniforms used in the renderer.
- * This includes the projection matrix, world transform matrix, world color, resolution, and bind group.
- * @category rendering
- * @advanced
- */
-export interface GlobalUniformData {
-	projectionMatrix: Matrix;
-	worldTransformMatrix: Matrix;
-	worldColor: number;
-	resolution: number[];
-	offset: PointData;
-	bindGroup: BindGroup;
-}
-/** @internal */
-export interface GlobalUniformRenderer {
-	renderTarget: GlRenderTargetSystem | GpuRenderTargetSystem;
-	renderPipes: Renderer["renderPipes"];
-	ubo: UboSystem;
-	type: RendererType;
-}
-/**
- * System plugin to the renderer to manage global uniforms for the renderer.
- * @category rendering
- * @advanced
- */
-export declare class GlobalUniformSystem implements System {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGLSystem,
-			ExtensionType.WebGPUSystem,
-			ExtensionType.CanvasSystem
-		];
-		readonly name: "globalUniforms";
-	};
-	private readonly _renderer;
-	private _stackIndex;
-	private _globalUniformDataStack;
-	private readonly _uniformsPool;
-	private readonly _activeUniforms;
-	private readonly _bindGroupPool;
-	private readonly _activeBindGroups;
-	private _currentGlobalUniformData;
-	constructor(renderer: GlobalUniformRenderer);
-	reset(): void;
-	start(options: GlobalUniformOptions): void;
-	bind({ size, projectionMatrix, worldTransformMatrix, worldColor, offset, }: GlobalUniformOptions): void;
-	push(options: GlobalUniformOptions): void;
-	pop(): void;
-	get bindGroup(): BindGroup;
-	get globalUniformData(): GlobalUniformData;
-	get uniformGroup(): UniformGroup<any>;
-	private _createUniforms;
-	destroy(): void;
-}
 /**
  * Checks if the render target is viewable on the screen
  * Basically, is it a canvas element and is that canvas element in the DOM
@@ -13446,6 +12551,47 @@ export declare class HelloSystem implements System<HelloSystemOptions> {
  * @internal
  */
 export declare function getAdjustedBlendModeBlend(blendMode: BLEND_MODES, textureSource: TextureSource): BLEND_MODES;
+interface System$1 {
+	extension: {
+		name: string;
+	};
+	defaultOptions?: any;
+	new (...args: any): any;
+}
+type SystemsWithExtensionList = System$1[];
+type InstanceType$1<T extends new (...args: any) => any> = T extends new (...args: any) => infer R ? R : any;
+type NameType<T extends SystemsWithExtensionList> = T[number]["extension"]["name"];
+/**
+ * Create a mapped type where each property key is a 'name' value,
+ * and each property value is an ElementType with a matching 'name'
+ * @internal
+ */
+export type ExtractSystemTypes<T extends SystemsWithExtensionList> = {
+	[K in NameType<T>]: InstanceType$1<Extract<T[number], {
+		extension: {
+			name: K;
+		};
+	}>>;
+};
+type NotUnknown<T> = T extends unknown ? keyof T extends never ? never : T : T;
+type KnownProperties<T> = {
+	[K in keyof T as NotUnknown<T[K]> extends never ? never : K]: T[K];
+};
+type FlattenOptions<T> = T extends {
+	[K: string]: infer U;
+} ? U : never;
+type OptionsUnion<T extends SystemsWithExtensionList> = FlattenOptions<SeparateOptions<T>>;
+type DefaultOptionsTypes<T extends SystemsWithExtensionList> = {
+	[K in NameType<T>]: Extract<T[number], {
+		extension: {
+			name: K;
+		};
+	}>["defaultOptions"];
+};
+type SeparateOptions<T extends SystemsWithExtensionList> = KnownProperties<DefaultOptionsTypes<T>>;
+type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never;
+/** @internal */
+export type ExtractRendererOptions<T extends SystemsWithExtensionList> = UnionToIntersection<OptionsUnion<T>>;
 /**
  * A utility type that represents a canvas and its rendering context.
  * @category rendering
@@ -13663,14 +12809,82 @@ export declare class RenderableGCSystem implements System<RenderableGCSystemOpti
 	private _updateInstructionGCTick;
 }
 /**
+ * Options for creating a CanvasSource.
+ * @category rendering
+ * @advanced
+ */
+export interface CanvasSourceOptions extends TextureSourceOptions<ICanvas> {
+	/**
+	 * Should the canvas be resized to preserve its screen width and height regardless
+	 * of the resolution of the renderer, this is only supported for HTMLCanvasElement
+	 * and will be ignored if the canvas is an OffscreenCanvas.
+	 */
+	autoDensity?: boolean;
+	/** if true, this canvas will be set up to be transparent where possible */
+	transparent?: boolean;
+}
+/**
+ * A texture source that uses a canvas as its resource.
+ * It automatically resizes the canvas based on the width, height, and resolution.
+ * It also provides a 2D rendering context for drawing.
+ * @category rendering
+ * @advanced
+ */
+export declare class CanvasSource extends TextureSource<ICanvas> {
+	static extension: ExtensionMetadata;
+	uploadMethodId: string;
+	autoDensity: boolean;
+	transparent: boolean;
+	private _context2D;
+	constructor(options: CanvasSourceOptions);
+	resizeCanvas(): void;
+	resize(width?: number, height?: number, resolution?: number): boolean;
+	static test(resource: any): resource is ICanvas;
+	/**
+	 * Returns the 2D rendering context for the canvas.
+	 * Caches the context after creating it.
+	 * @returns The 2D rendering context of the canvas.
+	 */
+	get context2D(): CanvasRenderingContext2D;
+}
+/**
+ * The type of image-like resource that can be used as a texture source.
+ *
+ * - `ImageBitmap` is used for bitmap images.
+ * - `HTMLCanvasElement` and `OffscreenCanvas` are used for canvas elements.
+ * - `ICanvas` is an interface for canvas-like objects.
+ * - `VideoFrame` is used for video frames.
+ * - `HTMLImageElement` is used for HTML image elements.
+ * - `HTMLVideoElement` is used for HTML video elements.
+ * @category rendering
+ * @advanced
+ */
+export type ImageResource = ImageBitmap | HTMLCanvasElement | OffscreenCanvas | ICanvas | VideoFrame | HTMLImageElement | HTMLVideoElement;
+/**
+ * A texture source that uses an image-like resource as its resource.
+ * It can handle HTMLImageElement, ImageBitmap, VideoFrame, and HTMLVideoElement.
+ * It is used for textures that can be uploaded to the GPU.
+ * @category rendering
+ * @advanced
+ */
+export declare class ImageSource extends TextureSource<ImageResource> {
+	static extension: ExtensionMetadata;
+	uploadMethodId: string;
+	constructor(options: TextureSourceOptions<ImageResource>);
+	static test(resource: any): resource is ImageResource;
+}
+/**
  * Options for the {@link TextureGCSystem}.
  * @category rendering
  * @advanced
+ * @deprecated since 8.15.0
+ * @see {@link GCSystem}
  */
 export interface TextureGCSystemOptions {
 	/**
 	 * If set to true, this will enable the garbage collector on the GPU.
 	 * @default true
+	 * @deprecated since 8.15.0
 	 */
 	textureGCActive: boolean;
 	/**
@@ -13681,11 +12895,13 @@ export interface TextureGCSystemOptions {
 	/**
 	 * The maximum idle frames before a texture is destroyed by garbage collection.
 	 * @default 60 * 60
+	 * @deprecated since 8.15.0
 	 */
 	textureGCMaxIdle: number;
 	/**
 	 * Frames between two garbage collections.
 	 * @default 600
+	 * @deprecated since 8.15.0
 	 */
 	textureGCCheckCountMax: number;
 }
@@ -13694,6 +12910,8 @@ export interface TextureGCSystemOptions {
  * ensuring that it does not get clogged up with textures that are no longer being used.
  * @category rendering
  * @advanced
+ * @deprecated since 8.15.0
+ * @see {@link GCSystem}
  */
 export declare class TextureGCSystem implements System<TextureGCSystemOptions> {
 	/** @ignore */
@@ -13704,33 +12922,46 @@ export declare class TextureGCSystem implements System<TextureGCSystemOptions> {
 		];
 		readonly name: "textureGC";
 	};
-	/** default options for the TextureGCSystem */
+	/**
+	 * Default options for the TextureGCSystem
+	 * @deprecated since 8.15.0
+	 */
 	static defaultOptions: TextureGCSystemOptions;
 	/**
 	 * Frame count since started.
 	 * @readonly
+	 * @deprecated since 8.15.0
 	 */
-	count: number;
+	get count(): number;
 	/**
 	 * Frame count since last garbage collection.
 	 * @readonly
+	 * @deprecated since 8.15.0
 	 */
-	checkCount: number;
+	get checkCount(): number;
+	set checkCount(value: number);
+	private _checkCount;
 	/**
 	 * Maximum idle frames before a texture is destroyed by garbage collection.
 	 * @see TextureGCSystem.defaultMaxIdle
+	 * @deprecated since 8.15.0
 	 */
-	maxIdle: number;
+	get maxIdle(): number;
+	set maxIdle(value: number);
 	/**
 	 * Frames between two garbage collections.
 	 * @see TextureGCSystem.defaultCheckCountMax
+	 * @deprecated since 8.15.0
 	 */
-	checkCountMax: number;
+	get checkCountMax(): number;
+	set checkCountMax(_value: number);
 	/**
 	 * Current garbage collection mode.
 	 * @see TextureGCSystem.defaultMode
+	 * @deprecated since 8.15.0
 	 */
-	active: boolean;
+	get active(): boolean;
+	set active(value: boolean);
 	private _renderer;
 	/** @param renderer - The renderer this System works for. */
 	constructor(renderer: Renderer);
@@ -13738,14 +12969,91 @@ export declare class TextureGCSystem implements System<TextureGCSystemOptions> {
 	/**
 	 * Checks to see when the last time a texture was used.
 	 * If the texture has not been used for a specified amount of time, it will be removed from the GPU.
-	 */
-	protected postrender(): void;
-	/**
-	 * Checks to see when the last time a texture was used.
-	 * If the texture has not been used for a specified amount of time, it will be removed from the GPU.
+	 * @deprecated since 8.15.0
 	 */
 	run(): void;
 	destroy(): void;
+}
+/**
+ * Class controls uv mapping from Texture normal space to BaseTexture normal space.
+ *
+ * Takes `trim` and `rotate` into account. May contain clamp settings for Meshes and TilingSprite.
+ *
+ * Can be used in Texture `uvMatrix` field, or separately, you can use different clamp settings on the same texture.
+ * If you want to add support for texture region of certain feature or filter, that's what you're looking for.
+ *
+ * Takes track of Texture changes through `_lastTextureID` private field.
+ * Use `update()` method call to track it from outside.
+ * @see Texture
+ * @see Mesh
+ * @see TilingSprite
+ * @category rendering
+ * @advanced
+ */
+export declare class TextureMatrix {
+	/**
+	 * Matrix operation that converts texture region coords to texture coords
+	 * @readonly
+	 */
+	mapCoord: Matrix;
+	/**
+	 * Changes frame clamping
+	 * Works with TilingSprite and Mesh
+	 * Change to 1.5 if you texture has repeated right and bottom lines, that leads to smoother borders
+	 * @default 0
+	 */
+	clampOffset: number;
+	/**
+	 * Changes frame clamping
+	 * Works with TilingSprite and Mesh
+	 * Change to -0.5 to add a pixel to the edge, recommended for transparent trimmed textures in atlas
+	 * @default 0.5
+	 */
+	clampMargin: number;
+	/**
+	 * Clamp region for normalized coords, left-top pixel center in xy , bottom-right in zw.
+	 * Calculated based on clampOffset.
+	 */
+	readonly uClampFrame: Float32Array;
+	/** Normalized clamp offset. Calculated based on clampOffset. */
+	readonly uClampOffset: Float32Array;
+	/**
+	 * Tracks Texture frame changes.
+	 * @ignore
+	 */
+	_updateID: number;
+	/**
+	 * Tracks Texture frame changes.
+	 * @protected
+	 */
+	protected _textureID: number;
+	protected _texture: Texture;
+	/**
+	 * If texture size is the same as baseTexture.
+	 * @default false
+	 * @readonly
+	 */
+	isSimple: boolean;
+	/**
+	 * @param texture - observed texture
+	 * @param clampMargin - Changes frame clamping, 0.5 by default. Use -0.5 for extra border.
+	 */
+	constructor(texture: Texture, clampMargin?: number);
+	/** Texture property. */
+	get texture(): Texture;
+	set texture(value: Texture);
+	/**
+	 * Multiplies uvs array to transform
+	 * @param uvs - mesh uvs
+	 * @param [out=uvs] - output
+	 * @returns - output
+	 */
+	multiplyUvs(uvs: Float32Array, out?: Float32Array): Float32Array;
+	/**
+	 * Updates matrices if texture was changed
+	 * @returns - whether or not it was updated
+	 */
+	update(): boolean;
 }
 /**
  * Texture pool, used by FilterSystem and plugins.
@@ -13880,6 +13188,37 @@ export declare const nonCompressedFormats: TEXTURE_FORMATS[];
 /** @internal */
 export declare function getSupportedTextureFormats(): Promise<TEXTURE_FORMATS[]>;
 /**
+ * The type of resource or options that can be used to create a texture source.
+ * This includes ImageResource, TextureSourceOptions, BufferSourceOptions, and CanvasSourceOptions.
+ * @category rendering
+ * @advanced
+ */
+export type TextureResourceOrOptions = ImageResource | TextureSourceOptions<ImageResource> | BufferSourceOptions | CanvasSourceOptions;
+/**
+ * @param options
+ * @deprecated since v8.2.0
+ * @see TextureSource.from
+ * @category rendering
+ * @internal
+ */
+export declare function autoDetectSource(options?: TextureResourceOrOptions): TextureSource;
+/**
+ * @param options
+ * @param skipCache
+ * @internal
+ */
+export declare function resourceToTexture(options?: TextureResourceOrOptions, skipCache?: boolean): Texture;
+/**
+ * Helper function that creates a returns Texture based on the source you provide.
+ * The source should be loaded and ready to go. If not its best to grab the asset using Assets.
+ * @param id - String or Source to create texture from
+ * @param skipCache - Skip adding the texture to the cache
+ * @returns The texture based on the Id provided
+ * @category utils
+ * @internal
+ */
+export declare function textureFrom(id: TextureSourceLike, skipCache?: boolean): Texture;
+/**
  * @param value
  * @param groupId
  * @internal
@@ -13925,7 +13264,318 @@ export interface View {
 	/** Checks if the point is within the view */
 	containsPoint: (point: Point) => boolean;
 }
-declare const DefaultWebGPUSystems: (typeof BackgroundSystem | typeof GlobalUniformSystem | typeof HelloSystem | typeof ViewSystem | typeof RenderGroupSystem | typeof TextureGCSystem | typeof GenerateTextureSystem | typeof ExtractSystem | typeof RendererInitHook | typeof RenderableGCSystem | typeof SchedulerSystem | typeof GpuUboSystem | typeof GpuEncoderSystem | typeof GpuDeviceSystem | typeof GpuLimitsSystem | typeof GpuBufferSystem | typeof GpuTextureSystem | typeof GpuRenderTargetSystem | typeof GpuShaderSystem | typeof GpuStateSystem | typeof PipelineSystem | typeof GpuColorMaskSystem | typeof GpuStencilSystem | typeof BindGroupSystem)[];
+/**
+ * Options passed to the ViewSystem
+ * @category rendering
+ * @advanced
+ */
+export interface ViewSystemOptions {
+	/**
+	 * The width of the screen.
+	 * @default 800
+	 */
+	width?: number;
+	/**
+	 * The height of the screen.
+	 * @default 600
+	 */
+	height?: number;
+	/** The canvas to use as a view, optional. */
+	canvas?: ICanvas;
+	/**
+	 * Alias for `canvas`.
+	 * @deprecated since 8.0.0
+	 */
+	view?: ICanvas;
+	/**
+	 * Resizes renderer view in CSS pixels to allow for resolutions other than 1.
+	 *
+	 * This is only supported for HTMLCanvasElement
+	 * and will be ignored if the canvas is an OffscreenCanvas.
+	 */
+	autoDensity?: boolean;
+	/** The resolution / device pixel ratio of the renderer. */
+	resolution?: number;
+	/** Whether to enable anti-aliasing. This may affect performance. */
+	antialias?: boolean;
+	/** Whether to ensure the main view has can make use of the depth buffer. Always true for WebGL renderer. */
+	depth?: boolean;
+}
+/**
+ * Options for destroying the ViewSystem.
+ * @category rendering
+ * @advanced
+ */
+export interface ViewSystemDestroyOptions {
+	/** Whether to remove the view element from the DOM. Defaults to `false`. */
+	removeView?: boolean;
+}
+/**
+ * The view system manages the main canvas that is attached to the DOM.
+ * This main role is to deal with how the holding the view reference and dealing with how it is resized.
+ * @category rendering
+ * @advanced
+ */
+export declare class ViewSystem implements System<ViewSystemOptions, TypeOrBool<ViewSystemDestroyOptions>> {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGLSystem,
+			ExtensionType.WebGPUSystem,
+			ExtensionType.CanvasSystem
+		];
+		readonly name: "view";
+		readonly priority: 0;
+	};
+	/** The default options for the view system. */
+	static defaultOptions: ViewSystemOptions;
+	/** The canvas element that everything is drawn to. */
+	canvas: ICanvas;
+	/** The texture that is used to draw the canvas to the screen. */
+	texture: Texture<CanvasSource>;
+	/**
+	 * Whether CSS dimensions of canvas view should be resized to screen dimensions automatically.
+	 * This is only supported for HTMLCanvasElement and will be ignored if the canvas is an OffscreenCanvas.
+	 * @type {boolean}
+	 */
+	get autoDensity(): boolean;
+	set autoDensity(value: boolean);
+	/** Whether to enable anti-aliasing. This may affect performance. */
+	antialias: boolean;
+	/**
+	 * Measurements of the screen. (0, 0, screenWidth, screenHeight).
+	 *
+	 * Its safe to use as filterArea or hitArea for the whole stage.
+	 */
+	screen: Rectangle;
+	/** The render target that the view is drawn to. */
+	renderTarget: RenderTarget;
+	/** The resolution / device pixel ratio of the renderer. */
+	get resolution(): number;
+	set resolution(value: number);
+	/**
+	 * initiates the view system
+	 * @param options - the options for the view
+	 */
+	init(options: ViewSystemOptions): void;
+	/**
+	 * Resizes the screen and canvas to the specified dimensions.
+	 * @param desiredScreenWidth - The new width of the screen.
+	 * @param desiredScreenHeight - The new height of the screen.
+	 * @param resolution
+	 */
+	resize(desiredScreenWidth: number, desiredScreenHeight: number, resolution: number): void;
+	/**
+	 * Destroys this System and optionally removes the canvas from the dom.
+	 * @param {options | false} options - The options for destroying the view, or "false".
+	 * @example
+	 * viewSystem.destroy();
+	 * viewSystem.destroy(true);
+	 * viewSystem.destroy({ removeView: true });
+	 */
+	destroy(options?: TypeOrBool<ViewSystemDestroyOptions>): void;
+}
+/**
+ * The WebGL adaptor for the render target system. Allows the Render Target System to be used with the WebGL renderer
+ * @category rendering
+ * @ignore
+ */
+export declare class GlRenderTargetAdaptor implements RenderTargetAdaptor<GlRenderTarget> {
+	private _renderTargetSystem;
+	private _renderer;
+	private _clearColorCache;
+	private _viewPortCache;
+	/** Pre-computed draw buffers arrays for MRT, indexed by color attachment count */
+	private _drawBuffersCache;
+	init(renderer: WebGLRenderer, renderTargetSystem: RenderTargetSystem<GlRenderTarget>): void;
+	contextChange(): void;
+	copyToTexture(sourceRenderSurfaceTexture: RenderTarget, destinationTexture: Texture, originSrc: {
+		x: number;
+		y: number;
+	}, size: {
+		width: number;
+		height: number;
+	}, originDest: {
+		x: number;
+		y: number;
+	}): Texture<TextureSource<any>>;
+	startRenderPass(renderTarget: RenderTarget, clear?: CLEAR_OR_BOOL, clearColor?: RgbaArray, viewport?: Rectangle): void;
+	finishRenderPass(renderTarget?: RenderTarget): void;
+	initGpuRenderTarget(renderTarget: RenderTarget): GlRenderTarget;
+	destroyGpuRenderTarget(gpuRenderTarget: GlRenderTarget): void;
+	clear(_renderTarget: RenderTarget, clear: CLEAR_OR_BOOL, clearColor?: RgbaArray): void;
+	resizeGpuRenderTarget(renderTarget: RenderTarget): void;
+	private _initColor;
+	private _resizeColor;
+	private _initStencil;
+	private _resizeStencil;
+	prerender(renderTarget: RenderTarget): void;
+	postrender(renderTarget: RenderTarget): void;
+	private _setDrawBuffers;
+}
+/**
+ * The WebGL adaptor for the render target system. Allows the Render Target System to be used with the WebGl renderer
+ * @category rendering
+ * @advanced
+ */
+export declare class GlRenderTargetSystem extends RenderTargetSystem<GlRenderTarget> {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGLSystem
+		];
+		readonly name: "renderTarget";
+	};
+	adaptor: GlRenderTargetAdaptor;
+	constructor(renderer: WebGLRenderer);
+}
+/**
+ * Type definition for the global uniforms used in the renderer.
+ * This includes projection matrix, world transform matrix, world color, and resolution.
+ * @category rendering
+ * @advanced
+ */
+export type GlobalUniformGroup = UniformGroup<{
+	uProjectionMatrix: {
+		value: Matrix;
+		type: "mat3x3<f32>";
+	};
+	uWorldTransformMatrix: {
+		value: Matrix;
+		type: "mat3x3<f32>";
+	};
+	uWorldColorAlpha: {
+		value: Float32Array;
+		type: "vec4<f32>";
+	};
+	uResolution: {
+		value: number[];
+		type: "vec2<f32>";
+	};
+}>;
+/**
+ * Options for the global uniforms system.
+ * This includes size, projection matrix, world transform matrix, world color, and offset.
+ * @category rendering
+ * @advanced
+ */
+export interface GlobalUniformOptions {
+	size?: number[];
+	projectionMatrix?: Matrix;
+	worldTransformMatrix?: Matrix;
+	worldColor?: number;
+	offset?: PointData;
+}
+/**
+ * Data structure for the global uniforms used in the renderer.
+ * This includes the projection matrix, world transform matrix, world color, resolution, and bind group.
+ * @category rendering
+ * @advanced
+ */
+export interface GlobalUniformData {
+	projectionMatrix: Matrix;
+	worldTransformMatrix: Matrix;
+	worldColor: number;
+	resolution: number[];
+	offset: PointData;
+	bindGroup: BindGroup;
+}
+/** @internal */
+export interface GlobalUniformRenderer {
+	renderTarget: GlRenderTargetSystem | GpuRenderTargetSystem;
+	renderPipes: Renderer["renderPipes"];
+	ubo: UboSystem;
+	type: RendererType;
+}
+/**
+ * System plugin to the renderer to manage global uniforms for the renderer.
+ * @category rendering
+ * @advanced
+ */
+export declare class GlobalUniformSystem implements System {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGLSystem,
+			ExtensionType.WebGPUSystem,
+			ExtensionType.CanvasSystem
+		];
+		readonly name: "globalUniforms";
+	};
+	private readonly _renderer;
+	private _stackIndex;
+	private _globalUniformDataStack;
+	private readonly _uniformsPool;
+	private readonly _activeUniforms;
+	private readonly _bindGroupPool;
+	private readonly _activeBindGroups;
+	private _currentGlobalUniformData;
+	constructor(renderer: GlobalUniformRenderer);
+	reset(): void;
+	start(options: GlobalUniformOptions): void;
+	bind({ size, projectionMatrix, worldTransformMatrix, worldColor, offset, }: GlobalUniformOptions): void;
+	push(options: GlobalUniformOptions): void;
+	pop(): void;
+	get bindGroup(): BindGroup;
+	get globalUniformData(): GlobalUniformData;
+	get uniformGroup(): UniformGroup<any>;
+	private _createUniforms;
+	destroy(): void;
+}
+/**
+ * Shared systems for the renderer.
+ * @category rendering
+ * @internal
+ */
+export declare const SharedSystems: (typeof BackgroundSystem | typeof GlobalUniformSystem | typeof HelloSystem | typeof ViewSystem | typeof RenderGroupSystem | typeof GCSystem | typeof TextureGCSystem | typeof GenerateTextureSystem | typeof ExtractSystem | typeof RendererInitHook | typeof RenderableGCSystem | typeof SchedulerSystem)[];
+/**
+ * Shared render pipes for the renderer.
+ * @category rendering
+ * @internal
+ */
+export declare const SharedRenderPipes: (typeof BlendModePipe | typeof BatcherPipe | typeof SpritePipe | typeof RenderGroupPipe | typeof AlphaMaskPipe | typeof StencilMaskPipe | typeof ColorMaskPipe | typeof CustomRenderPipe)[];
+/**
+ * Options for the shared systems of a renderer.
+ * @category rendering
+ * @advanced
+ */
+export interface SharedRendererOptions extends ExtractRendererOptions<typeof SharedSystems>, PixiMixins.RendererOptions {
+	/**
+	 * Whether to stop PixiJS from dynamically importing default extensions for the renderer.
+	 * It is false by default, and means PixiJS will load all the default extensions, based
+	 * on the environment e.g browser/webworker.
+	 * If you set this to true, then you will need to manually import the systems and extensions you need.
+	 *
+	 * e.g.
+	 * ```js
+	 * import 'accessibility';
+	 * import 'app';
+	 * import 'events';
+	 * import 'spritesheet';
+	 * import 'graphics';
+	 * import 'mesh';
+	 * import 'text';
+	 * import 'text-bitmap';
+	 * import 'text-html';
+	 * import { autoDetectRenderer } from 'pixi.js';
+	 *
+	 * const renderer = await autoDetectRenderer({
+	 *   width: 800,
+	 *   height: 600,
+	 *   skipExtensionImports: true,
+	 * });
+	 * ```
+	 * @default false
+	 */
+	skipExtensionImports?: boolean;
+	/**
+	 * @default true
+	 * @deprecated since 8.1.6
+	 * @see `skipExtensionImports`
+	 */
+	manageImports?: boolean;
+}
+declare const DefaultWebGPUSystems: (typeof BackgroundSystem | typeof GlobalUniformSystem | typeof HelloSystem | typeof ViewSystem | typeof RenderGroupSystem | typeof GCSystem | typeof TextureGCSystem | typeof GenerateTextureSystem | typeof ExtractSystem | typeof RendererInitHook | typeof RenderableGCSystem | typeof SchedulerSystem | typeof GpuUboSystem | typeof GpuEncoderSystem | typeof GpuDeviceSystem | typeof GpuLimitsSystem | typeof GpuBufferSystem | typeof GpuTextureSystem | typeof GpuRenderTargetSystem | typeof GpuShaderSystem | typeof GpuStateSystem | typeof PipelineSystem | typeof GpuColorMaskSystem | typeof GpuStencilSystem | typeof BindGroupSystem)[];
 declare const DefaultWebGPUPipes: (typeof BlendModePipe | typeof BatcherPipe | typeof SpritePipe | typeof RenderGroupPipe | typeof AlphaMaskPipe | typeof StencilMaskPipe | typeof ColorMaskPipe | typeof CustomRenderPipe | typeof GpuUniformBatchPipe)[];
 /**
  * The default WebGPU systems. These are the systems that are added by default to the WebGPURenderer.
@@ -14015,481 +13665,954 @@ export declare class WebGPURenderer<T extends ICanvas = HTMLCanvasElement> exten
 	constructor();
 }
 /**
- * Options for {@link autoDetectRenderer}.
+ * The GPU object.
+ * Contains the GPU adapter and device.
  * @category rendering
  * @advanced
  */
-export interface AutoDetectOptions extends RendererOptions {
-	/** The preferred renderer type. WebGPU is recommended as its generally faster than WebGL. */
-	preference?: "webgl" | "webgpu";
-	/** Optional WebGPUOptions to pass only to WebGPU renderer. */
-	webgpu?: Partial<WebGPUOptions>;
-	/** Optional WebGLOptions to pass only to the WebGL renderer */
-	webgl?: Partial<WebGLOptions>;
+interface GPU$1 {
+	/** The GPU adapter */
+	adapter: GPUAdapter;
+	/** The GPU device */
+	device: GPUDevice;
 }
 /**
- * Automatically determines the most appropriate renderer for the current environment.
- *
- * The function will prioritize the WebGL renderer as it is the most tested safe API to use.
- * In the near future as WebGPU becomes more stable and ubiquitous, it will be prioritized over WebGL.
- *
- * The selected renderer's code is then dynamically imported to optimize
- * performance and minimize the initial bundle size.
- *
- * To maximize the benefits of dynamic imports, it's recommended to use a modern bundler
- * that supports code splitting. This will place the renderer code in a separate chunk,
- * which is loaded only when needed.
- * @example
- *
- * // create a renderer
- * const renderer = await autoDetectRenderer({
- *   width: 800,
- *   height: 600,
- *   antialias: true,
- * });
- *
- * // custom for each renderer
- * const renderer = await autoDetectRenderer({
- *   width: 800,
- *   height: 600,
- *   webgpu:{
- *     antialias: true,
- *     backgroundColor: 'red'
- *   },
- *   webgl:{
- *     antialias: true,
- *     backgroundColor: 'green'
- *   }
- *  });
- * @param options - A partial configuration object based on the `AutoDetectOptions` type.
- * @returns A Promise that resolves to an instance of the selected renderer.
+ * Options for the WebGPU context.
+ * @property {GpuPowerPreference} [powerPreference=default] - An optional hint indicating what configuration of GPU
+ * is suitable for the WebGPU context, can be `'high-performance'` or `'low-power'`.
+ * Setting to `'high-performance'` will prioritize rendering performance over power consumption,
+ * while setting to `'low-power'` will prioritize power saving over rendering performance.
+ * @property {boolean} [forceFallbackAdapter=false] - Force the use of the fallback adapter
  * @category rendering
- * @standard
- */
-export declare function autoDetectRenderer(options: Partial<AutoDetectOptions>): Promise<Renderer>;
-/**
- * Interface for creating Application plugins. Any plugin that's usable for Application must implement these methods.
- *
- * To create a plugin:
- * 1. Create a class that implements this interface
- * 2. Add the required static extension property
- * 3. Register the plugin using extensions.add()
- * @example
- * ```ts
- * import { ApplicationPlugin, ExtensionType, extensions } from 'pixi.js';
- *
- * class MyPlugin {
- *    // Required: Declare the extension type
- *    public static extension = ExtensionType.Application;
- *
- *    // Required: Implement init method
- *    public static init(options: Partial<ApplicationOptions>): void {
- *        // Add properties/methods to the Application instance (this)
- *        Object.defineProperty(this, 'myFeature', {
- *            value: () => console.log('My feature!'),
- *        });
- *
- *        // Use options if needed
- *        console.log('Plugin initialized with:', options);
- *    }
- *
- *    // Required: Implement destroy method
- *    public static destroy(): void {
- *        // Clean up any resources
- *        console.log('Plugin destroyed');
- *    }
- * }
- *
- * // Register the plugin
- * extensions.add(MyPlugin);
- *
- * // Usage in application
- * const app = new Application();
- * await app.init();
- * app.myFeature(); // Output: "My feature!"
- * ```
- * > [!IMPORTANT]
- * > - Plugins are initialized in the order they are added
- * > - Plugins are destroyed in reverse order
- * > - The `this` context in both methods refers to the Application instance
- * @see {@link ExtensionType} For different types of extensions
- * @see {@link extensions} For the extension registration system
- * @see {@link ApplicationOptions} For available application options
- * @category app
  * @advanced
  */
-export interface ApplicationPlugin {
+export interface GpuContextOptions {
 	/**
-	 * Called when Application is constructed, scoped to Application instance.
-	 * Passes in `options` as the only argument, which are Application `init()` options.
-	 * @param {object} options - Application options.
+	 * An optional hint indicating what configuration of GPU is suitable for the WebGPU context,
+	 * can be `'high-performance'` or `'low-power'`.
+	 * Setting to `'high-performance'` will prioritize rendering performance over power consumption,
+	 * while setting to `'low-power'` will prioritize power saving over rendering performance.
+	 * @default undefined
 	 */
-	init(options: Partial<ApplicationOptions>): void;
-	/** Called when destroying Application, scoped to Application instance. */
+	powerPreference?: GpuPowerPreference;
+	/**
+	 * Force the use of the fallback adapter
+	 * @default false
+	 */
+	forceFallbackAdapter: boolean;
+	/** Using shared device and adaptor from other engine */
+	gpu?: GPU$1;
+}
+/**
+ * System plugin to the renderer to manage the context.
+ * @class
+ * @category rendering
+ * @advanced
+ */
+export declare class GpuDeviceSystem implements System<GpuContextOptions> {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGPUSystem
+		];
+		readonly name: "device";
+	};
+	/** The default options for the GpuDeviceSystem. */
+	static defaultOptions: GpuContextOptions;
+	/** The GPU device */
+	gpu: GPU$1;
+	private _renderer;
+	private _initPromise;
+	/**
+	 * @param {WebGPURenderer} renderer - The renderer this System works for.
+	 */
+	constructor(renderer: WebGPURenderer);
+	init(options: GpuContextOptions): Promise<void>;
+	/**
+	 * Handle the context change event
+	 * @param gpu
+	 */
+	protected contextChange(gpu: GPU$1): void;
+	/**
+	 * Helper class to create a WebGL Context
+	 * @param {object} options - An options object that gets passed in to the canvas element containing the
+	 *    context attributes
+	 * @see https://developer.mozilla.org/en/docs/Web/API/HTMLCanvasElement/getContext
+	 * @returns {WebGLRenderingContext} the WebGL context
+	 */
+	private _createDeviceAndAdaptor;
 	destroy(): void;
 }
 /**
- * Application options supplied to the {@link Application#init} method.
- * These options configure how your PixiJS application behaves.
- * @category app
- * @standard
- * @example
- * ```js
- * import { Application } from 'pixi.js';
- *
- * const app = new Application();
- *
- * // Initialize with common options
- * await app.init({
- *    // Rendering options
- *    width: 800,                    // Canvas width
- *    height: 600,                   // Canvas height
- *    backgroundColor: 0x1099bb,     // Background color
- *    antialias: true,              // Enable antialiasing
- *    resolution: window.devicePixelRatio, // Screen resolution
- *
- *    // Performance options
- *    autoStart: true,              // Auto-starts the render loop
- *    sharedTicker: true,           // Use shared ticker for better performance
- *
- *    // Automatic resize options
- *    resizeTo: window,             // Auto-resize to window
- *    autoDensity: true,           // Adjust for device pixel ratio
- *
- *    // Advanced options
- *    preference: 'webgl',         // Renderer preference ('webgl' or 'webgpu')
- *    powerPreference: 'high-performance' // GPU power preference
- * });
- * ```
- * @see {@link WebGLOptions} For resize-related options
- * @see {@link WebGPUOptions} For resize-related options
- * @see {@link TickerPlugin} For ticker-related options
- * @see {@link ResizePlugin} For resize-related options
+ * Stores GPU-specific data for a Texture instance in WebGL context.
+ * @internal
  */
-export interface ApplicationOptions extends AutoDetectOptions, PixiMixins.ApplicationOptions {
-}
-export interface Application extends PixiMixins.Application {
+export declare class GPUTextureGpuData implements GPUData {
+	gpuTexture: GPUTexture;
+	textureView: GPUTextureView;
+	constructor(gpuTexture: GPUTexture);
+	/** Destroys this GPU data instance. */
+	destroy(): void;
 }
 /**
- * Convenience class to create a new PixiJS application.
- *
- * The Application class is the main entry point for creating a PixiJS application. It handles the setup of all core
- * components needed to start rendering and managing your game or interactive experience.
- *
- * Key features:
- * - Automatically creates and manages the renderer
- * - Provides a stage (root container) for your display objects
- * - Handles canvas creation and management
- * - Supports plugins for extending functionality
- *   - {@link ResizePlugin} for automatic resizing
- *   - {@link TickerPlugin} for managing frame updates
- *   - {@link CullerPlugin} for culling off-screen objects
- * @example
- * ```js
- * import { Assets, Application, Sprite } from 'pixi.js';
- *
- * // Create a new application
- * const app = new Application();
- *
- * // Initialize with options
- * await app.init({
- *     width: 800,           // Canvas width
- *     height: 600,          // Canvas height
- *     backgroundColor: 0x1099bb, // Background color
- *     antialias: true,     // Enable antialiasing
- *     resolution: 1,       // Resolution / device pixel ratio
- *     preference: 'webgl', // or 'webgpu' // Renderer preference
- * });
- *
- * // Add the canvas to your webpage
- * document.body.appendChild(app.canvas);
- *
- * // Start adding content to your application
- * const texture = await Assets.load('your-image.png');
- * const sprite = new Sprite(texture);
- * app.stage.addChild(sprite);
- * ```
- * > [!IMPORTANT] From PixiJS v8.0.0, the application must be initialized using the async `init()` method
- * > rather than passing options to the constructor.
- * @category app
- * @standard
- * @see {@link ApplicationOptions} For all available initialization options
- * @see {@link Container} For information about the stage container
- * @see {@link Renderer} For details about the rendering system
+ * The system that handles textures for the GPU.
+ * @category rendering
+ * @advanced
  */
-export declare class Application<R extends Renderer = Renderer> {
+export declare class GpuTextureSystem implements System, CanvasGenerator {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGPUSystem
+		];
+		readonly name: "texture";
+	};
+	protected CONTEXT_UID: number;
+	private _gpuSamplers;
+	private _bindGroupHash;
+	private readonly _uploads;
+	private _gpu;
+	private _mipmapGenerator?;
+	private readonly _renderer;
+	private readonly _managedTextures;
 	/**
-	 * Collection of installed plugins.
+	 * @deprecated since 8.15.0
+	 */
+	get managedTextures(): Readonly<TextureSource[]>;
+	constructor(renderer: WebGPURenderer);
+	protected contextChange(gpu: GPU$1): void;
+	/**
+	 * Initializes a texture source, if it has already been initialized nothing will happen.
+	 * @param source - The texture source to initialize.
+	 * @returns The initialized texture source.
+	 */
+	initSource(source: TextureSource): GPUTexture;
+	private _initSource;
+	protected onSourceUpdate(source: TextureSource): void;
+	protected onUpdateMipmaps(source: TextureSource): void;
+	protected onSourceUnload(source: TextureSource): void;
+	protected onSourceResize(source: TextureSource): void;
+	private _initSampler;
+	getGpuSampler(sampler: TextureStyle): GPUSampler;
+	getGpuSource(source: TextureSource): GPUTexture;
+	/**
+	 * this returns s bind group for a specific texture, the bind group contains
+	 * - the texture source
+	 * - the texture style
+	 * - the texture matrix
+	 * This is cached so the bind group should only be created once per texture
+	 * @param texture - the texture you want the bindgroup for
+	 * @returns the bind group for the texture
+	 */
+	getTextureBindGroup(texture: Texture): BindGroup;
+	private _createTextureBindGroup;
+	getTextureView(texture: BindableTexture): GPUTextureView;
+	generateCanvas(texture: Texture): ICanvas;
+	getPixels(texture: Texture): GetPixelsOutput;
+	destroy(): void;
+}
+/**
+ * options for creating a new TextureSource
+ * @category rendering
+ * @advanced
+ */
+export interface TextureSourceOptions<T extends Record<string, any> = any> extends TextureStyleOptions {
+	/**
+	 * the resource that will be uploaded to the GPU. This is where we get our pixels from
+	 * eg an ImageBimt / Canvas / Video etc
+	 */
+	resource?: T;
+	/** the pixel width of this texture source. This is the REAL pure number, not accounting resolution */
+	width?: number;
+	/** the pixel height of this texture source. This is the REAL pure number, not accounting resolution */
+	height?: number;
+	/** the resolution of the texture. */
+	resolution?: number;
+	/** the format that the texture data has */
+	format?: TEXTURE_FORMATS;
+	/**
+	 * Used by internal textures
+	 * @ignore
+	 */
+	sampleCount?: number;
+	/**
+	 * Only really affects RenderTextures.
+	 * Should we use antialiasing for this texture. It will look better, but may impact performance as a
+	 * Blit operation will be required to resolve the texture.
+	 */
+	antialias?: boolean;
+	/** how many dimensions does this texture have? currently v8 only supports 2d */
+	dimensions?: TEXTURE_DIMENSIONS;
+	/** The number of mip levels to generate for this texture. this is  overridden if autoGenerateMipmaps is true */
+	mipLevelCount?: number;
+	/**
+	 * Should we auto generate mipmaps for this texture? This will automatically generate mipmaps
+	 * for this texture when uploading to the GPU. Mipmapped textures take up more memory, but
+	 * can look better when scaled down.
+	 *
+	 * For performance reasons, it is recommended to NOT use this with RenderTextures, as they are often updated every frame.
+	 * If you do, make sure to call `updateMipmaps` after you update the texture.
+	 */
+	autoGenerateMipmaps?: boolean;
+	/** the alpha mode of the texture */
+	alphaMode?: ALPHA_MODES;
+	/** optional label, can be used for debugging */
+	label?: string;
+	/** If true, the Garbage Collector will unload this texture if it is not used after a period of time */
+	autoGarbageCollect?: boolean;
+	/** Used by RenderTexture.create to allow resizing. Not used by TextureSource itself. */
+	dynamic?: boolean;
+}
+/**
+ * A TextureSource stores the information that represents an image.
+ * All textures have require TextureSource, which contains information about the source.
+ * Therefore you can have many textures all using a single TextureSource (eg a sprite sheet)
+ *
+ * This is an class is extended depending on the source of the texture.
+ * Eg if you are using an an image as your resource, then an ImageSource is used.
+ * @category rendering
+ * @advanced
+ */
+export declare class TextureSource<T extends Record<string, any> = any> extends EventEmitter<{
+	change: BindResource;
+	update: TextureSource;
+	unload: TextureSource;
+	destroy: TextureSource;
+	resize: TextureSource;
+	styleChange: TextureSource;
+	updateMipmaps: TextureSource;
+	error: Error;
+}> implements BindResource, GPUDataOwner, GCable {
+	protected readonly options: TextureSourceOptions<T>;
+	/** The default options used when creating a new TextureSource. override these to add your own defaults */
+	static defaultOptions: TextureSourceOptions;
+	/** @internal */
+	_gpuData: Record<number, GlTexture | GPUTextureGpuData>;
+	/** GC tracking data, undefined if not being tracked */
+	_gcData?: GCData;
+	/** @internal */
+	_gcLastUsed: number;
+	/** unique id for this Texture source */
+	readonly uid: number;
+	/** optional label, can be used for debugging */
+	label: string;
+	/**
+	 * The resource type used by this TextureSource. This is used by the bind groups to determine
+	 * how to handle this resource.
 	 * @internal
 	 */
-	static _plugins: ApplicationPlugin[];
+	readonly _resourceType = "textureSource";
 	/**
-	 * The root display container for your application.
-	 * All visual elements should be added to this container or its children.
-	 * @example
-	 * ```js
-	 * // Create a sprite and add it to the stage
-	 * const sprite = Sprite.from('image.png');
-	 * app.stage.addChild(sprite);
-	 *
-	 * // Create a container for grouping objects
-	 * const container = new Container();
-	 * app.stage.addChild(container);
-	 * ```
+	 * i unique resource id, used by the bind group systems.
+	 * This can change if the texture is resized or its resource changes
+	 * @internal
 	 */
-	stage: Container;
+	_resourceId: number;
 	/**
-	 * The renderer instance that handles all drawing operations.
-	 *
-	 * Unless specified, it will automatically create a WebGL renderer if available.
-	 * If WebGPU is available and the `preference` is set to `webgpu`, it will create a WebGPU renderer.
-	 * @example
-	 * ```js
-	 * // Create a new application
-	 * const app = new Application();
-	 * await app.init({
-	 *     width: 800,
-	 *     height: 600,
-	 *     preference: 'webgl', // or 'webgpu'
-	 * });
-	 *
-	 * // Access renderer properties
-	 * console.log(app.renderer.width, app.renderer.height);
-	 * ```
+	 * this is how the backends know how to upload this texture to the GPU
+	 * It changes depending on the resource type. Classes that extend TextureSource
+	 * should override this property.
+	 * @internal
 	 */
-	renderer: R;
-	/** Create new Application instance */
-	constructor();
-	/** @deprecated since 8.0.0 */
-	constructor(options?: Partial<ApplicationOptions>);
+	uploadMethodId: string;
+	/** @internal */
+	_resolution: number;
+	/** the pixel width of this texture source. This is the REAL pure number, not accounting resolution */
+	pixelWidth: number;
+	/** the pixel height of this texture source. This is the REAL pure number, not accounting resolution */
+	pixelHeight: number;
 	/**
-	 * Initializes the PixiJS application with the specified options.
-	 *
-	 * This method must be called after creating a new Application instance.
-	 * @param options - Configuration options for the application and renderer
-	 * @returns A promise that resolves when initialization is complete
-	 * @example
-	 * ```js
-	 * const app = new Application();
-	 *
-	 * // Initialize with custom options
-	 * await app.init({
-	 *     width: 800,
-	 *     height: 600,
-	 *     backgroundColor: 0x1099bb,
-	 *     preference: 'webgl', // or 'webgpu'
-	 * });
-	 * ```
+	 * the width of this texture source, accounting for resolution
+	 * eg pixelWidth 200, resolution 2, then width will be 100
 	 */
-	init(options?: Partial<ApplicationOptions>): Promise<void>;
+	width: number;
 	/**
-	 * Renders the current stage to the screen.
-	 *
-	 * When using the default setup with {@link TickerPlugin} (enabled by default), you typically don't need to call
-	 * this method directly as rendering is handled automatically.
-	 *
-	 * Only use this method if you've disabled the {@link TickerPlugin} or need custom
-	 * render timing control.
-	 * @example
-	 * ```js
-	 * // Example 1: Default setup (TickerPlugin handles rendering)
-	 * const app = new Application();
-	 * await app.init();
-	 * // No need to call render() - TickerPlugin handles it
-	 *
-	 * // Example 2: Custom rendering loop (if TickerPlugin is disabled)
-	 * const app = new Application();
-	 * await app.init({ autoStart: false }); // Disable automatic rendering
-	 *
-	 * function animate() {
-	 *     app.render();
-	 *     requestAnimationFrame(animate);
-	 * }
-	 * animate();
-	 * ```
+	 * the height of this texture source, accounting for resolution
+	 * eg pixelHeight 200, resolution 2, then height will be 100
 	 */
-	render(): void;
+	height: number;
 	/**
-	 * Reference to the renderer's canvas element. This is the HTML element
-	 * that displays your application's graphics.
+	 * the resource that will be uploaded to the GPU. This is where we get our pixels from
+	 * eg an ImageBimt / Canvas / Video etc
+	 */
+	resource: T;
+	/**
+	 * The number of samples of a multisample texture. This is always 1 for non-multisample textures.
+	 * To enable multisample for a texture, set antialias to true
+	 * @internal
+	 */
+	sampleCount: number;
+	/** The number of mip levels to generate for this texture. this is  overridden if autoGenerateMipmaps is true */
+	mipLevelCount: number;
+	/**
+	 * Should we auto generate mipmaps for this texture? This will automatically generate mipmaps
+	 * for this texture when uploading to the GPU. Mipmapped textures take up more memory, but
+	 * can look better when scaled down.
+	 *
+	 * For performance reasons, it is recommended to NOT use this with RenderTextures, as they are often updated every frame.
+	 * If you do, make sure to call `updateMipmaps` after you update the texture.
+	 */
+	autoGenerateMipmaps: boolean;
+	/** the format that the texture data has */
+	format: TEXTURE_FORMATS;
+	/** how many dimensions does this texture have? currently v8 only supports 2d */
+	dimension: TEXTURE_DIMENSIONS;
+	/** the alpha mode of the texture */
+	alphaMode: ALPHA_MODES;
+	private _style;
+	/**
+	 * Only really affects RenderTextures.
+	 * Should we use antialiasing for this texture. It will look better, but may impact performance as a
+	 * Blit operation will be required to resolve the texture.
+	 */
+	antialias: boolean;
+	/**
+	 * Has the source been destroyed?
 	 * @readonly
-	 * @type {HTMLCanvasElement}
-	 * @example
-	 * ```js
-	 * // Create a new application
-	 * const app = new Application();
-	 * // Initialize the application
-	 * await app.init({...});
-	 * // Add canvas to the page
-	 * document.body.appendChild(app.canvas);
-	 *
-	 * // Access the canvas directly
-	 * console.log(app.canvas); // HTMLCanvasElement
-	 * ```
 	 */
-	get canvas(): R["canvas"];
+	destroyed: boolean;
 	/**
-	 * Reference to the renderer's canvas element.
-	 * @type {HTMLCanvasElement}
-	 * @deprecated since 8.0.0
-	 * @see {@link Application#canvas}
+	 * Used by automatic texture Garbage Collection, stores last GC tick when it was bound
+	 * @protected
 	 */
-	get view(): R["canvas"];
+	_touched: number;
 	/**
-	 * Reference to the renderer's screen rectangle. This represents the visible area of your application.
-	 *
-	 * It's commonly used for:
-	 * - Setting filter areas for full-screen effects
-	 * - Defining hit areas for screen-wide interaction
-	 * - Determining the visible bounds of your application
-	 * @readonly
-	 * @example
-	 * ```js
-	 * // Use as filter area for a full-screen effect
-	 * const blurFilter = new BlurFilter();
-	 * sprite.filterArea = app.screen;
-	 *
-	 * // Use as hit area for screen-wide interaction
-	 * const screenSprite = new Sprite();
-	 * screenSprite.hitArea = app.screen;
-	 *
-	 * // Get screen dimensions
-	 * console.log(app.screen.width, app.screen.height);
-	 * ```
-	 * @see {@link Rectangle} For all available properties and methods
+	 * Used by the batcher to build texture batches. faster to have the variable here!
+	 * @protected
 	 */
-	get screen(): Rectangle;
+	_batchTick: number;
 	/**
-	 * Destroys the application and all of its resources.
-	 *
-	 * This method should be called when you want to completely
-	 * clean up the application and free all associated memory.
-	 * @param rendererDestroyOptions - Options for destroying the renderer:
-	 *  - `false` or `undefined`: Preserves the canvas element (default)
-	 *  - `true`: Removes the canvas element
-	 *  - `{ removeView: boolean }`: Object with removeView property to control canvas removal
-	 * @param options - Options for destroying the application:
-	 *  - `false` or `undefined`: Basic cleanup (default)
-	 *  - `true`: Complete cleanup including children
-	 *  - Detailed options object:
-	 *    - `children`: Remove children
-	 *    - `texture`: Destroy textures
-	 *    - `textureSource`: Destroy texture sources
-	 *    - `context`: Destroy WebGL context
-	 * @example
-	 * ```js
-	 * // Basic cleanup
-	 * app.destroy();
-	 *
-	 * // Remove canvas and do complete cleanup
-	 * app.destroy(true, true);
-	 *
-	 * // Remove canvas with explicit options
-	 * app.destroy({ removeView: true }, true);
-	 *
-	 * // Detailed cleanup with specific options
-	 * app.destroy(
-	 *     { removeView: true },
-	 *     {
-	 *         children: true,
-	 *         texture: true,
-	 *         textureSource: true,
-	 *         context: true
-	 *     }
-	 * );
-	 * ```
-	 * > [!WARNING] After calling destroy, the application instance should no longer be used.
-	 * > All properties will be null and further operations will throw errors.
+	 * A temporary batch location for the texture batching. Here for performance reasons only!
+	 * @protected
 	 */
-	destroy(rendererDestroyOptions?: RendererDestroyOptions, options?: DestroyOptions): void;
-}
-declare global {
-	var __PIXI_APP_INIT__: undefined | ((arg: Application | Renderer, version: string) => void);
-	var __PIXI_RENDERER_INIT__: undefined | ((arg: Application | Renderer, version: string) => void);
+	_textureBindLocation: number;
+	isPowerOfTwo: boolean;
+	/** If true, the Garbage Collector will unload this texture if it is not used after a period of time */
+	autoGarbageCollect: boolean;
+	/**
+	 * used internally to know where a texture came from. Usually assigned by the asset loader!
+	 * @ignore
+	 */
+	_sourceOrigin: string;
+	/**
+	 * @param options - options for creating a new TextureSource
+	 */
+	constructor(options?: TextureSourceOptions<T>);
+	/** returns itself */
+	get source(): TextureSource;
+	/** the style of the texture */
+	get style(): TextureStyle;
+	set style(value: TextureStyle);
+	/** Specifies the maximum anisotropy value clamp used by the sampler. */
+	set maxAnisotropy(value: number);
+	get maxAnisotropy(): number;
+	/** setting this will set wrapModeU, wrapModeV and wrapModeW all at once! */
+	get addressMode(): WRAP_MODE;
+	set addressMode(value: WRAP_MODE);
+	/** setting this will set wrapModeU, wrapModeV and wrapModeW all at once! */
+	get repeatMode(): WRAP_MODE;
+	set repeatMode(value: WRAP_MODE);
+	/** Specifies the sampling behavior when the sample footprint is smaller than or equal to one texel. */
+	get magFilter(): SCALE_MODE;
+	set magFilter(value: SCALE_MODE);
+	/** Specifies the sampling behavior when the sample footprint is larger than one texel. */
+	get minFilter(): SCALE_MODE;
+	set minFilter(value: SCALE_MODE);
+	/** Specifies behavior for sampling between mipmap levels. */
+	get mipmapFilter(): SCALE_MODE;
+	set mipmapFilter(value: SCALE_MODE);
+	/** Specifies the minimum and maximum levels of detail, respectively, used internally when sampling a texture. */
+	get lodMinClamp(): number;
+	set lodMinClamp(value: number);
+	/** Specifies the minimum and maximum levels of detail, respectively, used internally when sampling a texture. */
+	get lodMaxClamp(): number;
+	set lodMaxClamp(value: number);
+	private _onStyleChange;
+	/** call this if you have modified the texture outside of the constructor */
+	update(): void;
+	/** Destroys this texture source */
+	destroy(): void;
+	/**
+	 * This will unload the Texture source from the GPU. This will free up the GPU memory
+	 * As soon as it is required fore rendering, it will be re-uploaded.
+	 */
+	unload(): void;
+	/** the width of the resource. This is the REAL pure number, not accounting resolution   */
+	get resourceWidth(): number;
+	/** the height of the resource. This is the REAL pure number, not accounting resolution */
+	get resourceHeight(): number;
+	/**
+	 * the resolution of the texture. Changing this number, will not change the number of pixels in the actual texture
+	 * but will the size of the texture when rendered.
+	 *
+	 * changing the resolution of this texture to 2 for example will make it appear twice as small when rendered (as pixel
+	 * density will have increased)
+	 */
+	get resolution(): number;
+	set resolution(resolution: number);
+	/**
+	 * Resize the texture, this is handy if you want to use the texture as a render texture
+	 * @param width - the new width of the texture
+	 * @param height - the new height of the texture
+	 * @param resolution - the new resolution of the texture
+	 * @returns - if the texture was resized
+	 */
+	resize(width?: number, height?: number, resolution?: number): boolean;
+	/**
+	 * Lets the renderer know that this texture has been updated and its mipmaps should be re-generated.
+	 * This is only important for RenderTexture instances, as standard Texture instances will have their
+	 * mipmaps generated on upload. You should call this method after you make any change to the texture
+	 *
+	 * The reason for this is is can be quite expensive to update mipmaps for a texture. So by default,
+	 * We want you, the developer to specify when this action should happen.
+	 *
+	 * Generally you don't want to have mipmaps generated on Render targets that are changed every frame,
+	 */
+	updateMipmaps(): void;
+	set wrapMode(value: WRAP_MODE);
+	get wrapMode(): WRAP_MODE;
+	set scaleMode(value: SCALE_MODE);
+	/** setting this will set magFilter,minFilter and mipmapFilter all at once!  */
+	get scaleMode(): SCALE_MODE;
+	/**
+	 * Refresh check for isPowerOfTwo texture based on size
+	 * @private
+	 */
+	protected _refreshPOT(): void;
+	static test(_resource: any): any;
+	/**
+	 * A helper function that creates a new TextureSource based on the resource you provide.
+	 * @param resource - The resource to create the texture source from.
+	 */
+	static from: (resource: TextureResourceOrOptions) => TextureSource;
 }
 /**
- * Calls global __PIXI_APP_INIT__ hook with the application instance, after the application is initialized.
- * @category app
- * @internal
- */
-export declare class ApplicationInitHook {
-	/** @ignore */
-	static extension: ExtensionMetadata;
-	static init(): void;
-	static destroy(): void;
-}
-/**
- * Calls global __PIXI_RENDERER_INIT__ hook with the renderer instance, after the renderer is initialized.
+ * Options for creating a BufferImageSource.
  * @category rendering
- * @internal
+ * @advanced
  */
-export declare class RendererInitHook implements System {
+export interface BufferSourceOptions extends TextureSourceOptions<TypedArray | ArrayBuffer> {
+	width: number;
+	height: number;
+}
+/**
+ * A texture source that uses a TypedArray or ArrayBuffer as its resource.
+ * It automatically determines the format based on the type of TypedArray provided.
+ * @category rendering
+ * @advanced
+ */
+export declare class BufferImageSource extends TextureSource<TypedArray | ArrayBuffer> {
+	static extension: ExtensionMetadata;
+	uploadMethodId: string;
+	constructor(options: BufferSourceOptions);
+	static test(resource: any): resource is TypedArray | ArrayBuffer;
+}
+/**
+ * Stores the width of the non-scalable borders, for example when used with {@link NineSlicePlane} texture.
+ * @category rendering
+ * @advanced
+ */
+export interface TextureBorders {
+	/** left border in pixels */
+	left: number;
+	/** top border in pixels */
+	top: number;
+	/** right border in pixels */
+	right: number;
+	/** bottom border in pixels */
+	bottom: number;
+}
+/**
+ * The UVs data structure for a texture.
+ * @category rendering
+ * @advanced
+ */
+export type UVs = {
+	x0: number;
+	y0: number;
+	x1: number;
+	y1: number;
+	x2: number;
+	y2: number;
+	x3: number;
+	y3: number;
+};
+/**
+ * The options that can be passed to a new Texture
+ * @category rendering
+ * @standard
+ */
+export interface TextureOptions<TextureSourceType extends TextureSource = TextureSource> {
+	/** the underlying texture data that this texture will use  */
+	source?: TextureSourceType;
+	/** optional label, for debugging */
+	label?: string;
+	/** The rectangle frame of the texture to show */
+	frame?: Rectangle;
+	/** The area of original texture */
+	orig?: Rectangle;
+	/** Trimmed rectangle of original texture */
+	trim?: Rectangle;
+	/** Default anchor point used for sprite placement / rotation */
+	defaultAnchor?: {
+		x: number;
+		y: number;
+	};
+	/** Default borders used for 9-slice scaling {@link NineSlicePlane}*/
+	defaultBorders?: TextureBorders;
+	/** indicates how the texture was rotated by texture packer. See {@link groupD8} */
+	rotate?: number;
+	/**
+	 * Set to true if you plan on modifying this texture's frame, UVs, or swapping its source at runtime.
+	 * This is false by default as it improves performance. Generally, it's recommended to create new
+	 * textures and swap those rather than modifying an existing texture's properties unless you are
+	 * working with a dynamic frames.
+	 * Not setting this to true when modifying the texture can lead to visual artifacts.
+	 *
+	 * If this is false and you modify the texture, you can manually update the sprite's texture by calling
+	 * `sprite.onViewUpdate()`.
+	 */
+	dynamic?: boolean;
+}
+/**
+ * A texture that can be bound to a shader as it has a texture source.
+ * @category rendering
+ * @advanced
+ */
+export interface BindableTexture {
+	source: TextureSource;
+}
+/**
+ * A texture source can be a string, an image, a video, a canvas, or a texture resource.
+ * @category rendering
+ * @advanced
+ * @see {@link TextureSource}
+ * @see {@link TextureResourceOrOptions}
+ * @see {@link Texture.from}
+ */
+export type TextureSourceLike = TextureSource | TextureResourceOrOptions | string;
+/**
+ * A texture stores the information that represents an image or part of an image.
+ *
+ * A texture must have a loaded resource passed to it to work. It does not contain any
+ * loading mechanisms.
+ *
+ * The Assets class can be used to load a texture from a file. This is the recommended
+ * way as it will handle the loading and caching for you.
+ *
+ * ```js
+ *
+ * const texture = await Assets.load('assets/image.png');
+ *
+ * // once Assets has loaded the image it will be available via the from method
+ * const sameTexture = Texture.from('assets/image.png');
+ * // another way to access the texture once loaded
+ * const sameAgainTexture = Assets.get('assets/image.png');
+ *
+ * const sprite1 = new Sprite(texture);
+ *
+ * ```
+ *
+ * It cannot be added to the display list directly; instead use it as the texture for a Sprite.
+ * If no frame is provided for a texture, then the whole image is used.
+ *
+ * You can directly create a texture from an image and then reuse it multiple times like this :
+ *
+ * ```js
+ * import { Sprite, Texture } from 'pixi.js';
+ *
+ * const texture = await Assets.load('assets/image.png');
+ * const sprite1 = new Sprite(texture);
+ * const sprite2 = new Sprite(texture);
+ * ```
+ *
+ * If you didn't pass the texture frame to constructor, it enables `noFrame` mode:
+ * it subscribes on baseTexture events, it automatically resizes at the same time as baseTexture.
+ * @category rendering
+ * @class
+ * @standard
+ */
+export declare class Texture<TextureSourceType extends TextureSource = TextureSource> extends EventEmitter<{
+	update: Texture;
+	destroy: Texture;
+}> implements BindableTexture {
+	/**
+	 * Helper function that creates a returns Texture based on the source you provide.
+	 * The source should be loaded and ready to go. If not its best to grab the asset using Assets.
+	 * @param id - String or Source to create texture from
+	 * @param skipCache - Skip adding the texture to the cache
+	 * @returns The texture based on the Id provided
+	 */
+	static from: (id: TextureSourceLike, skipCache?: boolean) => Texture;
+	/** label used for debugging */
+	label?: string;
+	/** unique id for this texture */
+	readonly uid: number;
+	/**
+	 * Has the texture been destroyed?
+	 * @readonly
+	 */
+	destroyed: boolean;
+	/** @internal */
+	_source: TextureSourceType;
+	/**
+	 * Indicates whether the texture is rotated inside the atlas
+	 * set to 2 to compensate for texture packer rotation
+	 * set to 6 to compensate for spine packer rotation
+	 * can be used to rotate or mirror sprites
+	 * See {@link groupD8} for explanation
+	 */
+	readonly rotate: number;
+	/** A uvs object based on the given frame and the texture source */
+	readonly uvs: UVs;
+	/**
+	 * Anchor point that is used as default if sprite is created with this texture.
+	 * Changing the `defaultAnchor` at a later point of time will not update Sprite's anchor point.
+	 * @default{0,0}
+	 */
+	readonly defaultAnchor?: {
+		x: number;
+		y: number;
+	};
+	/**
+	 * Default width of the non-scalable border that is used if 9-slice plane is created with this texture.
+	 * @since 7.2.0
+	 * @see NineSliceSprite
+	 */
+	readonly defaultBorders?: TextureBorders;
+	/**
+	 * This is the area of the BaseTexture image to actually copy to the Canvas / WebGL when rendering,
+	 * irrespective of the actual frame size or placement (which can be influenced by trimmed texture atlases)
+	 */
+	readonly frame: Rectangle;
+	/** This is the area of original texture, before it was put in atlas. */
+	readonly orig: Rectangle;
+	/**
+	 * This is the trimmed area of original texture, before it was put in atlas
+	 * Please call `updateUvs()` after you change coordinates of `trim` manually.
+	 */
+	readonly trim: Rectangle;
+	/**
+	 * Does this Texture have any frame data assigned to it?
+	 *
+	 * This mode is enabled automatically if no frame was passed inside constructor.
+	 *
+	 * In this mode texture is subscribed to baseTexture events, and fires `update` on any change.
+	 *
+	 * Beware, after loading or resize of baseTexture event can fired two times!
+	 * If you want more control, subscribe on baseTexture itself.
+	 * @example
+	 * texture.on('update', () => {});
+	 */
+	noFrame: boolean;
+	/**
+	 * Set to true if you plan on modifying the uvs of this texture.
+	 * When this is the case, sprites and other objects using the texture will
+	 * make sure to listen for changes to the uvs and update their vertices accordingly.
+	 */
+	dynamic: boolean;
+	private _textureMatrix;
+	/** is it a texture? yes! used for type checking */
+	readonly isTexture = true;
+	/**
+	 * @param {TextureOptions} options - Options for the texture
+	 */
+	constructor({ source, label, frame, orig, trim, defaultAnchor, defaultBorders, rotate, dynamic }?: TextureOptions<TextureSourceType>);
+	set source(value: TextureSourceType);
+	/** the underlying source of the texture (equivalent of baseTexture in v7) */
+	get source(): TextureSourceType;
+	/** returns a TextureMatrix instance for this texture. By default, that object is not created because its heavy. */
+	get textureMatrix(): TextureMatrix;
+	/** The width of the Texture in pixels. */
+	get width(): number;
+	/** The height of the Texture in pixels. */
+	get height(): number;
+	/** Call this function when you have modified the frame of this texture. */
+	updateUvs(): void;
+	/**
+	 * Destroys this texture
+	 * @param destroySource - Destroy the source when the texture is destroyed.
+	 */
+	destroy(destroySource?: boolean): void;
+	/**
+	 * Call this if you have modified the `texture outside` of the constructor.
+	 *
+	 * If you have modified this texture's source, you must separately call `texture.source.update()` to see those changes.
+	 */
+	update(): void;
+	/** @deprecated since 8.0.0 */
+	get baseTexture(): TextureSource;
+	/** an Empty Texture used internally by the engine */
+	static EMPTY: Texture;
+	/** a White texture used internally by the engine */
+	static WHITE: Texture<BufferImageSource>;
+}
+/**
+ * A render texture, extends `Texture`.
+ * @see {@link Texture}
+ * @category rendering
+ * @advanced
+ */
+export declare class RenderTexture extends Texture {
+	/**
+	 * Creates a RenderTexture. Pass `dynamic: true` in options to allow resizing after creation.
+	 * @param options - Options for the RenderTexture, including width, height, and dynamic.
+	 * @returns A new RenderTexture instance.
+	 * @example
+	 * const rt = RenderTexture.create({ width: 100, height: 100, dynamic: true });
+	 * rt.resize(500, 500);
+	 */
+	static create(options: TextureSourceOptions): RenderTexture;
+	/**
+	 * Resizes the render texture.
+	 * @param width - The new width of the render texture.
+	 * @param height - The new height of the render texture.
+	 * @param resolution - The new resolution of the render texture.
+	 * @returns This texture.
+	 */
+	resize(width: number, height: number, resolution?: number): this;
+}
+/**
+ * Options for generating a texture source.
+ * @category rendering
+ * @advanced
+ * @interface
+ */
+export type GenerateTextureSourceOptions = Omit<TextureSourceOptions, "resource" | "width" | "height" | "resolution">;
+/**
+ * Options for generating a texture from a container.
+ * Used to create reusable textures from display objects, which can improve performance
+ * when the same content needs to be rendered multiple times.
+ * @example
+ * ```ts
+ * // Basic texture generation
+ * const sprite = new Sprite(texture);
+ * const generatedTexture = renderer.generateTexture({
+ *     target: sprite
+ * });
+ *
+ * // Generate with custom region and resolution
+ * const texture = renderer.generateTexture({
+ *     target: container,
+ *     frame: new Rectangle(0, 0, 100, 100),
+ *     resolution: 2
+ * });
+ *
+ * // Generate with background color and anti-aliasing
+ * const highQualityTexture = renderer.generateTexture({
+ *     target: graphics,
+ *     clearColor: '#ff0000',
+ *     antialias: true,
+ *     textureSourceOptions: {
+ *         scaleMode: 'linear'
+ *     }
+ * });
+ * ```
+ * @category rendering
+ * @advanced
+ */
+export type GenerateTextureOptions = {
+	/**
+	 * The container to generate the texture from.
+	 * This can be any display object like Sprite, Container, or Graphics.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics()
+	 *     .circle(0, 0, 50)
+	 *     .fill('red');
+	 *
+	 * const texture = renderer.generateTexture({
+	 *     target: graphics
+	 * });
+	 * ```
+	 */
+	target: Container;
+	/**
+	 * The region of the container that should be rendered.
+	 * If not specified, defaults to the local bounds of the container.
+	 * @example
+	 * ```ts
+	 * // Extract only a portion of the container
+	 * const texture = renderer.generateTexture({
+	 *     target: container,
+	 *     frame: new Rectangle(10, 10, 100, 100)
+	 * });
+	 * ```
+	 */
+	frame?: Rectangle;
+	/**
+	 * The resolution of the texture being generated.
+	 * Higher values create sharper textures at the cost of memory.
+	 * @default renderer.resolution
+	 * @example
+	 * ```ts
+	 * // Generate a high-resolution texture
+	 * const hiResTexture = renderer.generateTexture({
+	 *     target: sprite,
+	 *     resolution: 2 // 2x resolution
+	 * });
+	 * ```
+	 */
+	resolution?: number;
+	/**
+	 * The color used to clear the texture before rendering.
+	 * Can be a hex number, string, or array of numbers.
+	 * @example
+	 * ```ts
+	 * // Clear with red background
+	 * const texture = renderer.generateTexture({
+	 *     target: sprite,
+	 *     clearColor: '#ff0000'
+	 * });
+	 *
+	 * // Clear with semi-transparent black
+	 * const texture = renderer.generateTexture({
+	 *     target: sprite,
+	 *     clearColor: [0, 0, 0, 0.5]
+	 * });
+	 * ```
+	 */
+	clearColor?: ColorSource;
+	/**
+	 * Whether to enable anti-aliasing. This may affect performance.
+	 * @default false
+	 * @example
+	 * ```ts
+	 * // Generate a smooth texture
+	 * const texture = renderer.generateTexture({
+	 *     target: graphics,
+	 *     antialias: true
+	 * });
+	 * ```
+	 */
+	antialias?: boolean;
+	/**
+	 * Advanced options for configuring the texture source.
+	 * Controls texture properties like scale mode and filtering.
+	 * @advanced
+	 * @example
+	 * ```ts
+	 * const texture = renderer.generateTexture({
+	 *     target: sprite,
+	 *     textureSourceOptions: {
+	 *         scaleMode: 'linear',
+	 *     }
+	 * });
+	 * ```
+	 */
+	textureSourceOptions?: GenerateTextureSourceOptions;
+};
+/**
+ * System that manages the generation of textures from display objects in the renderer.
+ * This system is responsible for creating reusable textures from containers, sprites, and other display objects.
+ * Available through `renderer.textureGenerator`.
+ * @example
+ * ```ts
+ * import { Application, Sprite, Graphics } from 'pixi.js';
+ *
+ * const app = new Application();
+ * await app.init();
+ *
+ * // Create a complex display object
+ * const container = new Container();
+ *
+ * const graphics = new Graphics()
+ *     .circle(0, 0, 50)
+ *     .fill('red');
+ *
+ * const sprite = new Sprite(texture);
+ * sprite.x = 100;
+ *
+ * container.addChild(graphics, sprite);
+ *
+ * // Generate a texture from the container
+ * const generatedTexture = app.renderer.textureGenerator.generateTexture({
+ *     target: container,
+ *     resolution: 2,
+ *     antialias: true
+ * });
+ *
+ * // Use the generated texture
+ * const newSprite = new Sprite(generatedTexture);
+ * app.stage.addChild(newSprite);
+ *
+ * // Clean up when done
+ * generatedTexture.destroy(true);
+ * ```
+ *
+ * Features:
+ * - Convert any display object to a texture
+ * - Support for custom regions and resolutions
+ * - Anti-aliasing support
+ * - Background color configuration
+ * - Texture source options customization
+ *
+ * Common Use Cases:
+ * - Creating texture atlases dynamically
+ * - Caching complex container content
+ * - Generating thumbnails
+ * - Creating reusable textures from rendered content
+ *
+ * Performance Considerations:
+ * - Generating textures is relatively expensive
+ * - Cache results when possible
+ * - Be mindful of resolution and size
+ * - Clean up unused textures
+ * @see {@link GenerateTextureOptions} For detailed texture generation options
+ * @see {@link AbstractRenderer.generateTexture} For the main renderer method
+ * @see {@link RenderTexture} For the resulting texture type
+ * @category rendering
+ * @standard
+ */
+export declare class GenerateTextureSystem implements System {
 	/** @ignore */
 	static extension: {
 		readonly type: readonly [
 			ExtensionType.WebGLSystem,
 			ExtensionType.WebGPUSystem
 		];
-		readonly name: "initHook";
-		readonly priority: -10;
+		readonly name: "textureGenerator";
 	};
-	private _renderer;
+	private readonly _renderer;
 	constructor(renderer: Renderer);
-	init(): void;
-	destroy(): void;
-}
-/**
- * Shared systems for the renderer.
- * @category rendering
- * @internal
- */
-export declare const SharedSystems: (typeof BackgroundSystem | typeof GlobalUniformSystem | typeof HelloSystem | typeof ViewSystem | typeof RenderGroupSystem | typeof TextureGCSystem | typeof GenerateTextureSystem | typeof ExtractSystem | typeof RendererInitHook | typeof RenderableGCSystem | typeof SchedulerSystem)[];
-/**
- * Shared render pipes for the renderer.
- * @category rendering
- * @internal
- */
-export declare const SharedRenderPipes: (typeof BlendModePipe | typeof BatcherPipe | typeof SpritePipe | typeof RenderGroupPipe | typeof AlphaMaskPipe | typeof StencilMaskPipe | typeof ColorMaskPipe | typeof CustomRenderPipe)[];
-/**
- * Options for the shared systems of a renderer.
- * @category rendering
- * @advanced
- */
-export interface SharedRendererOptions extends ExtractRendererOptions<typeof SharedSystems>, PixiMixins.RendererOptions {
 	/**
-	 * Whether to stop PixiJS from dynamically importing default extensions for the renderer.
-	 * It is false by default, and means PixiJS will load all the default extensions, based
-	 * on the environment e.g browser/webworker.
-	 * If you set this to true, then you will need to manually import the systems and extensions you need.
+	 * Creates a texture from a display object that can be used for creating sprites and other textures.
+	 * This is particularly useful for optimizing performance when a complex container needs to be reused.
+	 * @param options - Generate texture options or a container to convert to texture
+	 * @returns A new RenderTexture containing the rendered display object
+	 * @example
+	 * ```ts
+	 * // Basic usage with a container
+	 * const container = new Container();
+	 * container.addChild(
+	 *     new Graphics()
+	 *         .circle(0, 0, 50)
+	 *         .fill('red')
+	 * );
 	 *
-	 * e.g.
-	 * ```js
-	 * import 'accessibility';
-	 * import 'app';
-	 * import 'events';
-	 * import 'spritesheet';
-	 * import 'graphics';
-	 * import 'mesh';
-	 * import 'text';
-	 * import 'text-bitmap';
-	 * import 'text-html';
-	 * import { autoDetectRenderer } from 'pixi.js';
+	 * const texture = renderer.textureGenerator.generateTexture(container);
 	 *
-	 * const renderer = await autoDetectRenderer({
-	 *   width: 800,
-	 *   height: 600,
-	 *   skipExtensionImports: true,
+	 * // Advanced usage with options
+	 * const texture = renderer.textureGenerator.generateTexture({
+	 *     target: container,
+	 *     frame: new Rectangle(0, 0, 100, 100), // Specific region
+	 *     resolution: 2,                        // High DPI
+	 *     clearColor: '#ff0000',               // Red background
+	 *     antialias: true                      // Smooth edges
 	 * });
+	 *
+	 * // Create a sprite from the generated texture
+	 * const sprite = new Sprite(texture);
+	 *
+	 * // Clean up when done
+	 * texture.destroy(true);
 	 * ```
-	 * @default false
+	 * @see {@link GenerateTextureOptions} For detailed texture generation options
+	 * @see {@link RenderTexture} For the type of texture created
+	 * @category rendering
 	 */
-	skipExtensionImports?: boolean;
-	/**
-	 * @default true
-	 * @deprecated since 8.1.6
-	 * @see `skipExtensionImports`
-	 */
-	manageImports?: boolean;
+	generateTexture(options: GenerateTextureOptions | Container): RenderTexture;
+	destroy(): void;
 }
 /**
  * The configuration for the renderer.
@@ -14663,6 +14786,8 @@ export declare class AbstractRenderer<PIPES, OPTIONS extends SharedRendererOptio
 	readonly type: number;
 	/** The name of the renderer. */
 	readonly name: string;
+	/** The current tick of the renderer. */
+	tick: number;
 	/** @internal */
 	readonly uid: number;
 	/** @internal */
@@ -14816,7 +14941,7 @@ export declare class AbstractRenderer<PIPES, OPTIONS extends SharedRendererOptio
 	 */
 	resetState(): void;
 }
-declare const DefaultWebGLSystems: (typeof BackgroundSystem | typeof GlobalUniformSystem | typeof HelloSystem | typeof ViewSystem | typeof RenderGroupSystem | typeof TextureGCSystem | typeof GenerateTextureSystem | typeof ExtractSystem | typeof RendererInitHook | typeof RenderableGCSystem | typeof SchedulerSystem | typeof GlUboSystem | typeof GlBackBufferSystem | typeof GlContextSystem | typeof GlLimitsSystem | typeof GlBufferSystem | typeof GlTextureSystem | typeof GlRenderTargetSystem | typeof GlGeometrySystem | typeof GlUniformGroupSystem | typeof GlShaderSystem | typeof GlEncoderSystem | typeof GlStateSystem | typeof GlStencilSystem | typeof GlColorMaskSystem)[];
+declare const DefaultWebGLSystems: (typeof BackgroundSystem | typeof GlobalUniformSystem | typeof HelloSystem | typeof ViewSystem | typeof RenderGroupSystem | typeof GCSystem | typeof TextureGCSystem | typeof GenerateTextureSystem | typeof ExtractSystem | typeof RendererInitHook | typeof RenderableGCSystem | typeof SchedulerSystem | typeof GlUboSystem | typeof GlBackBufferSystem | typeof GlContextSystem | typeof GlLimitsSystem | typeof GlBufferSystem | typeof GlTextureSystem | typeof GlRenderTargetSystem | typeof GlGeometrySystem | typeof GlUniformGroupSystem | typeof GlShaderSystem | typeof GlEncoderSystem | typeof GlStateSystem | typeof GlStencilSystem | typeof GlColorMaskSystem)[];
 declare const DefaultWebGLPipes: (typeof BlendModePipe | typeof BatcherPipe | typeof SpritePipe | typeof RenderGroupPipe | typeof AlphaMaskPipe | typeof StencilMaskPipe | typeof ColorMaskPipe | typeof CustomRenderPipe)[];
 /**
  * The default WebGL renderer, uses WebGL2 contexts.
@@ -14959,10 +15084,203 @@ export declare enum RendererType {
  * @category rendering
  * @advanced
  */
-export type GpuPowerPreference = "low-power" | "high-performance";
-/** @internal */
+export type GpuPowerPreference = "low-power" | "high-performance"; /** @internal */
+/**
+ * A resource that can have GPU data associated with it.
+ * @category rendering
+ * @advanced
+ */
+export interface GPUDataOwner<GPU_DATA extends GPUData = any> {
+	_gpuData: Record<number, GPU_DATA>;
+	unload: () => void;
+}
+/**
+ * Data stored on a GC-managed resource.
+ * @category rendering
+ * @advanced
+ */
+export interface GCData {
+	/** Index in the managed resources array */
+	index?: number;
+	/** Type of the resource */
+	type: "resource" | "renderable";
+}
+/**
+ * Interface for resources that can be garbage collected.
+ * @category rendering
+ * @advanced
+ */
+export interface GCable extends GPUDataOwner {
+	/** Timestamp of last use */
+	_gcLastUsed: number;
+	/** GC tracking data, null if not being tracked */
+	_gcData?: GCData | null;
+	/** If set to true, the resource will be garbage collected automatically when it is not used. */
+	autoGarbageCollect?: boolean;
+	/** An optional callback for when an item is touched */
+	_onTouch?(now: number): void;
+}
+type GCableEventEmitter = GCable & Pick<EventEmitter, "once" | "off">;
+interface GCResourceHashEntry {
+	context: any;
+	hash: string;
+	type: GCData["type"];
+	priority: number;
+}
+/**
+ * Options for the {@link GCSystem}.
+ * @category rendering
+ * @advanced
+ */
+export interface GCSystemOptions {
+	/**
+	 * If set to true, this will enable the garbage collector.
+	 * @default true
+	 */
+	gcActive: boolean;
+	/**
+	 * The maximum time in milliseconds a resource can be unused before being garbage collected.
+	 * @default 60000
+	 */
+	gcMaxUnusedTime: number;
+	/**
+	 * How frequently to run garbage collection in milliseconds.
+	 * @default 30000
+	 */
+	gcFrequency: number;
+}
+/**
+ * A unified garbage collection system for managing GPU resources.
+ * Resources register themselves with a cleanup callback and are automatically
+ * cleaned up when they haven't been used for a specified amount of time.
+ * @example
+ * ```ts
+ * // Register a resource for GC
+ * gc.addResource(myResource, () => {
+ *     // cleanup logic here
+ *     myResource.unload();
+ * });
+ *
+ * // Touch the resource when used (resets idle timer)
+ * gc.touch(myResource);
+ *
+ * // Remove from GC tracking (e.g., on manual destroy)
+ * gc.removeResource(myResource);
+ * ```
+ * @category rendering
+ * @advanced
+ */
+export declare class GCSystem implements System<GCSystemOptions> {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGLSystem,
+			ExtensionType.WebGPUSystem
+		];
+		readonly name: "gc";
+		readonly priority: 0;
+	};
+	/** Default options for the GCSystem */
+	static defaultOptions: GCSystemOptions;
+	/** Maximum time in ms a resource can be unused before being garbage collected */
+	maxUnusedTime: number;
+	/** Reference to the renderer this system belongs to */
+	private _renderer;
+	/** Array of resources being tracked for garbage collection */
+	private readonly _managedResources;
+	private readonly _managedResourceHashes;
+	/** ID of the GC scheduler handler */
+	private _handler;
+	/** How frequently GC runs in ms */
+	private _frequency;
+	/** Current timestamp used for age calculations */
+	now: number;
+	private _ready;
+	/**
+	 * Creates a new GCSystem instance.
+	 * @param renderer - The renderer this garbage collection system works for
+	 */
+	constructor(renderer: Renderer);
+	/**
+	 * Initializes the garbage collection system with the provided options.
+	 * @param options - Configuration options
+	 */
+	init(options: GCSystemOptions): void;
+	/**
+	 * Gets whether the garbage collection system is currently enabled.
+	 * @returns True if GC is enabled, false otherwise
+	 */
+	get enabled(): boolean;
+	/**
+	 * Enables or disables the garbage collection system.
+	 * When enabled, schedules periodic cleanup of resources.
+	 * When disabled, cancels all scheduled cleanups.
+	 */
+	set enabled(value: boolean);
+	/**
+	 * Called before rendering. Updates the current timestamp.
+	 * @param options - The render options
+	 * @param options.container - The container to render
+	 */
+	protected prerender({ container }: RenderOptions): void;
+	/** Performs garbage collection after rendering. */
+	protected postrender(): void;
+	/**
+	 * Updates the GC tick counter for a render group and its children.
+	 * @param renderGroup - The render group to update
+	 * @param gcTick - The new tick value
+	 */
+	private _updateInstructionGCTick;
+	/**
+	 * Registers a resource for garbage collection tracking.
+	 * @param resource - The resource to track
+	 * @param type - The type of resource to track
+	 */
+	addResource(resource: GCableEventEmitter, type: GCData["type"]): void;
+	/**
+	 * Removes a resource from garbage collection tracking.
+	 * Call this when manually destroying a resource.
+	 * @param resource - The resource to stop tracking
+	 */
+	removeResource(resource: GCable): void;
+	/**
+	 * Registers a hash-based resource collection for garbage collection tracking.
+	 * Resources in the hash will be automatically tracked and cleaned up when unused.
+	 * @param context - The object containing the hash property
+	 * @param hash - The property name on context that holds the resource hash
+	 * @param type - The type of resources in the hash ('resource' or 'renderable')
+	 * @param priority - Processing priority (lower values are processed first)
+	 */
+	addResourceHash(context: any, hash: string, type: GCData["type"], priority?: number): void;
+	/**
+	 * Performs garbage collection by cleaning up unused resources.
+	 * Removes resources that haven't been used for longer than maxUnusedTime.
+	 */
+	run(): void;
+	protected updateRenderableGCTick(renderable: Renderable & GCable, now: number): void;
+	protected runOnResource(resource: GCableEventEmitter, now: number, writeIndex: number): number;
+	/**
+	 * Creates a clone of the hash, copying all non-null entries up to (but not including) the stop key.
+	 * @param hashValue - The original hash to clone from
+	 * @param stopKey - The key to stop at (exclusive)
+	 * @returns A new hash object with copied entries
+	 */
+	private _createHashClone;
+	protected runOnHash(hashEntry: GCResourceHashEntry, now: number): void;
+	/** Cleans up the garbage collection system. Disables GC and removes all tracked resources. */
+	destroy(): void;
+}
+/**
+ * A GPU Data object
+ * @internal
+ */
 export interface GPUData {
 	destroy: () => void;
+}
+/** @internal */
+export interface GPUDataContainer<GPU_DATA extends GPUData = any> {
+	_gpuData: Record<number, GPU_DATA>;
+	unload: () => void;
 }
 /**
  * Options for the construction of a ViewContainer.
@@ -14970,9 +15288,10 @@ export interface GPUData {
  * @advanced
  */
 export interface ViewContainerOptions extends ContainerOptions, PixiMixins.ViewContainerOptions {
+	/** If set to true, the resource will be garbage collected automatically when it is not used. */
+	autoGarbageCollect?: boolean;
 }
-export interface ViewContainer<GPU_DATA extends GPUData = any> extends PixiMixins.ViewContainer, Container {
-	_gpuData: Record<number, GPU_DATA>;
+export interface ViewContainer<GPU_DATA extends GPUData = any> extends PixiMixins.ViewContainer, Container, GPUDataOwner<GPU_DATA>, GCable {
 }
 /**
  * A ViewContainer is a type of container that represents a view.
@@ -14981,7 +15300,7 @@ export interface ViewContainer<GPU_DATA extends GPUData = any> extends PixiMixin
  * @category scene
  * @advanced
  */
-export declare abstract class ViewContainer<GPU_DATA extends GPUData = any> extends Container implements View {
+export declare abstract class ViewContainer<GPU_DATA extends GPUData = any> extends Container implements View, GCable {
 	/** @internal */
 	readonly renderPipeId: string;
 	/** @internal */
@@ -14994,6 +15313,12 @@ export declare abstract class ViewContainer<GPU_DATA extends GPUData = any> exte
 	_lastUsed: number;
 	/** @internal */
 	_gpuData: Record<number, GPU_DATA>;
+	/** @internal */
+	_gcData?: GCData;
+	/** If set to true, the resource will be garbage collected automatically when it is not used. */
+	autoGarbageCollect: boolean;
+	/** @internal */
+	_gcLastUsed: number;
 	protected _bounds: Bounds;
 	protected _boundsDirty: boolean;
 	/**
@@ -15044,6 +15369,8 @@ export declare abstract class ViewContainer<GPU_DATA extends GPUData = any> exte
 	abstract batched: boolean;
 	/** @private */
 	protected onViewUpdate(): void;
+	/** Unloads the GPU data from the view. */
+	unload(): void;
 	destroy(options?: DestroyOptions): void;
 	/**
 	 * Collects renderables for the view container.
@@ -15321,7 +15648,20 @@ export declare class RenderLayer extends Container {
 	destroyed: boolean;
 	/** @internal */
 	layerParentId: string;
-	/** @internal */
+	/**
+	 * If true, the layer's children will be sorted by zIndex before rendering.
+	 * If false, you can manually sort the children using sortRenderLayerChildren when needed.
+	 * @default false
+	 * @example
+	 * ```ts
+	 * const layer = new RenderLayer({
+	 *     sortableChildren: true // Automatically sorts children by zIndex
+	 * });
+	 * ```
+	 * @see {@link RenderLayer#sortRenderLayerChildren} For manual sorting
+	 * @see {@link RenderLayer#sortFunction} For customizing the sort logic
+	 * @see {@link Container#zIndex} For the default sort property
+	 */
 	sortableChildren: boolean;
 	/**
 	 * Creates a new RenderLayer instance
@@ -17683,7 +18023,6 @@ export declare class Ticker {
 	 *
 	 * This is NOT in milliseconds - it's a scalar multiplier for frame-independent animations.
 	 * For actual milliseconds, use {@link Ticker#deltaMS}.
-	 * @member {number}
 	 * @example
 	 * ```ts
 	 * // Frame-independent animation using deltaTime scalar
@@ -17724,7 +18063,6 @@ export declare class Ticker {
 	 * This value is not capped or scaled and provides raw timing information.
 	 *
 	 * Unlike {@link Ticker#deltaMS}, this value is unmodified by speed scaling or FPS capping.
-	 * @member {number}
 	 * @example
 	 * ```ts
 	 * ticker.add((ticker) => {
@@ -17738,7 +18076,6 @@ export declare class Ticker {
 	 * Similar to performance.now() timestamp format.
 	 *
 	 * Used internally for calculating time deltas between frames.
-	 * @member {number}
 	 * @example
 	 * ```ts
 	 * ticker.add((ticker) => {
@@ -22350,624 +22687,46 @@ declare global {
 		rotate<T extends PointData = Point>(radians: number, outPoint?: T): T;
 	}
 }
-/**
- * Typed and cleaned up version of:
- * https://stackoverflow.com/questions/44855794/html5-canvas-triangle-with-rounded-corners/44856925#44856925
- * @param g - Graphics to be drawn on.
- * @param points - Corners of the shape to draw. Minimum length is 3.
- * @param radius - Corners default radius.
- * @ignore
- */
-export declare function roundedShapeArc(g: ShapePath, points: RoundedPoint[], radius: number): void;
-/**
- * Data structure for points with optional radius.
- * @category scene
- * @standard
- */
-export type RoundedPoint = PointData & {
-	radius?: number;
-};
-/**
- * Typed and cleaned up version of:
- * https://stackoverflow.com/questions/44855794/html5-canvas-triangle-with-rounded-corners/56214413#56214413
- * @param g - Graphics to be drawn on.
- * @param points - Corners of the shape to draw. Minimum length is 3.
- * @param radius - Corners default radius.
- * @ignore
- */
-export declare function roundedShapeQuadraticCurve(g: ShapePath, points: RoundedPoint[], radius: number, smoothness?: number): void;
-/**
- * A type representing a shape primitive with optional transformation and holes.
- * @category scene
- * @advanced
- */
-export type ShapePrimitiveWithHoles = {
-	shape: ShapePrimitive;
-	transform?: Matrix;
-	holes?: ShapePrimitiveWithHoles[];
-};
-/**
- * The `ShapePath` class acts as a bridge between high-level drawing commands
- * and the lower-level `GraphicsContext` rendering engine.
- * It translates drawing commands, such as those for creating lines, arcs, ellipses, rectangles, and complex polygons, into a
- * format that can be efficiently processed by a `GraphicsContext`. This includes handling path starts,
- * ends, and transformations for shapes.
- *
- * It is used internally by `GraphicsPath` to build up the path.
- * @category scene
- * @advanced
- */
-export declare class ShapePath {
-	/** The list of shape primitives that make up the path. */
-	shapePrimitives: ShapePrimitiveWithHoles[];
-	private _currentPoly;
-	private readonly _graphicsPath2D;
-	private readonly _bounds;
-	readonly signed: boolean;
-	constructor(graphicsPath2D: GraphicsPath);
-	/**
-	 * Sets the starting point for a new sub-path. Any subsequent drawing commands are considered part of this path.
-	 * @param x - The x-coordinate for the starting point.
-	 * @param y - The y-coordinate for the starting point.
-	 * @returns The instance of the current object for chaining.
-	 */
-	moveTo(x: number, y: number): this;
-	/**
-	 * Connects the current point to a new point with a straight line. This method updates the current path.
-	 * @param x - The x-coordinate of the new point to connect to.
-	 * @param y - The y-coordinate of the new point to connect to.
-	 * @returns The instance of the current object for chaining.
-	 */
-	lineTo(x: number, y: number): this;
-	/**
-	 * Adds an arc to the path. The arc is centered at (x, y)
-	 *  position with radius `radius` starting at `startAngle` and ending at `endAngle`.
-	 * @param x - The x-coordinate of the arc's center.
-	 * @param y - The y-coordinate of the arc's center.
-	 * @param radius - The radius of the arc.
-	 * @param startAngle - The starting angle of the arc, in radians.
-	 * @param endAngle - The ending angle of the arc, in radians.
-	 * @param counterclockwise - Specifies whether the arc should be drawn in the anticlockwise direction. False by default.
-	 * @returns The instance of the current object for chaining.
-	 */
-	arc(x: number, y: number, radius: number, startAngle: number, endAngle: number, counterclockwise: boolean): this;
-	/**
-	 * Adds an arc to the path with the arc tangent to the line joining two specified points.
-	 * The arc radius is specified by `radius`.
-	 * @param x1 - The x-coordinate of the first point.
-	 * @param y1 - The y-coordinate of the first point.
-	 * @param x2 - The x-coordinate of the second point.
-	 * @param y2 - The y-coordinate of the second point.
-	 * @param radius - The radius of the arc.
-	 * @returns The instance of the current object for chaining.
-	 */
-	arcTo(x1: number, y1: number, x2: number, y2: number, radius: number): this;
-	/**
-	 * Adds an SVG-style arc to the path, allowing for elliptical arcs based on the SVG spec.
-	 * @param rx - The x-radius of the ellipse.
-	 * @param ry - The y-radius of the ellipse.
-	 * @param xAxisRotation - The rotation of the ellipse's x-axis relative
-	 * to the x-axis of the coordinate system, in degrees.
-	 * @param largeArcFlag - Determines if the arc should be greater than or less than 180 degrees.
-	 * @param sweepFlag - Determines if the arc should be swept in a positive angle direction.
-	 * @param x - The x-coordinate of the arc's end point.
-	 * @param y - The y-coordinate of the arc's end point.
-	 * @returns The instance of the current object for chaining.
-	 */
-	arcToSvg(rx: number, ry: number, xAxisRotation: number, largeArcFlag: number, sweepFlag: number, x: number, y: number): this;
-	/**
-	 * Adds a cubic Bezier curve to the path.
-	 * It requires three points: the first two are control points and the third one is the end point.
-	 * The starting point is the last point in the current path.
-	 * @param cp1x - The x-coordinate of the first control point.
-	 * @param cp1y - The y-coordinate of the first control point.
-	 * @param cp2x - The x-coordinate of the second control point.
-	 * @param cp2y - The y-coordinate of the second control point.
-	 * @param x - The x-coordinate of the end point.
-	 * @param y - The y-coordinate of the end point.
-	 * @param smoothness - Optional parameter to adjust the smoothness of the curve.
-	 * @returns The instance of the current object for chaining.
-	 */
-	bezierCurveTo(cp1x: number, cp1y: number, cp2x: number, cp2y: number, x: number, y: number, smoothness?: number): this;
-	/**
-	 * Adds a quadratic curve to the path. It requires two points: the control point and the end point.
-	 * The starting point is the last point in the current path.
-	 * @param cp1x - The x-coordinate of the control point.
-	 * @param cp1y - The y-coordinate of the control point.
-	 * @param x - The x-coordinate of the end point.
-	 * @param y - The y-coordinate of the end point.
-	 * @param smoothing - Optional parameter to adjust the smoothness of the curve.
-	 * @returns The instance of the current object for chaining.
-	 */
-	quadraticCurveTo(cp1x: number, cp1y: number, x: number, y: number, smoothing?: number): this;
-	/**
-	 * Closes the current path by drawing a straight line back to the start.
-	 * If the shape is already closed or there are no points in the path, this method does nothing.
-	 * @returns The instance of the current object for chaining.
-	 */
-	closePath(): this;
-	/**
-	 * Adds another path to the current path. This method allows for the combination of multiple paths into one.
-	 * @param path - The `GraphicsPath` object representing the path to add.
-	 * @param transform - An optional `Matrix` object to apply a transformation to the path before adding it.
-	 * @returns The instance of the current object for chaining.
-	 */
-	addPath(path: GraphicsPath, transform?: Matrix): this;
-	/**
-	 * Finalizes the drawing of the current path. Optionally, it can close the path.
-	 * @param closePath - A boolean indicating whether to close the path after finishing. False by default.
-	 */
-	finish(closePath?: boolean): void;
-	/**
-	 * Draws a rectangle shape. This method adds a new rectangle path to the current drawing.
-	 * @param x - The x-coordinate of the top-left corner of the rectangle.
-	 * @param y - The y-coordinate of the top-left corner of the rectangle.
-	 * @param w - The width of the rectangle.
-	 * @param h - The height of the rectangle.
-	 * @param transform - An optional `Matrix` object to apply a transformation to the rectangle.
-	 * @returns The instance of the current object for chaining.
-	 */
-	rect(x: number, y: number, w: number, h: number, transform?: Matrix): this;
-	/**
-	 * Draws a circle shape. This method adds a new circle path to the current drawing.
-	 * @param x - The x-coordinate of the center of the circle.
-	 * @param y - The y-coordinate of the center of the circle.
-	 * @param radius - The radius of the circle.
-	 * @param transform - An optional `Matrix` object to apply a transformation to the circle.
-	 * @returns The instance of the current object for chaining.
-	 */
-	circle(x: number, y: number, radius: number, transform?: Matrix): this;
-	/**
-	 * Draws a polygon shape. This method allows for the creation of complex polygons by specifying a sequence of points.
-	 * @param points - An array of numbers, or or an array of PointData objects eg [{x,y}, {x,y}, {x,y}]
-	 * representing the x and y coordinates of the polygon's vertices, in sequence.
-	 * @param close - A boolean indicating whether to close the polygon path. True by default.
-	 * @param transform - An optional `Matrix` object to apply a transformation to the polygon.
-	 * @returns The instance of the current object for chaining.
-	 */
-	poly(points: number[] | PointData[], close?: boolean, transform?: Matrix): this;
-	/**
-	 * Draws a regular polygon with a specified number of sides. All sides and angles are equal.
-	 * @param x - The x-coordinate of the center of the polygon.
-	 * @param y - The y-coordinate of the center of the polygon.
-	 * @param radius - The radius of the circumscribed circle of the polygon.
-	 * @param sides - The number of sides of the polygon. Must be 3 or more.
-	 * @param rotation - The rotation angle of the polygon, in radians. Zero by default.
-	 * @param transform - An optional `Matrix` object to apply a transformation to the polygon.
-	 * @returns The instance of the current object for chaining.
-	 */
-	regularPoly(x: number, y: number, radius: number, sides: number, rotation?: number, transform?: Matrix): this;
-	/**
-	 * Draws a polygon with rounded corners.
-	 * Similar to `regularPoly` but with the ability to round the corners of the polygon.
-	 * @param x - The x-coordinate of the center of the polygon.
-	 * @param y - The y-coordinate of the center of the polygon.
-	 * @param radius - The radius of the circumscribed circle of the polygon.
-	 * @param sides - The number of sides of the polygon. Must be 3 or more.
-	 * @param corner - The radius of the rounding of the corners.
-	 * @param rotation - The rotation angle of the polygon, in radians. Zero by default.
-	 * @param smoothness - Optional parameter to adjust the smoothness of the rounding.
-	 * @returns The instance of the current object for chaining.
-	 */
-	roundPoly(x: number, y: number, radius: number, sides: number, corner: number, rotation?: number, smoothness?: number): this;
-	/**
-	 * Draws a shape with rounded corners. This function supports custom radius for each corner of the shape.
-	 * Optionally, corners can be rounded using a quadratic curve instead of an arc, providing a different aesthetic.
-	 * @param points - An array of `RoundedPoint` representing the corners of the shape to draw.
-	 * A minimum of 3 points is required.
-	 * @param radius - The default radius for the corners.
-	 * This radius is applied to all corners unless overridden in `points`.
-	 * @param useQuadratic - If set to true, rounded corners are drawn using a quadraticCurve
-	 *  method instead of an arc method. Defaults to false.
-	 * @param smoothness - Specifies the smoothness of the curve when `useQuadratic` is true.
-	 * Higher values make the curve smoother.
-	 * @returns The instance of the current object for chaining.
-	 */
-	roundShape(points: RoundedPoint[], radius: number, useQuadratic?: boolean, smoothness?: number): this;
-	/**
-	 * Draw Rectangle with fillet corners. This is much like rounded rectangle
-	 * however it support negative numbers as well for the corner radius.
-	 * @param x - Upper left corner of rect
-	 * @param y - Upper right corner of rect
-	 * @param width - Width of rect
-	 * @param height - Height of rect
-	 * @param fillet - accept negative or positive values
-	 */
-	filletRect(x: number, y: number, width: number, height: number, fillet: number): this;
-	/**
-	 * Draw Rectangle with chamfer corners. These are angled corners.
-	 * @param x - Upper left corner of rect
-	 * @param y - Upper right corner of rect
-	 * @param width - Width of rect
-	 * @param height - Height of rect
-	 * @param chamfer - non-zero real number, size of corner cutout
-	 * @param transform
-	 */
-	chamferRect(x: number, y: number, width: number, height: number, chamfer: number, transform?: Matrix): this;
-	/**
-	 * Draws an ellipse at the specified location and with the given x and y radii.
-	 * An optional transformation can be applied, allowing for rotation, scaling, and translation.
-	 * @param x - The x-coordinate of the center of the ellipse.
-	 * @param y - The y-coordinate of the center of the ellipse.
-	 * @param radiusX - The horizontal radius of the ellipse.
-	 * @param radiusY - The vertical radius of the ellipse.
-	 * @param transform - An optional `Matrix` object to apply a transformation to the ellipse. This can include rotations.
-	 * @returns The instance of the current object for chaining.
-	 */
-	ellipse(x: number, y: number, radiusX: number, radiusY: number, transform?: Matrix): this;
-	/**
-	 * Draws a rectangle with rounded corners.
-	 * The corner radius can be specified to determine how rounded the corners should be.
-	 * An optional transformation can be applied, which allows for rotation, scaling, and translation of the rectangle.
-	 * @param x - The x-coordinate of the top-left corner of the rectangle.
-	 * @param y - The y-coordinate of the top-left corner of the rectangle.
-	 * @param w - The width of the rectangle.
-	 * @param h - The height of the rectangle.
-	 * @param radius - The radius of the rectangle's corners. If not specified, corners will be sharp.
-	 * @param transform - An optional `Matrix` object to apply a transformation to the rectangle.
-	 * @returns The instance of the current object for chaining.
-	 */
-	roundRect(x: number, y: number, w: number, h: number, radius?: number, transform?: Matrix): this;
-	/**
-	 * Draws a given shape on the canvas.
-	 * This is a generic method that can draw any type of shape specified by the `ShapePrimitive` parameter.
-	 * An optional transformation matrix can be applied to the shape, allowing for complex transformations.
-	 * @param shape - The shape to draw, defined as a `ShapePrimitive` object.
-	 * @param matrix - An optional `Matrix` for transforming the shape. This can include rotations,
-	 * scaling, and translations.
-	 * @returns The instance of the current object for chaining.
-	 */
-	drawShape(shape: ShapePrimitive, matrix?: Matrix): this;
-	/**
-	 * Starts a new polygon path from the specified starting point.
-	 * This method initializes a new polygon or ends the current one if it exists.
-	 * @param x - The x-coordinate of the starting point of the new polygon.
-	 * @param y - The y-coordinate of the starting point of the new polygon.
-	 * @returns The instance of the current object for chaining.
-	 */
-	startPoly(x: number, y: number): this;
-	/**
-	 * Ends the current polygon path. If `closePath` is set to true,
-	 * the path is closed by connecting the last point to the first one.
-	 * This method finalizes the current polygon and prepares it for drawing or adding to the shape primitives.
-	 * @param closePath - A boolean indicating whether to close the polygon by connecting the last point
-	 *  back to the starting point. False by default.
-	 * @returns The instance of the current object for chaining.
-	 */
-	endPoly(closePath?: boolean): this;
-	private _ensurePoly;
-	/** Builds the path. */
-	buildPath(): void;
-	/** Gets the bounds of the path. */
-	get bounds(): Bounds;
+/** @internal */
+export interface GraphicsAdaptor {
+	shader: Shader;
+	contextChange(renderer: Renderer): void;
+	execute(graphicsPipe: GraphicsPipe, renderable: Graphics): void;
+	destroy(): void;
 }
-/**
- * Represents a single drawing instruction in a `GraphicsPath`.
- * Each instruction consists of an action type and associated data.
- * @category scene
- * @advanced
- */
-export interface PathInstruction {
-	action: "moveTo" | "lineTo" | "quadraticCurveTo" | "bezierCurveTo" | "arc" | "closePath" | "addPath" | "arcTo" | "ellipse" | "rect" | "roundRect" | "arcToSvg" | "poly" | "circle" | "regularPoly" | "roundPoly" | "roundShape" | "filletRect" | "chamferRect";
-	data: any[];
+/** @internal */
+export declare class GraphicsGpuData implements GPUData {
+	batches: BatchableGraphics[];
+	batched: boolean;
+	destroy(): void;
 }
-/**
- * The `GraphicsPath` class is designed to represent a graphical path consisting of multiple drawing instructions.
- * This class serves as a collection of drawing commands that can be executed to render shapes and paths on a canvas or
- * similar graphical context. It supports high-level drawing operations like lines, arcs, curves, and more, enabling
- * complex graphic constructions with relative ease.
- * @category scene
- * @advanced
- */
-export declare class GraphicsPath {
-	instructions: PathInstruction[];
-	/** unique id for this graphics path */
-	readonly uid: number;
-	private _dirty;
-	private _shapePath;
-	/**
-	 * Controls whether shapes in this path should be checked for holes using the non-zero fill rule.
-	 * When true, any closed shape that is fully contained within another shape will become
-	 * a hole in that shape during filling operations.
-	 *
-	 * This follows SVG's non-zero fill rule where:
-	 * 1. Shapes are analyzed to find containment relationships
-	 * 2. If Shape B is fully contained within Shape A, Shape B becomes a hole in Shape A
-	 * 3. Multiple nested holes are supported
-	 *
-	 * Mainly used internally by the SVG parser to correctly handle holes in complex paths.
-	 * When false, all shapes are filled independently without checking for holes.
-	 */
-	checkForHoles: boolean;
-	/**
-	 * Provides access to the internal shape path, ensuring it is up-to-date with the current instructions.
-	 * @returns The `ShapePath` instance associated with this `GraphicsPath`.
-	 */
-	get shapePath(): ShapePath;
-	/**
-	 * Creates a `GraphicsPath` instance optionally from an SVG path string or an array of `PathInstruction`.
-	 * @param instructions - An SVG path string or an array of `PathInstruction` objects.
-	 * @param signed
-	 */
-	constructor(instructions?: string | PathInstruction[], signed?: boolean);
-	/**
-	 * Adds another `GraphicsPath` to this path, optionally applying a transformation.
-	 * @param path - The `GraphicsPath` to add.
-	 * @param transform - An optional transformation to apply to the added path.
-	 * @returns The instance of the current object for chaining.
-	 */
-	addPath(path: GraphicsPath, transform?: Matrix): this;
-	/**
-	 * Adds an arc to the path. The arc is centered at (x, y)
-	 *  position with radius `radius` starting at `startAngle` and ending at `endAngle`.
-	 * @param x - The x-coordinate of the arc's center.
-	 * @param y - The y-coordinate of the arc's center.
-	 * @param radius - The radius of the arc.
-	 * @param startAngle - The starting angle of the arc, in radians.
-	 * @param endAngle - The ending angle of the arc, in radians.
-	 * @param counterclockwise - Specifies whether the arc should be drawn in the anticlockwise direction. False by default.
-	 * @returns The instance of the current object for chaining.
-	 */
-	arc(x: number, y: number, radius: number, startAngle: number, endAngle: number, counterclockwise?: boolean): this;
-	/**
-	 * Adds an arc to the path with the arc tangent to the line joining two specified points.
-	 * The arc radius is specified by `radius`.
-	 * @param x1 - The x-coordinate of the first point.
-	 * @param y1 - The y-coordinate of the first point.
-	 * @param x2 - The x-coordinate of the second point.
-	 * @param y2 - The y-coordinate of the second point.
-	 * @param radius - The radius of the arc.
-	 * @returns The instance of the current object for chaining.
-	 */
-	arcTo(x1: number, y1: number, x2: number, y2: number, radius: number): this;
-	/**
-	 * Adds an SVG-style arc to the path, allowing for elliptical arcs based on the SVG spec.
-	 * @param rx - The x-radius of the ellipse.
-	 * @param ry - The y-radius of the ellipse.
-	 * @param xAxisRotation - The rotation of the ellipse's x-axis relative
-	 * to the x-axis of the coordinate system, in degrees.
-	 * @param largeArcFlag - Determines if the arc should be greater than or less than 180 degrees.
-	 * @param sweepFlag - Determines if the arc should be swept in a positive angle direction.
-	 * @param x - The x-coordinate of the arc's end point.
-	 * @param y - The y-coordinate of the arc's end point.
-	 * @returns The instance of the current object for chaining.
-	 */
-	arcToSvg(rx: number, ry: number, xAxisRotation: number, largeArcFlag: number, sweepFlag: number, x: number, y: number): this;
-	/**
-	 * Adds a cubic Bezier curve to the path.
-	 * It requires three points: the first two are control points and the third one is the end point.
-	 * The starting point is the last point in the current path.
-	 * @param cp1x - The x-coordinate of the first control point.
-	 * @param cp1y - The y-coordinate of the first control point.
-	 * @param cp2x - The x-coordinate of the second control point.
-	 * @param cp2y - The y-coordinate of the second control point.
-	 * @param x - The x-coordinate of the end point.
-	 * @param y - The y-coordinate of the end point.
-	 * @param smoothness - Optional parameter to adjust the smoothness of the curve.
-	 * @returns The instance of the current object for chaining.
-	 */
-	bezierCurveTo(cp1x: number, cp1y: number, cp2x: number, cp2y: number, x: number, y: number, smoothness?: number): this;
-	/**
-	 * Adds a cubic Bezier curve to the path.
-	 * It requires two points: the second control point and the end point. The first control point is assumed to be
-	 * The starting point is the last point in the current path.
-	 * @param cp2x - The x-coordinate of the second control point.
-	 * @param cp2y - The y-coordinate of the second control point.
-	 * @param x - The x-coordinate of the end point.
-	 * @param y - The y-coordinate of the end point.
-	 * @param smoothness - Optional parameter to adjust the smoothness of the curve.
-	 * @returns The instance of the current object for chaining.
-	 */
-	bezierCurveToShort(cp2x: number, cp2y: number, x: number, y: number, smoothness?: number): this;
-	/**
-	 * Closes the current path by drawing a straight line back to the start.
-	 * If the shape is already closed or there are no points in the path, this method does nothing.
-	 * @returns The instance of the current object for chaining.
-	 */
-	closePath(): this;
-	/**
-	 * Draws an ellipse at the specified location and with the given x and y radii.
-	 * An optional transformation can be applied, allowing for rotation, scaling, and translation.
-	 * @param x - The x-coordinate of the center of the ellipse.
-	 * @param y - The y-coordinate of the center of the ellipse.
-	 * @param radiusX - The horizontal radius of the ellipse.
-	 * @param radiusY - The vertical radius of the ellipse.
-	 * @param matrix - An optional `Matrix` object to apply a transformation to the ellipse. This can include rotations.
-	 * @returns The instance of the current object for chaining.
-	 */
-	ellipse(x: number, y: number, radiusX: number, radiusY: number, matrix?: Matrix): this;
-	/**
-	 * Connects the current point to a new point with a straight line. This method updates the current path.
-	 * @param x - The x-coordinate of the new point to connect to.
-	 * @param y - The y-coordinate of the new point to connect to.
-	 * @returns The instance of the current object for chaining.
-	 */
-	lineTo(x: number, y: number): this;
-	/**
-	 * Sets the starting point for a new sub-path. Any subsequent drawing commands are considered part of this path.
-	 * @param x - The x-coordinate for the starting point.
-	 * @param y - The y-coordinate for the starting point.
-	 * @returns The instance of the current object for chaining.
-	 */
-	moveTo(x: number, y: number): this;
-	/**
-	 * Adds a quadratic curve to the path. It requires two points: the control point and the end point.
-	 * The starting point is the last point in the current path.
-	 * @param cpx - The x-coordinate of the control point.
-	 * @param cpy - The y-coordinate of the control point.
-	 * @param x - The x-coordinate of the end point.
-	 * @param y - The y-coordinate of the end point.
-	 * @param smoothness - Optional parameter to adjust the smoothness of the curve.
-	 * @returns The instance of the current object for chaining.
-	 */
-	quadraticCurveTo(cpx: number, cpy: number, x: number, y: number, smoothness?: number): this;
-	/**
-	 * Adds a quadratic curve to the path. It uses the previous point as the control point.
-	 * @param x - The x-coordinate of the end point.
-	 * @param y - The y-coordinate of the end point.
-	 * @param smoothness - Optional parameter to adjust the smoothness of the curve.
-	 * @returns The instance of the current object for chaining.
-	 */
-	quadraticCurveToShort(x: number, y: number, smoothness?: number): this;
-	/**
-	 * Draws a rectangle shape. This method adds a new rectangle path to the current drawing.
-	 * @param x - The x-coordinate of the top-left corner of the rectangle.
-	 * @param y - The y-coordinate of the top-left corner of the rectangle.
-	 * @param w - The width of the rectangle.
-	 * @param h - The height of the rectangle.
-	 * @param transform - An optional `Matrix` object to apply a transformation to the rectangle.
-	 * @returns The instance of the current object for chaining.
-	 */
-	rect(x: number, y: number, w: number, h: number, transform?: Matrix): this;
-	/**
-	 * Draws a circle shape. This method adds a new circle path to the current drawing.
-	 * @param x - The x-coordinate of the center of the circle.
-	 * @param y - The y-coordinate of the center of the circle.
-	 * @param radius - The radius of the circle.
-	 * @param transform - An optional `Matrix` object to apply a transformation to the circle.
-	 * @returns The instance of the current object for chaining.
-	 */
-	circle(x: number, y: number, radius: number, transform?: Matrix): this;
-	/**
-	 * Draws a rectangle with rounded corners.
-	 * The corner radius can be specified to determine how rounded the corners should be.
-	 * An optional transformation can be applied, which allows for rotation, scaling, and translation of the rectangle.
-	 * @param x - The x-coordinate of the top-left corner of the rectangle.
-	 * @param y - The y-coordinate of the top-left corner of the rectangle.
-	 * @param w - The width of the rectangle.
-	 * @param h - The height of the rectangle.
-	 * @param radius - The radius of the rectangle's corners. If not specified, corners will be sharp.
-	 * @param transform - An optional `Matrix` object to apply a transformation to the rectangle.
-	 * @returns The instance of the current object for chaining.
-	 */
-	roundRect(x: number, y: number, w: number, h: number, radius?: number, transform?: Matrix): this;
-	/**
-	 * Draws a polygon shape by specifying a sequence of points. This method allows for the creation of complex polygons,
-	 * which can be both open and closed. An optional transformation can be applied, enabling the polygon to be scaled,
-	 * rotated, or translated as needed.
-	 * @param points - An array of numbers representing the x and y coordinates of the polygon's vertices, in sequence.
-	 * @param close - A boolean indicating whether to close the polygon path. True by default.
-	 * @param transform - An optional `Matrix` object to apply a transformation to the polygon.
-	 * @returns The instance of the current object for chaining further drawing commands.
-	 */
-	poly(points: number[] | PointData[], close?: boolean, transform?: Matrix): this;
-	/**
-	 * Draws a regular polygon with a specified number of sides. All sides and angles are equal.
-	 * @param x - The x-coordinate of the center of the polygon.
-	 * @param y - The y-coordinate of the center of the polygon.
-	 * @param radius - The radius of the circumscribed circle of the polygon.
-	 * @param sides - The number of sides of the polygon. Must be 3 or more.
-	 * @param rotation - The rotation angle of the polygon, in radians. Zero by default.
-	 * @param transform - An optional `Matrix` object to apply a transformation to the polygon.
-	 * @returns The instance of the current object for chaining.
-	 */
-	regularPoly(x: number, y: number, radius: number, sides: number, rotation?: number, transform?: Matrix): this;
-	/**
-	 * Draws a polygon with rounded corners.
-	 * Similar to `regularPoly` but with the ability to round the corners of the polygon.
-	 * @param x - The x-coordinate of the center of the polygon.
-	 * @param y - The y-coordinate of the center of the polygon.
-	 * @param radius - The radius of the circumscribed circle of the polygon.
-	 * @param sides - The number of sides of the polygon. Must be 3 or more.
-	 * @param corner - The radius of the rounding of the corners.
-	 * @param rotation - The rotation angle of the polygon, in radians. Zero by default.
-	 * @returns The instance of the current object for chaining.
-	 */
-	roundPoly(x: number, y: number, radius: number, sides: number, corner: number, rotation?: number): this;
-	/**
-	 * Draws a shape with rounded corners. This function supports custom radius for each corner of the shape.
-	 * Optionally, corners can be rounded using a quadratic curve instead of an arc, providing a different aesthetic.
-	 * @param points - An array of `RoundedPoint` representing the corners of the shape to draw.
-	 * A minimum of 3 points is required.
-	 * @param radius - The default radius for the corners.
-	 * This radius is applied to all corners unless overridden in `points`.
-	 * @param useQuadratic - If set to true, rounded corners are drawn using a quadraticCurve
-	 *  method instead of an arc method. Defaults to false.
-	 * @param smoothness - Specifies the smoothness of the curve when `useQuadratic` is true.
-	 * Higher values make the curve smoother.
-	 * @returns The instance of the current object for chaining.
-	 */
-	roundShape(points: RoundedPoint[], radius: number, useQuadratic?: boolean, smoothness?: number): this;
-	/**
-	 * Draw Rectangle with fillet corners. This is much like rounded rectangle
-	 * however it support negative numbers as well for the corner radius.
-	 * @param x - Upper left corner of rect
-	 * @param y - Upper right corner of rect
-	 * @param width - Width of rect
-	 * @param height - Height of rect
-	 * @param fillet - accept negative or positive values
-	 */
-	filletRect(x: number, y: number, width: number, height: number, fillet: number): this;
-	/**
-	 * Draw Rectangle with chamfer corners. These are angled corners.
-	 * @param x - Upper left corner of rect
-	 * @param y - Upper right corner of rect
-	 * @param width - Width of rect
-	 * @param height - Height of rect
-	 * @param chamfer - non-zero real number, size of corner cutout
-	 * @param transform
-	 */
-	chamferRect(x: number, y: number, width: number, height: number, chamfer: number, transform?: Matrix): this;
-	/**
-	 * Draws a star shape centered at a specified location. This method allows for the creation
-	 *  of stars with a variable number of points, outer radius, optional inner radius, and rotation.
-	 * The star is drawn as a closed polygon with alternating outer and inner vertices to create the star's points.
-	 * An optional transformation can be applied to scale, rotate, or translate the star as needed.
-	 * @param x - The x-coordinate of the center of the star.
-	 * @param y - The y-coordinate of the center of the star.
-	 * @param points - The number of points of the star.
-	 * @param radius - The outer radius of the star (distance from the center to the outer points).
-	 * @param innerRadius - Optional. The inner radius of the star
-	 * (distance from the center to the inner points between the outer points).
-	 * If not provided, defaults to half of the `radius`.
-	 * @param rotation - Optional. The rotation of the star in radians, where 0 is aligned with the y-axis.
-	 * Defaults to 0, meaning one point is directly upward.
-	 * @param transform - An optional `Matrix` object to apply a transformation to the star.
-	 * This can include rotations, scaling, and translations.
-	 * @returns The instance of the current object for chaining further drawing commands.
-	 */
-	star(x: number, y: number, points: number, radius: number, innerRadius?: number, rotation?: number, transform?: Matrix): this;
-	/**
-	 * Creates a copy of the current `GraphicsPath` instance. This method supports both shallow and deep cloning.
-	 * A shallow clone copies the reference of the instructions array, while a deep clone creates a new array and
-	 * copies each instruction individually, ensuring that modifications to the instructions of the cloned `GraphicsPath`
-	 * do not affect the original `GraphicsPath` and vice versa.
-	 * @param deep - A boolean flag indicating whether the clone should be deep.
-	 * @returns A new `GraphicsPath` instance that is a clone of the current instance.
-	 */
-	clone(deep?: boolean): GraphicsPath;
-	clear(): this;
-	/**
-	 * Applies a transformation matrix to all drawing instructions within the `GraphicsPath`.
-	 * This method enables the modification of the path's geometry according to the provided
-	 * transformation matrix, which can include translations, rotations, scaling, and skewing.
-	 *
-	 * Each drawing instruction in the path is updated to reflect the transformation,
-	 * ensuring the visual representation of the path is consistent with the applied matrix.
-	 *
-	 * Note: The transformation is applied directly to the coordinates and control points of the drawing instructions,
-	 * not to the path as a whole. This means the transformation's effects are baked into the individual instructions,
-	 * allowing for fine-grained control over the path's appearance.
-	 * @param matrix - A `Matrix` object representing the transformation to apply.
-	 * @returns The instance of the current object for chaining further operations.
-	 */
-	transform(matrix: Matrix): this;
-	get bounds(): Bounds;
-	/**
-	 * Retrieves the last point from the current drawing instructions in the `GraphicsPath`.
-	 * This method is useful for operations that depend on the path's current endpoint,
-	 * such as connecting subsequent shapes or paths. It supports various drawing instructions,
-	 * ensuring the last point's position is accurately determined regardless of the path's complexity.
-	 *
-	 * If the last instruction is a `closePath`, the method iterates backward through the instructions
-	 *  until it finds an actionable instruction that defines a point (e.g., `moveTo`, `lineTo`,
-	 * `quadraticCurveTo`, etc.). For compound paths added via `addPath`, it recursively retrieves
-	 * the last point from the nested path.
-	 * @param out - A `Point` object where the last point's coordinates will be stored.
-	 * This object is modified directly to contain the result.
-	 * @returns The `Point` object containing the last point's coordinates.
-	 */
-	getLastPoint(out: Point): Point;
+/** @internal */
+export declare class GraphicsPipe implements RenderPipe<Graphics> {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGLPipes,
+			ExtensionType.WebGPUPipes,
+			ExtensionType.CanvasPipes
+		];
+		readonly name: "graphics";
+	};
+	renderer: Renderer;
+	state: State;
+	private _adaptor;
+	private readonly _managedGraphics;
+	constructor(renderer: Renderer, adaptor: GraphicsAdaptor);
+	contextChange(): void;
+	validateRenderable(graphics: Graphics): boolean;
+	addRenderable(graphics: Graphics, instructionSet: InstructionSet): void;
+	updateRenderable(graphics: Graphics): void;
+	execute(graphics: Graphics): void;
+	private _rebuild;
+	private _addToBatcher;
+	private _getGpuDataForRenderable;
+	private _initGpuDataForRenderable;
+	private _updateBatchesForRenderable;
+	destroy(): void;
 }
 /**
  * The line cap styles for strokes.
@@ -23791,6 +23550,2420 @@ export type ConvertedStrokeStyle = ConvertedFillStyle & Required<StrokeAttribute
  */
 export type FillStyleInputs = ColorSource | FillGradient | FillPattern | FillStyle | ConvertedFillStyle | StrokeStyle | ConvertedStrokeStyle;
 /**
+ * Typed and cleaned up version of:
+ * https://stackoverflow.com/questions/44855794/html5-canvas-triangle-with-rounded-corners/44856925#44856925
+ * @param g - Graphics to be drawn on.
+ * @param points - Corners of the shape to draw. Minimum length is 3.
+ * @param radius - Corners default radius.
+ * @ignore
+ */
+export declare function roundedShapeArc(g: ShapePath, points: RoundedPoint[], radius: number): void;
+/**
+ * Data structure for points with optional radius.
+ * @category scene
+ * @standard
+ */
+export type RoundedPoint = PointData & {
+	radius?: number;
+};
+/**
+ * Typed and cleaned up version of:
+ * https://stackoverflow.com/questions/44855794/html5-canvas-triangle-with-rounded-corners/56214413#56214413
+ * @param g - Graphics to be drawn on.
+ * @param points - Corners of the shape to draw. Minimum length is 3.
+ * @param radius - Corners default radius.
+ * @ignore
+ */
+export declare function roundedShapeQuadraticCurve(g: ShapePath, points: RoundedPoint[], radius: number, smoothness?: number): void;
+/**
+ * A type representing a shape primitive with optional transformation and holes.
+ * @category scene
+ * @advanced
+ */
+export type ShapePrimitiveWithHoles = {
+	shape: ShapePrimitive;
+	transform?: Matrix;
+	holes?: ShapePrimitiveWithHoles[];
+};
+/**
+ * The `ShapePath` class acts as a bridge between high-level drawing commands
+ * and the lower-level `GraphicsContext` rendering engine.
+ * It translates drawing commands, such as those for creating lines, arcs, ellipses, rectangles, and complex polygons, into a
+ * format that can be efficiently processed by a `GraphicsContext`. This includes handling path starts,
+ * ends, and transformations for shapes.
+ *
+ * It is used internally by `GraphicsPath` to build up the path.
+ * @category scene
+ * @advanced
+ */
+export declare class ShapePath {
+	/** The list of shape primitives that make up the path. */
+	shapePrimitives: ShapePrimitiveWithHoles[];
+	private _currentPoly;
+	private readonly _graphicsPath2D;
+	private readonly _bounds;
+	readonly signed: boolean;
+	constructor(graphicsPath2D: GraphicsPath);
+	/**
+	 * Sets the starting point for a new sub-path. Any subsequent drawing commands are considered part of this path.
+	 * @param x - The x-coordinate for the starting point.
+	 * @param y - The y-coordinate for the starting point.
+	 * @returns The instance of the current object for chaining.
+	 */
+	moveTo(x: number, y: number): this;
+	/**
+	 * Connects the current point to a new point with a straight line. This method updates the current path.
+	 * @param x - The x-coordinate of the new point to connect to.
+	 * @param y - The y-coordinate of the new point to connect to.
+	 * @returns The instance of the current object for chaining.
+	 */
+	lineTo(x: number, y: number): this;
+	/**
+	 * Adds an arc to the path. The arc is centered at (x, y)
+	 *  position with radius `radius` starting at `startAngle` and ending at `endAngle`.
+	 * @param x - The x-coordinate of the arc's center.
+	 * @param y - The y-coordinate of the arc's center.
+	 * @param radius - The radius of the arc.
+	 * @param startAngle - The starting angle of the arc, in radians.
+	 * @param endAngle - The ending angle of the arc, in radians.
+	 * @param counterclockwise - Specifies whether the arc should be drawn in the anticlockwise direction. False by default.
+	 * @returns The instance of the current object for chaining.
+	 */
+	arc(x: number, y: number, radius: number, startAngle: number, endAngle: number, counterclockwise: boolean): this;
+	/**
+	 * Adds an arc to the path with the arc tangent to the line joining two specified points.
+	 * The arc radius is specified by `radius`.
+	 * @param x1 - The x-coordinate of the first point.
+	 * @param y1 - The y-coordinate of the first point.
+	 * @param x2 - The x-coordinate of the second point.
+	 * @param y2 - The y-coordinate of the second point.
+	 * @param radius - The radius of the arc.
+	 * @returns The instance of the current object for chaining.
+	 */
+	arcTo(x1: number, y1: number, x2: number, y2: number, radius: number): this;
+	/**
+	 * Adds an SVG-style arc to the path, allowing for elliptical arcs based on the SVG spec.
+	 * @param rx - The x-radius of the ellipse.
+	 * @param ry - The y-radius of the ellipse.
+	 * @param xAxisRotation - The rotation of the ellipse's x-axis relative
+	 * to the x-axis of the coordinate system, in degrees.
+	 * @param largeArcFlag - Determines if the arc should be greater than or less than 180 degrees.
+	 * @param sweepFlag - Determines if the arc should be swept in a positive angle direction.
+	 * @param x - The x-coordinate of the arc's end point.
+	 * @param y - The y-coordinate of the arc's end point.
+	 * @returns The instance of the current object for chaining.
+	 */
+	arcToSvg(rx: number, ry: number, xAxisRotation: number, largeArcFlag: number, sweepFlag: number, x: number, y: number): this;
+	/**
+	 * Adds a cubic Bezier curve to the path.
+	 * It requires three points: the first two are control points and the third one is the end point.
+	 * The starting point is the last point in the current path.
+	 * @param cp1x - The x-coordinate of the first control point.
+	 * @param cp1y - The y-coordinate of the first control point.
+	 * @param cp2x - The x-coordinate of the second control point.
+	 * @param cp2y - The y-coordinate of the second control point.
+	 * @param x - The x-coordinate of the end point.
+	 * @param y - The y-coordinate of the end point.
+	 * @param smoothness - Optional parameter to adjust the smoothness of the curve.
+	 * @returns The instance of the current object for chaining.
+	 */
+	bezierCurveTo(cp1x: number, cp1y: number, cp2x: number, cp2y: number, x: number, y: number, smoothness?: number): this;
+	/**
+	 * Adds a quadratic curve to the path. It requires two points: the control point and the end point.
+	 * The starting point is the last point in the current path.
+	 * @param cp1x - The x-coordinate of the control point.
+	 * @param cp1y - The y-coordinate of the control point.
+	 * @param x - The x-coordinate of the end point.
+	 * @param y - The y-coordinate of the end point.
+	 * @param smoothing - Optional parameter to adjust the smoothness of the curve.
+	 * @returns The instance of the current object for chaining.
+	 */
+	quadraticCurveTo(cp1x: number, cp1y: number, x: number, y: number, smoothing?: number): this;
+	/**
+	 * Closes the current path by drawing a straight line back to the start.
+	 * If the shape is already closed or there are no points in the path, this method does nothing.
+	 * @returns The instance of the current object for chaining.
+	 */
+	closePath(): this;
+	/**
+	 * Adds another path to the current path. This method allows for the combination of multiple paths into one.
+	 * @param path - The `GraphicsPath` object representing the path to add.
+	 * @param transform - An optional `Matrix` object to apply a transformation to the path before adding it.
+	 * @returns The instance of the current object for chaining.
+	 */
+	addPath(path: GraphicsPath, transform?: Matrix): this;
+	/**
+	 * Finalizes the drawing of the current path. Optionally, it can close the path.
+	 * @param closePath - A boolean indicating whether to close the path after finishing. False by default.
+	 */
+	finish(closePath?: boolean): void;
+	/**
+	 * Draws a rectangle shape. This method adds a new rectangle path to the current drawing.
+	 * @param x - The x-coordinate of the top-left corner of the rectangle.
+	 * @param y - The y-coordinate of the top-left corner of the rectangle.
+	 * @param w - The width of the rectangle.
+	 * @param h - The height of the rectangle.
+	 * @param transform - An optional `Matrix` object to apply a transformation to the rectangle.
+	 * @returns The instance of the current object for chaining.
+	 */
+	rect(x: number, y: number, w: number, h: number, transform?: Matrix): this;
+	/**
+	 * Draws a circle shape. This method adds a new circle path to the current drawing.
+	 * @param x - The x-coordinate of the center of the circle.
+	 * @param y - The y-coordinate of the center of the circle.
+	 * @param radius - The radius of the circle.
+	 * @param transform - An optional `Matrix` object to apply a transformation to the circle.
+	 * @returns The instance of the current object for chaining.
+	 */
+	circle(x: number, y: number, radius: number, transform?: Matrix): this;
+	/**
+	 * Draws a polygon shape. This method allows for the creation of complex polygons by specifying a sequence of points.
+	 * @param points - An array of numbers, or or an array of PointData objects eg [{x,y}, {x,y}, {x,y}]
+	 * representing the x and y coordinates of the polygon's vertices, in sequence.
+	 * @param close - A boolean indicating whether to close the polygon path. True by default.
+	 * @param transform - An optional `Matrix` object to apply a transformation to the polygon.
+	 * @returns The instance of the current object for chaining.
+	 */
+	poly(points: number[] | PointData[], close?: boolean, transform?: Matrix): this;
+	/**
+	 * Draws a regular polygon with a specified number of sides. All sides and angles are equal.
+	 * @param x - The x-coordinate of the center of the polygon.
+	 * @param y - The y-coordinate of the center of the polygon.
+	 * @param radius - The radius of the circumscribed circle of the polygon.
+	 * @param sides - The number of sides of the polygon. Must be 3 or more.
+	 * @param rotation - The rotation angle of the polygon, in radians. Zero by default.
+	 * @param transform - An optional `Matrix` object to apply a transformation to the polygon.
+	 * @returns The instance of the current object for chaining.
+	 */
+	regularPoly(x: number, y: number, radius: number, sides: number, rotation?: number, transform?: Matrix): this;
+	/**
+	 * Draws a polygon with rounded corners.
+	 * Similar to `regularPoly` but with the ability to round the corners of the polygon.
+	 * @param x - The x-coordinate of the center of the polygon.
+	 * @param y - The y-coordinate of the center of the polygon.
+	 * @param radius - The radius of the circumscribed circle of the polygon.
+	 * @param sides - The number of sides of the polygon. Must be 3 or more.
+	 * @param corner - The radius of the rounding of the corners.
+	 * @param rotation - The rotation angle of the polygon, in radians. Zero by default.
+	 * @param smoothness - Optional parameter to adjust the smoothness of the rounding.
+	 * @returns The instance of the current object for chaining.
+	 */
+	roundPoly(x: number, y: number, radius: number, sides: number, corner: number, rotation?: number, smoothness?: number): this;
+	/**
+	 * Draws a shape with rounded corners. This function supports custom radius for each corner of the shape.
+	 * Optionally, corners can be rounded using a quadratic curve instead of an arc, providing a different aesthetic.
+	 * @param points - An array of `RoundedPoint` representing the corners of the shape to draw.
+	 * A minimum of 3 points is required.
+	 * @param radius - The default radius for the corners.
+	 * This radius is applied to all corners unless overridden in `points`.
+	 * @param useQuadratic - If set to true, rounded corners are drawn using a quadraticCurve
+	 *  method instead of an arc method. Defaults to false.
+	 * @param smoothness - Specifies the smoothness of the curve when `useQuadratic` is true.
+	 * Higher values make the curve smoother.
+	 * @returns The instance of the current object for chaining.
+	 */
+	roundShape(points: RoundedPoint[], radius: number, useQuadratic?: boolean, smoothness?: number): this;
+	/**
+	 * Draw Rectangle with fillet corners. This is much like rounded rectangle
+	 * however it support negative numbers as well for the corner radius.
+	 * @param x - Upper left corner of rect
+	 * @param y - Upper right corner of rect
+	 * @param width - Width of rect
+	 * @param height - Height of rect
+	 * @param fillet - accept negative or positive values
+	 */
+	filletRect(x: number, y: number, width: number, height: number, fillet: number): this;
+	/**
+	 * Draw Rectangle with chamfer corners. These are angled corners.
+	 * @param x - Upper left corner of rect
+	 * @param y - Upper right corner of rect
+	 * @param width - Width of rect
+	 * @param height - Height of rect
+	 * @param chamfer - non-zero real number, size of corner cutout
+	 * @param transform
+	 */
+	chamferRect(x: number, y: number, width: number, height: number, chamfer: number, transform?: Matrix): this;
+	/**
+	 * Draws an ellipse at the specified location and with the given x and y radii.
+	 * An optional transformation can be applied, allowing for rotation, scaling, and translation.
+	 * @param x - The x-coordinate of the center of the ellipse.
+	 * @param y - The y-coordinate of the center of the ellipse.
+	 * @param radiusX - The horizontal radius of the ellipse.
+	 * @param radiusY - The vertical radius of the ellipse.
+	 * @param transform - An optional `Matrix` object to apply a transformation to the ellipse. This can include rotations.
+	 * @returns The instance of the current object for chaining.
+	 */
+	ellipse(x: number, y: number, radiusX: number, radiusY: number, transform?: Matrix): this;
+	/**
+	 * Draws a rectangle with rounded corners.
+	 * The corner radius can be specified to determine how rounded the corners should be.
+	 * An optional transformation can be applied, which allows for rotation, scaling, and translation of the rectangle.
+	 * @param x - The x-coordinate of the top-left corner of the rectangle.
+	 * @param y - The y-coordinate of the top-left corner of the rectangle.
+	 * @param w - The width of the rectangle.
+	 * @param h - The height of the rectangle.
+	 * @param radius - The radius of the rectangle's corners. If not specified, corners will be sharp.
+	 * @param transform - An optional `Matrix` object to apply a transformation to the rectangle.
+	 * @returns The instance of the current object for chaining.
+	 */
+	roundRect(x: number, y: number, w: number, h: number, radius?: number, transform?: Matrix): this;
+	/**
+	 * Draws a given shape on the canvas.
+	 * This is a generic method that can draw any type of shape specified by the `ShapePrimitive` parameter.
+	 * An optional transformation matrix can be applied to the shape, allowing for complex transformations.
+	 * @param shape - The shape to draw, defined as a `ShapePrimitive` object.
+	 * @param matrix - An optional `Matrix` for transforming the shape. This can include rotations,
+	 * scaling, and translations.
+	 * @returns The instance of the current object for chaining.
+	 */
+	drawShape(shape: ShapePrimitive, matrix?: Matrix): this;
+	/**
+	 * Starts a new polygon path from the specified starting point.
+	 * This method initializes a new polygon or ends the current one if it exists.
+	 * @param x - The x-coordinate of the starting point of the new polygon.
+	 * @param y - The y-coordinate of the starting point of the new polygon.
+	 * @returns The instance of the current object for chaining.
+	 */
+	startPoly(x: number, y: number): this;
+	/**
+	 * Ends the current polygon path. If `closePath` is set to true,
+	 * the path is closed by connecting the last point to the first one.
+	 * This method finalizes the current polygon and prepares it for drawing or adding to the shape primitives.
+	 * @param closePath - A boolean indicating whether to close the polygon by connecting the last point
+	 *  back to the starting point. False by default.
+	 * @returns The instance of the current object for chaining.
+	 */
+	endPoly(closePath?: boolean): this;
+	private _ensurePoly;
+	/** Builds the path. */
+	buildPath(): void;
+	/** Gets the bounds of the path. */
+	get bounds(): Bounds;
+}
+/**
+ * Represents a single drawing instruction in a `GraphicsPath`.
+ * Each instruction consists of an action type and associated data.
+ * @category scene
+ * @advanced
+ */
+export interface PathInstruction {
+	action: "moveTo" | "lineTo" | "quadraticCurveTo" | "bezierCurveTo" | "arc" | "closePath" | "addPath" | "arcTo" | "ellipse" | "rect" | "roundRect" | "arcToSvg" | "poly" | "circle" | "regularPoly" | "roundPoly" | "roundShape" | "filletRect" | "chamferRect";
+	data: any[];
+}
+/**
+ * The `GraphicsPath` class is designed to represent a graphical path consisting of multiple drawing instructions.
+ * This class serves as a collection of drawing commands that can be executed to render shapes and paths on a canvas or
+ * similar graphical context. It supports high-level drawing operations like lines, arcs, curves, and more, enabling
+ * complex graphic constructions with relative ease.
+ * @category scene
+ * @advanced
+ */
+export declare class GraphicsPath {
+	instructions: PathInstruction[];
+	/** unique id for this graphics path */
+	readonly uid: number;
+	private _dirty;
+	private _shapePath;
+	/**
+	 * Controls whether shapes in this path should be checked for holes using the non-zero fill rule.
+	 * When true, any closed shape that is fully contained within another shape will become
+	 * a hole in that shape during filling operations.
+	 *
+	 * This follows SVG's non-zero fill rule where:
+	 * 1. Shapes are analyzed to find containment relationships
+	 * 2. If Shape B is fully contained within Shape A, Shape B becomes a hole in Shape A
+	 * 3. Multiple nested holes are supported
+	 *
+	 * Mainly used internally by the SVG parser to correctly handle holes in complex paths.
+	 * When false, all shapes are filled independently without checking for holes.
+	 */
+	checkForHoles: boolean;
+	/**
+	 * Provides access to the internal shape path, ensuring it is up-to-date with the current instructions.
+	 * @returns The `ShapePath` instance associated with this `GraphicsPath`.
+	 */
+	get shapePath(): ShapePath;
+	/**
+	 * Creates a `GraphicsPath` instance optionally from an SVG path string or an array of `PathInstruction`.
+	 * @param instructions - An SVG path string or an array of `PathInstruction` objects.
+	 * @param signed
+	 */
+	constructor(instructions?: string | PathInstruction[], signed?: boolean);
+	/**
+	 * Adds another `GraphicsPath` to this path, optionally applying a transformation.
+	 * @param path - The `GraphicsPath` to add.
+	 * @param transform - An optional transformation to apply to the added path.
+	 * @returns The instance of the current object for chaining.
+	 */
+	addPath(path: GraphicsPath, transform?: Matrix): this;
+	/**
+	 * Adds an arc to the path. The arc is centered at (x, y)
+	 *  position with radius `radius` starting at `startAngle` and ending at `endAngle`.
+	 * @param x - The x-coordinate of the arc's center.
+	 * @param y - The y-coordinate of the arc's center.
+	 * @param radius - The radius of the arc.
+	 * @param startAngle - The starting angle of the arc, in radians.
+	 * @param endAngle - The ending angle of the arc, in radians.
+	 * @param counterclockwise - Specifies whether the arc should be drawn in the anticlockwise direction. False by default.
+	 * @returns The instance of the current object for chaining.
+	 */
+	arc(x: number, y: number, radius: number, startAngle: number, endAngle: number, counterclockwise?: boolean): this;
+	/**
+	 * Adds an arc to the path with the arc tangent to the line joining two specified points.
+	 * The arc radius is specified by `radius`.
+	 * @param x1 - The x-coordinate of the first point.
+	 * @param y1 - The y-coordinate of the first point.
+	 * @param x2 - The x-coordinate of the second point.
+	 * @param y2 - The y-coordinate of the second point.
+	 * @param radius - The radius of the arc.
+	 * @returns The instance of the current object for chaining.
+	 */
+	arcTo(x1: number, y1: number, x2: number, y2: number, radius: number): this;
+	/**
+	 * Adds an SVG-style arc to the path, allowing for elliptical arcs based on the SVG spec.
+	 * @param rx - The x-radius of the ellipse.
+	 * @param ry - The y-radius of the ellipse.
+	 * @param xAxisRotation - The rotation of the ellipse's x-axis relative
+	 * to the x-axis of the coordinate system, in degrees.
+	 * @param largeArcFlag - Determines if the arc should be greater than or less than 180 degrees.
+	 * @param sweepFlag - Determines if the arc should be swept in a positive angle direction.
+	 * @param x - The x-coordinate of the arc's end point.
+	 * @param y - The y-coordinate of the arc's end point.
+	 * @returns The instance of the current object for chaining.
+	 */
+	arcToSvg(rx: number, ry: number, xAxisRotation: number, largeArcFlag: number, sweepFlag: number, x: number, y: number): this;
+	/**
+	 * Adds a cubic Bezier curve to the path.
+	 * It requires three points: the first two are control points and the third one is the end point.
+	 * The starting point is the last point in the current path.
+	 * @param cp1x - The x-coordinate of the first control point.
+	 * @param cp1y - The y-coordinate of the first control point.
+	 * @param cp2x - The x-coordinate of the second control point.
+	 * @param cp2y - The y-coordinate of the second control point.
+	 * @param x - The x-coordinate of the end point.
+	 * @param y - The y-coordinate of the end point.
+	 * @param smoothness - Optional parameter to adjust the smoothness of the curve.
+	 * @returns The instance of the current object for chaining.
+	 */
+	bezierCurveTo(cp1x: number, cp1y: number, cp2x: number, cp2y: number, x: number, y: number, smoothness?: number): this;
+	/**
+	 * Adds a cubic Bezier curve to the path.
+	 * It requires two points: the second control point and the end point. The first control point is assumed to be
+	 * The starting point is the last point in the current path.
+	 * @param cp2x - The x-coordinate of the second control point.
+	 * @param cp2y - The y-coordinate of the second control point.
+	 * @param x - The x-coordinate of the end point.
+	 * @param y - The y-coordinate of the end point.
+	 * @param smoothness - Optional parameter to adjust the smoothness of the curve.
+	 * @returns The instance of the current object for chaining.
+	 */
+	bezierCurveToShort(cp2x: number, cp2y: number, x: number, y: number, smoothness?: number): this;
+	/**
+	 * Closes the current path by drawing a straight line back to the start.
+	 * If the shape is already closed or there are no points in the path, this method does nothing.
+	 * @returns The instance of the current object for chaining.
+	 */
+	closePath(): this;
+	/**
+	 * Draws an ellipse at the specified location and with the given x and y radii.
+	 * An optional transformation can be applied, allowing for rotation, scaling, and translation.
+	 * @param x - The x-coordinate of the center of the ellipse.
+	 * @param y - The y-coordinate of the center of the ellipse.
+	 * @param radiusX - The horizontal radius of the ellipse.
+	 * @param radiusY - The vertical radius of the ellipse.
+	 * @param matrix - An optional `Matrix` object to apply a transformation to the ellipse. This can include rotations.
+	 * @returns The instance of the current object for chaining.
+	 */
+	ellipse(x: number, y: number, radiusX: number, radiusY: number, matrix?: Matrix): this;
+	/**
+	 * Connects the current point to a new point with a straight line. This method updates the current path.
+	 * @param x - The x-coordinate of the new point to connect to.
+	 * @param y - The y-coordinate of the new point to connect to.
+	 * @returns The instance of the current object for chaining.
+	 */
+	lineTo(x: number, y: number): this;
+	/**
+	 * Sets the starting point for a new sub-path. Any subsequent drawing commands are considered part of this path.
+	 * @param x - The x-coordinate for the starting point.
+	 * @param y - The y-coordinate for the starting point.
+	 * @returns The instance of the current object for chaining.
+	 */
+	moveTo(x: number, y: number): this;
+	/**
+	 * Adds a quadratic curve to the path. It requires two points: the control point and the end point.
+	 * The starting point is the last point in the current path.
+	 * @param cpx - The x-coordinate of the control point.
+	 * @param cpy - The y-coordinate of the control point.
+	 * @param x - The x-coordinate of the end point.
+	 * @param y - The y-coordinate of the end point.
+	 * @param smoothness - Optional parameter to adjust the smoothness of the curve.
+	 * @returns The instance of the current object for chaining.
+	 */
+	quadraticCurveTo(cpx: number, cpy: number, x: number, y: number, smoothness?: number): this;
+	/**
+	 * Adds a quadratic curve to the path. It uses the previous point as the control point.
+	 * @param x - The x-coordinate of the end point.
+	 * @param y - The y-coordinate of the end point.
+	 * @param smoothness - Optional parameter to adjust the smoothness of the curve.
+	 * @returns The instance of the current object for chaining.
+	 */
+	quadraticCurveToShort(x: number, y: number, smoothness?: number): this;
+	/**
+	 * Draws a rectangle shape. This method adds a new rectangle path to the current drawing.
+	 * @param x - The x-coordinate of the top-left corner of the rectangle.
+	 * @param y - The y-coordinate of the top-left corner of the rectangle.
+	 * @param w - The width of the rectangle.
+	 * @param h - The height of the rectangle.
+	 * @param transform - An optional `Matrix` object to apply a transformation to the rectangle.
+	 * @returns The instance of the current object for chaining.
+	 */
+	rect(x: number, y: number, w: number, h: number, transform?: Matrix): this;
+	/**
+	 * Draws a circle shape. This method adds a new circle path to the current drawing.
+	 * @param x - The x-coordinate of the center of the circle.
+	 * @param y - The y-coordinate of the center of the circle.
+	 * @param radius - The radius of the circle.
+	 * @param transform - An optional `Matrix` object to apply a transformation to the circle.
+	 * @returns The instance of the current object for chaining.
+	 */
+	circle(x: number, y: number, radius: number, transform?: Matrix): this;
+	/**
+	 * Draws a rectangle with rounded corners.
+	 * The corner radius can be specified to determine how rounded the corners should be.
+	 * An optional transformation can be applied, which allows for rotation, scaling, and translation of the rectangle.
+	 * @param x - The x-coordinate of the top-left corner of the rectangle.
+	 * @param y - The y-coordinate of the top-left corner of the rectangle.
+	 * @param w - The width of the rectangle.
+	 * @param h - The height of the rectangle.
+	 * @param radius - The radius of the rectangle's corners. If not specified, corners will be sharp.
+	 * @param transform - An optional `Matrix` object to apply a transformation to the rectangle.
+	 * @returns The instance of the current object for chaining.
+	 */
+	roundRect(x: number, y: number, w: number, h: number, radius?: number, transform?: Matrix): this;
+	/**
+	 * Draws a polygon shape by specifying a sequence of points. This method allows for the creation of complex polygons,
+	 * which can be both open and closed. An optional transformation can be applied, enabling the polygon to be scaled,
+	 * rotated, or translated as needed.
+	 * @param points - An array of numbers representing the x and y coordinates of the polygon's vertices, in sequence.
+	 * @param close - A boolean indicating whether to close the polygon path. True by default.
+	 * @param transform - An optional `Matrix` object to apply a transformation to the polygon.
+	 * @returns The instance of the current object for chaining further drawing commands.
+	 */
+	poly(points: number[] | PointData[], close?: boolean, transform?: Matrix): this;
+	/**
+	 * Draws a regular polygon with a specified number of sides. All sides and angles are equal.
+	 * @param x - The x-coordinate of the center of the polygon.
+	 * @param y - The y-coordinate of the center of the polygon.
+	 * @param radius - The radius of the circumscribed circle of the polygon.
+	 * @param sides - The number of sides of the polygon. Must be 3 or more.
+	 * @param rotation - The rotation angle of the polygon, in radians. Zero by default.
+	 * @param transform - An optional `Matrix` object to apply a transformation to the polygon.
+	 * @returns The instance of the current object for chaining.
+	 */
+	regularPoly(x: number, y: number, radius: number, sides: number, rotation?: number, transform?: Matrix): this;
+	/**
+	 * Draws a polygon with rounded corners.
+	 * Similar to `regularPoly` but with the ability to round the corners of the polygon.
+	 * @param x - The x-coordinate of the center of the polygon.
+	 * @param y - The y-coordinate of the center of the polygon.
+	 * @param radius - The radius of the circumscribed circle of the polygon.
+	 * @param sides - The number of sides of the polygon. Must be 3 or more.
+	 * @param corner - The radius of the rounding of the corners.
+	 * @param rotation - The rotation angle of the polygon, in radians. Zero by default.
+	 * @returns The instance of the current object for chaining.
+	 */
+	roundPoly(x: number, y: number, radius: number, sides: number, corner: number, rotation?: number): this;
+	/**
+	 * Draws a shape with rounded corners. This function supports custom radius for each corner of the shape.
+	 * Optionally, corners can be rounded using a quadratic curve instead of an arc, providing a different aesthetic.
+	 * @param points - An array of `RoundedPoint` representing the corners of the shape to draw.
+	 * A minimum of 3 points is required.
+	 * @param radius - The default radius for the corners.
+	 * This radius is applied to all corners unless overridden in `points`.
+	 * @param useQuadratic - If set to true, rounded corners are drawn using a quadraticCurve
+	 *  method instead of an arc method. Defaults to false.
+	 * @param smoothness - Specifies the smoothness of the curve when `useQuadratic` is true.
+	 * Higher values make the curve smoother.
+	 * @returns The instance of the current object for chaining.
+	 */
+	roundShape(points: RoundedPoint[], radius: number, useQuadratic?: boolean, smoothness?: number): this;
+	/**
+	 * Draw Rectangle with fillet corners. This is much like rounded rectangle
+	 * however it support negative numbers as well for the corner radius.
+	 * @param x - Upper left corner of rect
+	 * @param y - Upper right corner of rect
+	 * @param width - Width of rect
+	 * @param height - Height of rect
+	 * @param fillet - accept negative or positive values
+	 */
+	filletRect(x: number, y: number, width: number, height: number, fillet: number): this;
+	/**
+	 * Draw Rectangle with chamfer corners. These are angled corners.
+	 * @param x - Upper left corner of rect
+	 * @param y - Upper right corner of rect
+	 * @param width - Width of rect
+	 * @param height - Height of rect
+	 * @param chamfer - non-zero real number, size of corner cutout
+	 * @param transform
+	 */
+	chamferRect(x: number, y: number, width: number, height: number, chamfer: number, transform?: Matrix): this;
+	/**
+	 * Draws a star shape centered at a specified location. This method allows for the creation
+	 *  of stars with a variable number of points, outer radius, optional inner radius, and rotation.
+	 * The star is drawn as a closed polygon with alternating outer and inner vertices to create the star's points.
+	 * An optional transformation can be applied to scale, rotate, or translate the star as needed.
+	 * @param x - The x-coordinate of the center of the star.
+	 * @param y - The y-coordinate of the center of the star.
+	 * @param points - The number of points of the star.
+	 * @param radius - The outer radius of the star (distance from the center to the outer points).
+	 * @param innerRadius - Optional. The inner radius of the star
+	 * (distance from the center to the inner points between the outer points).
+	 * If not provided, defaults to half of the `radius`.
+	 * @param rotation - Optional. The rotation of the star in radians, where 0 is aligned with the y-axis.
+	 * Defaults to 0, meaning one point is directly upward.
+	 * @param transform - An optional `Matrix` object to apply a transformation to the star.
+	 * This can include rotations, scaling, and translations.
+	 * @returns The instance of the current object for chaining further drawing commands.
+	 */
+	star(x: number, y: number, points: number, radius: number, innerRadius?: number, rotation?: number, transform?: Matrix): this;
+	/**
+	 * Creates a copy of the current `GraphicsPath` instance. This method supports both shallow and deep cloning.
+	 * A shallow clone copies the reference of the instructions array, while a deep clone creates a new array and
+	 * copies each instruction individually, ensuring that modifications to the instructions of the cloned `GraphicsPath`
+	 * do not affect the original `GraphicsPath` and vice versa.
+	 * @param deep - A boolean flag indicating whether the clone should be deep.
+	 * @returns A new `GraphicsPath` instance that is a clone of the current instance.
+	 */
+	clone(deep?: boolean): GraphicsPath;
+	clear(): this;
+	/**
+	 * Applies a transformation matrix to all drawing instructions within the `GraphicsPath`.
+	 * This method enables the modification of the path's geometry according to the provided
+	 * transformation matrix, which can include translations, rotations, scaling, and skewing.
+	 *
+	 * Each drawing instruction in the path is updated to reflect the transformation,
+	 * ensuring the visual representation of the path is consistent with the applied matrix.
+	 *
+	 * Note: The transformation is applied directly to the coordinates and control points of the drawing instructions,
+	 * not to the path as a whole. This means the transformation's effects are baked into the individual instructions,
+	 * allowing for fine-grained control over the path's appearance.
+	 * @param matrix - A `Matrix` object representing the transformation to apply.
+	 * @returns The instance of the current object for chaining further operations.
+	 */
+	transform(matrix: Matrix): this;
+	get bounds(): Bounds;
+	/**
+	 * Retrieves the last point from the current drawing instructions in the `GraphicsPath`.
+	 * This method is useful for operations that depend on the path's current endpoint,
+	 * such as connecting subsequent shapes or paths. It supports various drawing instructions,
+	 * ensuring the last point's position is accurately determined regardless of the path's complexity.
+	 *
+	 * If the last instruction is a `closePath`, the method iterates backward through the instructions
+	 *  until it finds an actionable instruction that defines a point (e.g., `moveTo`, `lineTo`,
+	 * `quadraticCurveTo`, etc.). For compound paths added via `addPath`, it recursively retrieves
+	 * the last point from the nested path.
+	 * @param out - A `Point` object where the last point's coordinates will be stored.
+	 * This object is modified directly to contain the result.
+	 * @returns The `Point` object containing the last point's coordinates.
+	 */
+	getLastPoint(out: Point): Point;
+}
+/**
+ * Constructor options used for Graphics instances.
+ * Configures the initial state and behavior of a Graphics object.
+ * @example
+ * ```ts
+ * const graphics = new Graphics({
+ *     roundPixels: true,
+ *     position: { x: 100.5, y: 100.5 }
+ * });
+ *
+ * // Reuse graphics context
+ * const sharedContext = new GraphicsContext();
+ * const graphics1 = new Graphics({ context: sharedContext });
+ * const graphics2 = new Graphics({ context: sharedContext });
+ * ```
+ * @see {@link Graphics} For the graphics class implementation
+ * @see {@link GraphicsContext} For the graphics context API
+ * @category scene
+ * @standard
+ */
+export interface GraphicsOptions extends PixiMixins.GraphicsOptions, ViewContainerOptions {
+	/**
+	 * The GraphicsContext to use, useful for reuse and optimisation
+	 * If not provided, a new GraphicsContext will be created.
+	 * @example
+	 * ```ts
+	 * const sharedContext = new GraphicsContext();
+	 * const graphics1 = new Graphics({ context: sharedContext });
+	 * const graphics2 = new Graphics({ context: sharedContext });
+	 * ```
+	 */
+	context?: GraphicsContext;
+	/**
+	 * Whether or not to round the x/y position.
+	 * @default false
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics({ roundPixels: true });
+	 * ```
+	 */
+	roundPixels?: boolean;
+}
+export interface Graphics extends PixiMixins.Graphics, ViewContainer<GraphicsGpuData> {
+}
+/**
+ * The Graphics class is primarily used to render primitive shapes such as lines, circles and
+ * rectangles to the display, and to color and fill them. It can also be used to create complex
+ * masks and hit areas for interaction.
+ * @example
+ * ```ts
+ * // Create a new graphics object
+ * const graphics = new Graphics();
+ *
+ * // Draw a filled rectangle with a stroke
+ * graphics
+ *     .rect(0, 0, 100, 100)
+ *     .fill({ color: 0xff0000 }) // Fill with red
+ *     .stroke({ width: 2, color: 0x000000 }); // Stroke with black
+ *
+ * // Draw a complex shape
+ * graphics
+ *     .moveTo(50, 50)
+ *     .lineTo(100, 100)
+ *     .arc(100, 100, 50, 0, Math.PI)
+ *     .closePath()
+ *     .fill({ color: 0x00ff00, alpha: 0.5 }); // Fill the shape
+ *
+ * // Use as a mask
+ * sprite.mask = graphics;
+ * ```
+ * @see {@link GraphicsContext} For the underlying drawing API
+ * @see {@link GraphicsPath} For path creation
+ * @category scene
+ * @standard
+ */
+export declare class Graphics extends ViewContainer<GraphicsGpuData> implements Instruction {
+	/** @internal */
+	readonly renderPipeId: string;
+	/** @internal */
+	batched: boolean;
+	private _context;
+	private readonly _ownedContext;
+	/**
+	 * Creates a new Graphics object.
+	 * @param options - Options for the Graphics.
+	 */
+	constructor(options?: GraphicsOptions | GraphicsContext);
+	set context(context: GraphicsContext);
+	/**
+	 * The underlying graphics context used for drawing operations.
+	 * Controls how shapes and paths are rendered.
+	 * @example
+	 * ```ts
+	 * // Create a shared context
+	 * const sharedContext = new GraphicsContext();
+	 *
+	 * // Create graphics objects sharing the same context
+	 * const graphics1 = new Graphics();
+	 * const graphics2 = new Graphics();
+	 *
+	 * // Assign shared context
+	 * graphics1.context = sharedContext;
+	 * graphics2.context = sharedContext;
+	 *
+	 * // Both graphics will show the same shapes
+	 * sharedContext
+	 *     .rect(0, 0, 100, 100)
+	 *     .fill({ color: 0xff0000 });
+	 * ```
+	 * @see {@link GraphicsContext} For drawing operations
+	 * @see {@link GraphicsOptions} For context configuration
+	 */
+	get context(): GraphicsContext;
+	/**
+	 * The local bounds of the graphics object.
+	 * Returns the boundaries after all graphical operations but before any transforms.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Draw a shape
+	 * graphics
+	 *     .rect(0, 0, 100, 100)
+	 *     .fill({ color: 0xff0000 });
+	 *
+	 * // Get bounds information
+	 * const bounds = graphics.bounds;
+	 * console.log(bounds.width);  // 100
+	 * console.log(bounds.height); // 100
+	 * ```
+	 * @readonly
+	 * @see {@link Bounds} For bounds operations
+	 * @see {@link Container#getBounds} For transformed bounds
+	 */
+	get bounds(): Bounds;
+	/**
+	 * Graphics objects do not need to update their bounds as the context handles this.
+	 * @private
+	 */
+	protected updateBounds(): void;
+	/**
+	 * Checks if the object contains the given point.
+	 * Returns true if the point lies within the Graphics object's rendered area.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Draw a shape
+	 * graphics
+	 *     .rect(0, 0, 100, 100)
+	 *     .fill({ color: 0xff0000 });
+	 *
+	 * // Check point intersection
+	 * if (graphics.containsPoint({ x: 50, y: 50 })) {
+	 *     console.log('Point is inside rectangle!');
+	 * }
+	 * ```
+	 * @param point - The point to check in local coordinates
+	 * @returns True if the point is inside the Graphics object
+	 * @see {@link Graphics#bounds} For bounding box checks
+	 * @see {@link PointData} For point data structure
+	 */
+	containsPoint(point: PointData): boolean;
+	/**
+	 * Destroys this graphics renderable and optionally its context.
+	 * @param options - Options parameter. A boolean will act as if all options
+	 *
+	 * If the context was created by this graphics and `destroy(false)` or `destroy()` is called
+	 * then the context will still be destroyed.
+	 *
+	 * If you want to explicitly not destroy this context that this graphics created,
+	 * then you should pass destroy({ context: false })
+	 *
+	 * If the context was passed in as an argument to the constructor then it will not be destroyed
+	 * @example
+	 * ```ts
+	 * // Destroy the graphics and its context
+	 * graphics.destroy();
+	 * graphics.destroy(true);
+	 * graphics.destroy({ context: true, texture: true, textureSource: true });
+	 * ```
+	 */
+	destroy(options?: DestroyOptions): void;
+	/**
+	 * @param now - The current time in milliseconds.
+	 * @internal
+	 */
+	_onTouch(now: number): void;
+	private _callContextMethod;
+	/**
+	 * Sets the current fill style of the graphics context.
+	 * The fill style can be a color, gradient, pattern, or a complex style object.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Basic color fill
+	 * graphics
+	 *     .setFillStyle({ color: 0xff0000 }) // Red fill
+	 *     .rect(0, 0, 100, 100)
+	 *     .fill();
+	 *
+	 * // Gradient fill
+	 * const gradient = new FillGradient({
+	 *    end: { x: 1, y: 0 },
+	 *    colorStops: [
+	 *         { offset: 0, color: 0xff0000 }, // Red at start
+	 *         { offset: 0.5, color: 0x00ff00 }, // Green at middle
+	 *         { offset: 1, color: 0x0000ff }, // Blue at end
+	 *    ],
+	 * });
+	 *
+	 * graphics
+	 *     .setFillStyle(gradient)
+	 *     .circle(100, 100, 50)
+	 *     .fill();
+	 *
+	 * // Pattern fill
+	 * const pattern = new FillPattern(texture);
+	 * graphics
+	 *     .setFillStyle({
+	 *         fill: pattern,
+	 *         alpha: 0.5
+	 *     })
+	 *     .rect(0, 0, 200, 200)
+	 *     .fill();
+	 * ```
+	 * @param {FillInput} args - The fill style to apply
+	 * @returns The Graphics instance for chaining
+	 * @see {@link FillStyle} For fill style options
+	 * @see {@link FillGradient} For gradient fills
+	 * @see {@link FillPattern} For pattern fills
+	 */
+	setFillStyle(...args: Parameters<GraphicsContext["setFillStyle"]>): this;
+	/**
+	 * Sets the current stroke style of the graphics context.
+	 * Similar to fill styles, stroke styles can encompass colors, gradients, patterns, or more detailed configurations.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Basic color stroke
+	 * graphics
+	 *     .setStrokeStyle({
+	 *         width: 2,
+	 *         color: 0x000000
+	 *     })
+	 *     .rect(0, 0, 100, 100)
+	 *     .stroke();
+	 *
+	 * // Complex stroke style
+	 * graphics
+	 *     .setStrokeStyle({
+	 *         width: 4,
+	 *         color: 0xff0000,
+	 *         alpha: 0.5,
+	 *         join: 'round',
+	 *         cap: 'round',
+	 *         alignment: 0.5
+	 *     })
+	 *     .circle(100, 100, 50)
+	 *     .stroke();
+	 *
+	 * // Gradient stroke
+	 * const gradient = new FillGradient({
+	 *    end: { x: 1, y: 0 },
+	 *    colorStops: [
+	 *         { offset: 0, color: 0xff0000 }, // Red at start
+	 *         { offset: 0.5, color: 0x00ff00 }, // Green at middle
+	 *         { offset: 1, color: 0x0000ff }, // Blue at end
+	 *    ],
+	 * });
+	 *
+	 * graphics
+	 *     .setStrokeStyle({
+	 *         width: 10,
+	 *         fill: gradient
+	 *     })
+	 *     .poly([0,0, 100,50, 0,100])
+	 *     .stroke();
+	 * ```
+	 * @param {StrokeInput} args - The stroke style to apply
+	 * @returns The Graphics instance for chaining
+	 * @see {@link StrokeStyle} For stroke style options
+	 * @see {@link FillGradient} For gradient strokes
+	 * @see {@link FillPattern} For pattern strokes
+	 */
+	setStrokeStyle(...args: Parameters<GraphicsContext["setStrokeStyle"]>): this;
+	/**
+	 * Fills the current or given path with the current fill style or specified style.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Fill with direct color
+	 * graphics
+	 *     .circle(50, 50, 25)
+	 *     .fill('red'); // Red fill
+	 *
+	 * // Fill with texture
+	 * graphics
+	 *    .rect(0, 0, 100, 100)
+	 *    .fill(myTexture); // Fill with texture
+	 *
+	 * // Fill with complex style
+	 * graphics
+	 *     .rect(0, 0, 100, 100)
+	 *     .fill({
+	 *         color: 0x00ff00,
+	 *         alpha: 0.5,
+	 *         texture: myTexture,
+	 *         matrix: new Matrix()
+	 *     });
+	 *
+	 * // Fill with gradient
+	 * const gradient = new FillGradient({
+	 *     end: { x: 1, y: 0 },
+	 *     colorStops: [
+	 *         { offset: 0, color: 0xff0000 },
+	 *         { offset: 0.5, color: 0x00ff00 },
+	 *         { offset: 1, color: 0x0000ff },
+	 *     ],
+	 * });
+	 *
+	 * graphics
+	 *     .circle(100, 100, 50)
+	 *     .fill(gradient);
+	 * ```
+	 * @param {FillInput} style - The style to fill the path with. Can be:
+	 * - A ColorSource
+	 * - A gradient
+	 * - A pattern
+	 * - A complex style object
+	 * If omitted, uses current fill style.
+	 * @returns The Graphics instance for chaining
+	 * @see {@link FillStyle} For fill style options
+	 * @see {@link FillGradient} For gradient fills
+	 * @see {@link FillPattern} For pattern fills
+	 */
+	fill(style?: FillInput): this;
+	/** @deprecated 8.0.0 */
+	fill(color: ColorSource, alpha?: number): this;
+	/**
+	 * Strokes the current path with the current stroke style or specified style.
+	 * Outlines the shape using the stroke settings.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Stroke with direct color
+	 * graphics
+	 *     .circle(50, 50, 25)
+	 *     .stroke({
+	 *         width: 2,
+	 *         color: 0xff0000
+	 *     }); // 2px red stroke
+	 *
+	 * // Fill with texture
+	 * graphics
+	 *    .rect(0, 0, 100, 100)
+	 *    .stroke(myTexture); // Fill with texture
+	 *
+	 * // Stroke with gradient
+	 * const gradient = new FillGradient({
+	 *     end: { x: 1, y: 0 },
+	 *     colorStops: [
+	 *         { offset: 0, color: 0xff0000 },
+	 *         { offset: 0.5, color: 0x00ff00 },
+	 *         { offset: 1, color: 0x0000ff },
+	 *     ],
+	 * });
+	 *
+	 * graphics
+	 *     .rect(0, 0, 100, 100)
+	 *     .stroke({
+	 *         width: 4,
+	 *         fill: gradient,
+	 *         alignment: 0.5,
+	 *         join: 'round'
+	 *     });
+	 * ```
+	 * @param {StrokeStyle} args - Optional stroke style to apply. Can be:
+	 * - A stroke style object with width, color, etc.
+	 * - A gradient
+	 * - A pattern
+	 * If omitted, uses current stroke style.
+	 * @returns The Graphics instance for chaining
+	 * @see {@link StrokeStyle} For stroke style options
+	 * @see {@link FillGradient} For gradient strokes
+	 * @see {@link setStrokeStyle} For setting default stroke style
+	 */
+	stroke(...args: Parameters<GraphicsContext["stroke"]>): this;
+	/**
+	 * Adds a texture to the graphics context. This method supports multiple ways to draw textures
+	 * including basic textures, tinted textures, and textures with custom dimensions.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Basic texture drawing
+	 * graphics.texture(myTexture);
+	 *
+	 * // Tinted texture with position
+	 * graphics.texture(myTexture, 0xff0000); // Red tint
+	 *
+	 * // Texture with custom position and dimensions
+	 * graphics
+	 *     .texture(
+	 *         myTexture,    // texture
+	 *         0xffffff,     // white tint
+	 *         100, 100,     // position
+	 *         200, 150      // dimensions
+	 *     );
+	 * ```
+	 * Basic texture drawing:
+	 * @param texture - The Texture object to use.
+	 * @returns The instance of the current Graphics for chaining.
+	 *
+	 * Extended texture drawing:
+	 * @param texture - The Texture object to use.
+	 *        tint - A ColorSource to tint the texture (defaults to white).
+	 *        dx - The x-coordinate for the texture placement.
+	 *        dy - The y-coordinate for the texture placement.
+	 *        dw - The width to draw the texture (defaults to texture width).
+	 *        dh - The height to draw the texture (defaults to texture height).
+	 * @returns The instance of the current Graphics for chaining.
+	 * @see {@link Texture} For texture creation
+	 * @see {@link FillPattern} For pattern fills
+	 */
+	texture(texture: Texture): this;
+	texture(texture: Texture, tint?: ColorSource, dx?: number, dy?: number, dw?: number, dh?: number): this;
+	/**
+	 * Resets the current path. Any previous path and its commands are discarded and a new path is
+	 * started. This is typically called before beginning a new shape or series of drawing commands.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 * graphics
+	 *     .circle(150, 150, 50)
+	 *     .fill({ color: 0x00ff00 })
+	 *     .beginPath() // Starts a new path
+	 *     .circle(250, 150, 50)
+	 *     .fill({ color: 0x0000ff });
+	 * ```
+	 * @returns The Graphics instance for chaining
+	 * @see {@link Graphics#moveTo} For starting a new subpath
+	 * @see {@link Graphics#closePath} For closing the current path
+	 */
+	beginPath(): this;
+	/**
+	 * Applies a cutout to the last drawn shape. This is used to create holes or complex shapes by
+	 * subtracting a path from the previously drawn path.
+	 *
+	 * If a hole is not completely in a shape, it will fail to cut correctly.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Draw outer circle
+	 * graphics
+	 *     .circle(100, 100, 50)
+	 *     .fill({ color: 0xff0000 });
+	 *     .circle(100, 100, 25) // Inner circle
+	 *     .cut() // Cuts out the inner circle from the outer circle
+	 * ```
+	 */
+	cut(): this;
+	/**
+	 * Adds an arc to the current path, which is centered at (x, y) with the specified radius,
+	 * starting and ending angles, and direction.
+	 * @example
+	 * ```ts
+	 * // Draw a simple arc (quarter circle)
+	 * const graphics = new Graphics();
+	 * graphics
+	 *     .arc(100, 100, 50, 0, Math.PI/2)
+	 *     .stroke({ width: 2, color: 0xff0000 });
+	 *
+	 * // Draw a full circle using an arc
+	 * graphics
+	 *     .arc(200, 200, 30, 0, Math.PI * 2)
+	 *     .stroke({ color: 0x00ff00 });
+	 *
+	 * // Draw a counterclockwise arc
+	 * graphics
+	 *     .arc(150, 150, 40, Math.PI, 0, true)
+	 *     .stroke({ width: 2, color: 0x0000ff });
+	 * ```
+	 * @param x - The x-coordinate of the arc's center
+	 * @param y - The y-coordinate of the arc's center
+	 * @param radius - The arc's radius (must be positive)
+	 * @param startAngle - The starting point of the arc, in radians
+	 * @param endAngle - The end point of the arc, in radians
+	 * @param counterclockwise - Optional. If true, draws the arc counterclockwise.
+	 *                          If false (default), draws clockwise.
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#circle} For drawing complete circles
+	 * @see {@link Graphics#arcTo} For drawing arcs between points
+	 * @see {@link Graphics#arcToSvg} For SVG-style arc drawing
+	 */
+	arc(x: number, y: number, radius: number, startAngle: number, endAngle: number, counterclockwise?: boolean): this;
+	/**
+	 * Adds an arc to the current path that connects two points using a radius.
+	 * The arc is drawn between the current point and the specified end point,
+	 * using the given control point to determine the curve of the arc.
+	 * @example
+	 * ```ts
+	 * // Draw a simple curved corner
+	 * const graphics = new Graphics();
+	 * graphics
+	 *     .moveTo(50, 50)
+	 *     .arcTo(100, 50, 100, 100, 20) // Rounded corner with 20px radius
+	 *     .stroke({ width: 2, color: 0xff0000 });
+	 *
+	 * // Create a rounded rectangle using arcTo
+	 * graphics
+	 *     .moveTo(150, 150)
+	 *     .arcTo(250, 150, 250, 250, 30) // Top right corner
+	 *     .arcTo(250, 250, 150, 250, 30) // Bottom right corner
+	 *     .arcTo(150, 250, 150, 150, 30) // Bottom left corner
+	 *     .arcTo(150, 150, 250, 150, 30) // Top left corner
+	 *     .fill({ color: 0x00ff00 });
+	 * ```
+	 * @param x1 - The x-coordinate of the control point
+	 * @param y1 - The y-coordinate of the control point
+	 * @param x2 - The x-coordinate of the end point
+	 * @param y2 - The y-coordinate of the end point
+	 * @param radius - The radius of the arc in pixels (must be positive)
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#arc} For drawing arcs using center point and angles
+	 * @see {@link Graphics#arcToSvg} For SVG-style arc drawing
+	 * @see {@link Graphics#roundRect} For drawing rectangles with rounded corners
+	 */
+	arcTo(x1: number, y1: number, x2: number, y2: number, radius: number): this;
+	/**
+	 * Adds an SVG-style arc to the path, allowing for elliptical arcs based on the SVG spec.
+	 * This is particularly useful when converting SVG paths to Graphics or creating complex curved shapes.
+	 * @example
+	 * ```ts
+	 * // Draw a simple elliptical arc
+	 * const graphics = new Graphics();
+	 * graphics
+	 *     .moveTo(100, 100)
+	 *     .arcToSvg(50, 30, 0, 0, 1, 200, 100)
+	 *     .stroke({ width: 2, color: 0xff0000 });
+	 *
+	 * // Create a complex path with rotated elliptical arc
+	 * graphics
+	 *     .moveTo(150, 150)
+	 *     .arcToSvg(
+	 *         60,    // rx
+	 *         30,    // ry
+	 *         45,    // x-axis rotation (45 degrees)
+	 *         1,     // large arc flag
+	 *         0,     // sweep flag
+	 *         250,   // end x
+	 *         200    // end y
+	 *     )
+	 *     .stroke({ width: 4, color: 0x00ff00 });
+	 *
+	 * // Chain multiple arcs for complex shapes
+	 * graphics
+	 *     .moveTo(300, 100)
+	 *     .arcToSvg(40, 20, 0, 0, 1, 350, 150)
+	 *     .arcToSvg(40, 20, 0, 0, 1, 300, 200)
+	 *     .fill({ color: 0x0000ff, alpha: 0.5 });
+	 * ```
+	 * @param rx - The x-radius of the ellipse (must be non-negative)
+	 * @param ry - The y-radius of the ellipse (must be non-negative)
+	 * @param xAxisRotation - The rotation of the ellipse's x-axis relative to the x-axis, in degrees
+	 * @param largeArcFlag - Either 0 or 1, determines if the larger of the two possible arcs is chosen (1) or not (0)
+	 * @param sweepFlag - Either 0 or 1, determines if the arc should be swept in
+	 *                    a positive angle direction (1) or negative (0)
+	 * @param x - The x-coordinate of the arc's end point
+	 * @param y - The y-coordinate of the arc's end point
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#arc} For simple circular arcs
+	 * @see {@link Graphics#arcTo} For connecting points with circular arcs
+	 * @see {@link Graphics#svg} For parsing complete SVG paths
+	 */
+	arcToSvg(rx: number, ry: number, xAxisRotation: number, largeArcFlag: number, sweepFlag: number, x: number, y: number): this;
+	/**
+	 * Adds a cubic Bézier curve to the path, from the current point to the specified end point.
+	 * The curve is influenced by two control points that define its shape and curvature.
+	 * @example
+	 * ```ts
+	 * // Draw a simple curved line
+	 * const graphics = new Graphics();
+	 * graphics
+	 *     .moveTo(50, 50)
+	 *     .bezierCurveTo(
+	 *         100, 25,   // First control point
+	 *         150, 75,   // Second control point
+	 *         200, 50    // End point
+	 *     )
+	 *     .stroke({ width: 2, color: 0xff0000 });
+	 *
+	 * // Adjust curve smoothness
+	 * graphics
+	 *     .moveTo(50, 200)
+	 *     .bezierCurveTo(
+	 *         100, 150,
+	 *         200, 250,
+	 *         250, 200,
+	 *         0.5         // Smoothness factor
+	 *     )
+	 *     .stroke({ width: 4, color: 0x0000ff });
+	 * ```
+	 * @param cp1x - The x-coordinate of the first control point
+	 * @param cp1y - The y-coordinate of the first control point
+	 * @param cp2x - The x-coordinate of the second control point
+	 * @param cp2y - The y-coordinate of the second control point
+	 * @param x - The x-coordinate of the end point
+	 * @param y - The y-coordinate of the end point
+	 * @param smoothness - Optional parameter to adjust the curve's smoothness (0-1)
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#quadraticCurveTo} For simpler curves with one control point
+	 * @see {@link Graphics#arc} For circular arcs
+	 * @see {@link Graphics#arcTo} For connecting points with circular arcs
+	 */
+	bezierCurveTo(cp1x: number, cp1y: number, cp2x: number, cp2y: number, x: number, y: number, smoothness?: number): this;
+	/**
+	 * Closes the current path by drawing a straight line back to the start point.
+	 *
+	 * This is useful for completing shapes and ensuring they are properly closed for fills.
+	 * @example
+	 * ```ts
+	 * // Create a triangle with closed path
+	 * const graphics = new Graphics();
+	 * graphics
+	 *     .moveTo(50, 50)
+	 *     .lineTo(100, 100)
+	 *     .lineTo(0, 100)
+	 *     .closePath()
+	 * ```
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#beginPath} For starting a new path
+	 * @see {@link Graphics#fill} For filling closed paths
+	 * @see {@link Graphics#stroke} For stroking paths
+	 */
+	closePath(): this;
+	/**
+	 * Draws an ellipse at the specified location and with the given x and y radii.
+	 * An optional transformation can be applied, allowing for rotation, scaling, and translation.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Draw a basic ellipse
+	 * graphics
+	 *     .ellipse(100, 100, 50, 30)
+	 *     .fill({ color: 0xff0000 });
+	 *
+	 * // Draw an ellipse with stroke
+	 * graphics
+	 *     .ellipse(200, 100, 70, 40)
+	 *     .stroke({ width: 2, color: 0x00ff00 });
+	 * ```
+	 * @param x - The x-coordinate of the center of the ellipse
+	 * @param y - The y-coordinate of the center of the ellipse
+	 * @param radiusX - The horizontal radius of the ellipse
+	 * @param radiusY - The vertical radius of the ellipse
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#circle} For drawing perfect circles
+	 * @see {@link Graphics#arc} For drawing partial circular arcs
+	 */
+	ellipse(x: number, y: number, radiusX: number, radiusY: number): this;
+	/**
+	 * Draws a circle shape at the specified location with the given radius.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Draw a simple filled circle
+	 * graphics
+	 *     .circle(100, 100, 50)
+	 *     .fill({ color: 0xff0000 });
+	 *
+	 * // Draw a circle with gradient fill
+	 * const gradient = new FillGradient({
+	 *     end: { x: 1, y: 0 },
+	 *     colorStops: [
+	 *           { offset: 0, color: 0xff0000 }, // Red at start
+	 *           { offset: 0.5, color: 0x00ff00 }, // Green at middle
+	 *           { offset: 1, color: 0x0000ff }, // Blue at end
+	 *     ],
+	 * });
+	 *
+	 * graphics
+	 *     .circle(250, 100, 40)
+	 *     .fill({ fill: gradient });
+	 * ```
+	 * @param x - The x-coordinate of the center of the circle
+	 * @param y - The y-coordinate of the center of the circle
+	 * @param radius - The radius of the circle
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#ellipse} For drawing ellipses
+	 * @see {@link Graphics#arc} For drawing partial circles
+	 */
+	circle(x: number, y: number, radius: number): this;
+	/**
+	 * Adds another `GraphicsPath` to this path, optionally applying a transformation.
+	 * This allows for reuse of complex paths and shapes across different graphics instances.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 * // Create a reusable path
+	 * const heartPath = new GraphicsPath()
+	 *     .moveTo(0, 0)
+	 *     .bezierCurveTo(-50, -25, -50, -75, 0, -100)
+	 *     .bezierCurveTo(50, -75, 50, -25, 0, 0);
+	 *
+	 * // Use the path multiple times
+	 * graphics
+	 *     .path(heartPath)
+	 *     .fill({ color: 0xff0000 })
+	 *     .translateTransform(200, 200)
+	 *     .path(heartPath)
+	 *     .fill({ color: 0xff0000, alpha: 0.5 });
+	 * ```
+	 * @param path - The `GraphicsPath` to add to the current path
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link GraphicsPath} For creating reusable paths
+	 * @see {@link Matrix} For creating transformations
+	 * @see {@link Graphics#transform} For applying transformations
+	 */
+	path(path: GraphicsPath): this;
+	/**
+	 * Connects the current point to a new point with a straight line.
+	 * Any subsequent drawing commands will start from this new point.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Draw a triangle
+	 * graphics
+	 *     .moveTo(50, 50)
+	 *     .lineTo(100, 100)
+	 *     .lineTo(0, 100)
+	 *     .fill({ color: 0xff0000 });
+	 *
+	 * // Create a complex shape with multiple lines
+	 * graphics
+	 *     .moveTo(200, 50)
+	 *     .lineTo(250, 50)
+	 *     .lineTo(250, 100)
+	 *     .lineTo(200, 100)
+	 *     .stroke({ width: 2, color: 0x00ff00 });
+	 * ```
+	 * @param x - The x-coordinate of the line's end point
+	 * @param y - The y-coordinate of the line's end point
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#moveTo} For starting a new sub-path
+	 */
+	lineTo(x: number, y: number): this;
+	/**
+	 * Sets the starting point for a new sub-path.
+	 *
+	 * Moves the "pen" to a new location without drawing a line.
+	 * Any subsequent drawing commands will start from this point.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Create multiple separate lines
+	 * graphics
+	 *     .moveTo(50, 50)
+	 *     .lineTo(100, 50)
+	 *     .moveTo(50, 100)    // Start a new line
+	 *     .lineTo(100, 100)
+	 *     .stroke({ width: 2, color: 0xff0000 });
+	 *
+	 * // Create disconnected shapes
+	 * graphics
+	 *     .moveTo(150, 50)
+	 *     .rect(150, 50, 50, 50)
+	 *     .fill({ color: 0x00ff00 })
+	 *     .moveTo(250, 50)    // Start a new shape
+	 *     .circle(250, 75, 25)
+	 *     .fill({ color: 0x0000ff });
+	 *
+	 * // Position before curved paths
+	 * graphics
+	 *     .moveTo(300, 50)
+	 *     .bezierCurveTo(
+	 *         350, 25,   // Control point 1
+	 *         400, 75,   // Control point 2
+	 *         450, 50    // End point
+	 *     )
+	 *     .stroke({ width: 3, color: 0xff00ff });
+	 * ```
+	 * @param x - The x-coordinate to move to
+	 * @param y - The y-coordinate to move to
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#lineTo} For drawing lines
+	 * @see {@link Graphics#beginPath} For starting a completely new path
+	 */
+	moveTo(x: number, y: number): this;
+	/**
+	 * Adds a quadratic curve to the path. It requires two points: the control point and the end point.
+	 * The starting point is the last point in the current path.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Draw a simple curve
+	 * graphics
+	 *     .moveTo(50, 50)
+	 *     .quadraticCurveTo(100, 25, 150, 50)
+	 *     .stroke({ width: 2, color: 0xff0000 });
+	 *
+	 * // Adjust curve smoothness
+	 * graphics
+	 *     .moveTo(50, 200)
+	 *     .quadraticCurveTo(
+	 *         150, 150,   // Control point
+	 *         250, 200,   // End point
+	 *         0.5         // Smoothness factor
+	 *     )
+	 *     .stroke({
+	 *         width: 4,
+	 *         color: 0x0000ff,
+	 *         alpha: 0.7
+	 *     });
+	 * ```
+	 * @param cpx - The x-coordinate of the control point
+	 * @param cpy - The y-coordinate of the control point
+	 * @param x - The x-coordinate of the end point
+	 * @param y - The y-coordinate of the end point
+	 * @param smoothness - Optional parameter to adjust the curve's smoothness (0-1)
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#bezierCurveTo} For curves with two control points
+	 * @see {@link Graphics#arc} For circular arcs
+	 * @see {@link Graphics#arcTo} For connecting points with circular arcs
+	 */
+	quadraticCurveTo(cpx: number, cpy: number, x: number, y: number, smoothness?: number): this;
+	/**
+	 * Draws a rectangle shape.
+	 *
+	 * This method adds a new rectangle path to the current drawing.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Draw a simple filled rectangle
+	 * graphics
+	 *     .rect(50, 50, 100, 75)
+	 *     .fill({ color: 0xff0000 });
+	 *
+	 * // Rectangle with stroke
+	 * graphics
+	 *     .rect(200, 50, 100, 75)
+	 *     .stroke({ width: 2, color: 0x00ff00 });
+	 * ```
+	 * @param x - The x-coordinate of the top-left corner of the rectangle
+	 * @param y - The y-coordinate of the top-left corner of the rectangle
+	 * @param w - The width of the rectangle
+	 * @param h - The height of the rectangle
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#roundRect} For drawing rectangles with rounded corners
+	 * @see {@link Graphics#filletRect} For drawing rectangles with filleted corners
+	 * @see {@link Graphics#chamferRect} For drawing rectangles with chamfered corners
+	 */
+	rect(x: number, y: number, w: number, h: number): this;
+	/**
+	 * Draws a rectangle with rounded corners. The corner radius can be specified to
+	 * determine how rounded the corners should be.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Basic rounded rectangle
+	 * graphics
+	 *     .roundRect(50, 50, 100, 75, 15)
+	 *     .fill({ color: 0xff0000 });
+	 * ```
+	 * @param x - The x-coordinate of the top-left corner of the rectangle
+	 * @param y - The y-coordinate of the top-left corner of the rectangle
+	 * @param w - The width of the rectangle
+	 * @param h - The height of the rectangle
+	 * @param radius - The radius of the rectangle's corners (must be non-negative)
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#rect} For drawing rectangles with sharp corners
+	 * @see {@link Graphics#filletRect} For drawing rectangles with filleted corners
+	 * @see {@link Graphics#chamferRect} For drawing rectangles with chamfered corners
+	 */
+	roundRect(x: number, y: number, w: number, h: number, radius?: number): this;
+	/**
+	 * Draws a polygon shape by specifying a sequence of points. This method allows for the creation of complex polygons,
+	 * which can be both open and closed.
+	 *
+	 * An optional transformation can be applied, enabling the polygon to be scaled,
+	 * rotated, or translated as needed.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Draw a triangle using array of numbers [x1,y1, x2,y2, x3,y3]
+	 * graphics
+	 *     .poly([50,50, 100,100, 0,100], true)
+	 *     .fill({ color: 0xff0000 });
+	 *
+	 * // Draw a polygon using point objects
+	 * graphics
+	 *     .poly([
+	 *         { x: 200, y: 50 },
+	 *         { x: 250, y: 100 },
+	 *         { x: 200, y: 150 },
+	 *         { x: 150, y: 100 }
+	 *     ])
+	 *     .fill({ color: 0x00ff00 });
+	 *
+	 * // Draw an open polygon with stroke
+	 * graphics
+	 *     .poly([300,50, 350,50, 350,100, 300,100], false)
+	 *     .stroke({
+	 *         width: 2,
+	 *         color: 0x0000ff,
+	 *         join: 'round'
+	 *     });
+	 * ```
+	 * @param points - An array of numbers [x1,y1, x2,y2, ...] or an array of point objects [{x,y}, ...]
+	 *                representing the vertices of the polygon in sequence
+	 * @param close - Whether to close the polygon path by connecting the last point to the first.
+	 *               Default is true.
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#regularPoly} For drawing regular polygons
+	 * @see {@link Graphics#roundPoly} For drawing polygons with rounded corners
+	 * @see {@link Graphics#star} For drawing star shapes
+	 */
+	poly(points: number[] | PointData[], close?: boolean): this;
+	/**
+	 * Draws a regular polygon with a specified number of sides. All sides and angles are equal,
+	 * making shapes like triangles, squares, pentagons, etc.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Draw a simple triangle (3 sides)
+	 * graphics
+	 *     .regularPoly(100, 100, 50, 3)
+	 *     .fill({ color: 0xff0000 });
+	 *
+	 * // Draw a hexagon (6 sides) with rotation
+	 * graphics
+	 *     .regularPoly(
+	 *         250, 100,    // center position
+	 *         40,          // radius
+	 *         6,           // sides
+	 *         Math.PI / 6  // rotation (30 degrees)
+	 *     )
+	 *     .fill({ color: 0x00ff00 })
+	 *     .stroke({ width: 2, color: 0x000000 });
+	 *
+	 * // Draw an octagon (8 sides) with transform
+	 * const transform = new Matrix()
+	 *     .scale(1.5, 1)      // stretch horizontally
+	 *     .rotate(Math.PI/4); // rotate 45 degrees
+	 *
+	 * graphics
+	 *     .regularPoly(400, 100, 30, 8, 0, transform)
+	 *     .fill({ color: 0x0000ff, alpha: 0.5 });
+	 * ```
+	 * @param x - The x-coordinate of the center of the polygon
+	 * @param y - The y-coordinate of the center of the polygon
+	 * @param radius - The radius of the circumscribed circle of the polygon
+	 * @param sides - The number of sides of the polygon (must be 3 or more)
+	 * @param rotation - The rotation angle of the polygon in radians (default: 0)
+	 * @param transform - Optional Matrix to transform the polygon's shape
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#poly} For drawing custom polygons
+	 * @see {@link Graphics#roundPoly} For drawing polygons with rounded corners
+	 * @see {@link Graphics#star} For drawing star shapes
+	 */
+	regularPoly(x: number, y: number, radius: number, sides: number, rotation?: number, transform?: Matrix): this;
+	/**
+	 * Draws a polygon with rounded corners.
+	 *
+	 * Similar to `regularPoly` but with the ability to round the corners of the polygon.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Draw a basic rounded triangle
+	 * graphics
+	 *     .roundPoly(100, 100, 50, 3, 10)
+	 *     .fill({ color: 0xff0000 });
+	 *
+	 * // Draw a rounded hexagon with rotation
+	 * graphics
+	 *     .roundPoly(
+	 *         250, 150,     // center position
+	 *         40,           // radius
+	 *         6,            // sides
+	 *         8,            // corner radius
+	 *         Math.PI / 6   // rotation (30 degrees)
+	 *     )
+	 *     .fill({ color: 0x00ff00 })
+	 *     .stroke({ width: 2, color: 0x000000 });
+	 * ```
+	 * @param x - The x-coordinate of the center of the polygon
+	 * @param y - The y-coordinate of the center of the polygon
+	 * @param radius - The radius of the circumscribed circle of the polygon
+	 * @param sides - The number of sides of the polygon (must be 3 or more)
+	 * @param corner - The radius of the corner rounding (must be non-negative)
+	 * @param rotation - The rotation angle of the polygon in radians (default: 0)
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#regularPoly} For drawing polygons without rounded corners
+	 * @see {@link Graphics#poly} For drawing custom polygons
+	 * @see {@link Graphics#roundRect} For drawing rectangles with rounded corners
+	 */
+	roundPoly(x: number, y: number, radius: number, sides: number, corner: number, rotation?: number): this;
+	/**
+	 * Draws a shape with rounded corners. This function supports custom radius for each corner of the shape.
+	 * Optionally, corners can be rounded using a quadratic curve instead of an arc, providing a different aesthetic.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Draw a custom shape with rounded corners
+	 * graphics
+	 *     .roundShape([
+	 *         { x: 100, y: 100, radius: 20 },
+	 *         { x: 200, y: 100, radius: 10 },
+	 *         { x: 200, y: 200, radius: 15 },
+	 *         { x: 100, y: 200, radius: 5 }
+	 *     ], 10)
+	 *     .fill({ color: 0xff0000 });
+	 *
+	 * // Using quadratic curves for corners
+	 * graphics
+	 *     .roundShape([
+	 *         { x: 250, y: 100 },
+	 *         { x: 350, y: 100 },
+	 *         { x: 350, y: 200 },
+	 *         { x: 250, y: 200 }
+	 *     ], 15, true, 0.5)
+	 *     .fill({ color: 0x00ff00 })
+	 *     .stroke({ width: 2, color: 0x000000 });
+	 *
+	 * // Shape with varying corner radii
+	 * graphics
+	 *     .roundShape([
+	 *         { x: 400, y: 100, radius: 30 },
+	 *         { x: 500, y: 100, radius: 5 },
+	 *         { x: 450, y: 200, radius: 15 }
+	 *     ], 10)
+	 *     .fill({ color: 0x0000ff, alpha: 0.5 });
+	 * ```
+	 * @param points - An array of `RoundedPoint` representing the corners of the shape.
+	 *                Each point can have its own radius or use the default.
+	 *                A minimum of 3 points is required.
+	 * @param radius - The default radius for corners without a specific radius defined.
+	 *                Applied to any point that doesn't specify its own radius.
+	 * @param useQuadratic - When true, corners are drawn using quadratic curves instead
+	 *                      of arcs, creating a different visual style. Defaults to false.
+	 * @param smoothness - Controls the smoothness of quadratic corners when useQuadratic
+	 *                    is true. Values range from 0-1, higher values create smoother curves.
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#roundRect} For drawing rectangles with rounded corners
+	 * @see {@link Graphics#roundPoly} For drawing regular polygons with rounded corners
+	 */
+	roundShape(points: RoundedPoint[], radius: number, useQuadratic?: boolean, smoothness?: number): this;
+	/**
+	 * Draws a rectangle with fillet corners. Unlike rounded rectangles, this supports negative corner
+	 * radii which create external rounded corners rather than internal ones.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Draw a rectangle with internal fillets
+	 * graphics
+	 *     .filletRect(50, 50, 100, 80, 15)
+	 *     .fill({ color: 0xff0000 });
+	 *
+	 * // Draw a rectangle with external fillets
+	 * graphics
+	 *     .filletRect(200, 50, 100, 80, -20)
+	 *     .fill({ color: 0x00ff00 })
+	 *     .stroke({ width: 2, color: 0x000000 });
+	 * ```
+	 * @param x - The x-coordinate of the top-left corner of the rectangle
+	 * @param y - The y-coordinate of the top-left corner of the rectangle
+	 * @param width - The width of the rectangle
+	 * @param height - The height of the rectangle
+	 * @param fillet - The radius of the corner fillets (can be positive or negative)
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#roundRect} For standard rounded corners
+	 * @see {@link Graphics#chamferRect} For angled corners
+	 */
+	filletRect(x: number, y: number, width: number, height: number, fillet: number): this;
+	/**
+	 * Draws a rectangle with chamfered (angled) corners. Each corner is cut off at
+	 * a 45-degree angle based on the chamfer size.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Draw a basic chamfered rectangle
+	 * graphics
+	 *     .chamferRect(50, 50, 100, 80, 15)
+	 *     .fill({ color: 0xff0000 });
+	 *
+	 * // Add transform and stroke
+	 * const transform = new Matrix()
+	 *     .rotate(Math.PI / 4); // 45 degrees
+	 *
+	 * graphics
+	 *     .chamferRect(200, 50, 100, 80, 20, transform)
+	 *     .fill({ color: 0x00ff00 })
+	 *     .stroke({ width: 2, color: 0x000000 });
+	 * ```
+	 * @param x - The x-coordinate of the top-left corner of the rectangle
+	 * @param y - The y-coordinate of the top-left corner of the rectangle
+	 * @param width - The width of the rectangle
+	 * @param height - The height of the rectangle
+	 * @param chamfer - The size of the corner chamfers (must be non-zero)
+	 * @param transform - Optional Matrix to transform the rectangle
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#roundRect} For rounded corners
+	 * @see {@link Graphics#filletRect} For rounded corners with negative radius support
+	 */
+	chamferRect(x: number, y: number, width: number, height: number, chamfer: number, transform?: Matrix): this;
+	/**
+	 * Draws a star shape centered at a specified location. This method allows for the creation
+	 * of stars with a variable number of points, outer radius, optional inner radius, and rotation.
+	 *
+	 * The star is drawn as a closed polygon with alternating outer and inner vertices to create the star's points.
+	 * An optional transformation can be applied to scale, rotate, or translate the star as needed.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Draw a basic 5-pointed star
+	 * graphics
+	 *     .star(100, 100, 5, 50)
+	 *     .fill({ color: 0xff0000 });
+	 *
+	 * // Star with custom inner radius
+	 * graphics
+	 *     .star(250, 100, 6, 50, 20)
+	 *     .fill({ color: 0x00ff00 })
+	 *     .stroke({ width: 2, color: 0x000000 });
+	 * ```
+	 * @param x - The x-coordinate of the center of the star
+	 * @param y - The y-coordinate of the center of the star
+	 * @param points - The number of points on the star (must be >= 3)
+	 * @param radius - The outer radius of the star (distance from center to point tips)
+	 * @param innerRadius - Optional. The inner radius of the star (distance from center to inner vertices).
+	 *                     If not specified, defaults to half of the outer radius
+	 * @param rotation - Optional. The rotation of the star in radians. Default is 0,
+	 *                  which aligns one point straight up
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#regularPoly} For drawing regular polygons
+	 * @see {@link Graphics#poly} For drawing custom polygons
+	 * @see {@link Graphics#path} For creating custom shapes
+	 */
+	star(x: number, y: number, points: number, radius: number, innerRadius?: number, rotation?: number): this;
+	/**
+	 * Parses and renders an SVG string into the graphics context. This allows for complex shapes
+	 * and paths defined in SVG format to be drawn within the graphics context.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 * graphics
+	 *     .svg(`
+	 *         <path d="M 50,50 L 100,50 L 100,100 L 50,100 Z"
+	 *               fill="blue" />
+	 *         <circle cx="150" cy="75" r="25"
+	 *               fill="green" />
+	 *     `)
+	 *     .stroke({ width: 2, color: 0x000000 });
+	 * ```
+	 * @param svg - The SVG string to be parsed and rendered
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#path} For adding custom paths
+	 * @see {@link Graphics#fill} For filling shapes after SVG parsing
+	 * @see {@link Graphics#stroke} For stroking shapes after SVG parsing
+	 */
+	svg(svg: string): this;
+	/**
+	 * Restores the most recently saved graphics state by popping the top of the graphics state stack.
+	 * This includes transformations, fill styles, and stroke styles.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Save current state
+	 * graphics.save();
+	 *
+	 * // Make temporary changes
+	 * graphics
+	 *     .translateTransform(100, 100)
+	 *     .setFillStyle({ color: 0xff0000 })
+	 *     .circle(0, 0, 50)
+	 *     .fill();
+	 *
+	 * // Restore to previous state
+	 * graphics.restore();
+	 *
+	 * // Draw with original transform and styles
+	 * graphics
+	 *     .circle(50, 50, 30)
+	 *     .fill();
+	 * ```
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#save} For saving the current state
+	 */
+	restore(): this;
+	/**
+	 * Saves the current graphics state onto a stack. The state includes:
+	 * - Current transformation matrix
+	 * - Current fill style
+	 * - Current stroke style
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Save state before complex operations
+	 * graphics.save();
+	 *
+	 * // Create transformed and styled shape
+	 * graphics
+	 *     .translateTransform(100, 100)
+	 *     .rotateTransform(Math.PI / 4)
+	 *     .setFillStyle({
+	 *         color: 0xff0000,
+	 *         alpha: 0.5
+	 *     })
+	 *     .rect(-25, -25, 50, 50)
+	 *     .fill();
+	 *
+	 * // Restore to original state
+	 * graphics.restore();
+	 *
+	 * // Continue drawing with previous state
+	 * graphics
+	 *     .circle(50, 50, 25)
+	 *     .fill();
+	 * ```
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#restore} For restoring the saved state
+	 * @see {@link Graphics#setTransform} For setting transformations
+	 */
+	save(): this;
+	/**
+	 * Returns the current transformation matrix of the graphics context.
+	 * This matrix represents all accumulated transformations including translate, scale, and rotate.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Apply some transformations
+	 * graphics
+	 *     .translateTransform(100, 100)
+	 *     .rotateTransform(Math.PI / 4);
+	 *
+	 * // Get the current transform matrix
+	 * const matrix = graphics.getTransform();
+	 * console.log(matrix.tx, matrix.ty); // 100, 100
+	 *
+	 * // Use the matrix for other operations
+	 * graphics
+	 *     .setTransform(matrix)
+	 *     .circle(0, 0, 50)
+	 *     .fill({ color: 0xff0000 });
+	 * ```
+	 * @returns The current transformation matrix.
+	 * @see {@link Graphics#setTransform} For setting the transform matrix
+	 * @see {@link Matrix} For matrix operations
+	 */
+	getTransform(): Matrix;
+	/**
+	 * Resets the current transformation matrix to the identity matrix, effectively removing
+	 * any transformations (rotation, scaling, translation) previously applied.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Apply transformations
+	 * graphics
+	 *     .translateTransform(100, 100)
+	 *     .scaleTransform(2, 2)
+	 *     .circle(0, 0, 25)
+	 *     .fill({ color: 0xff0000 });
+	 * // Reset transform to default state
+	 * graphics
+	 *     .resetTransform()
+	 *     .circle(50, 50, 25) // Will draw at actual coordinates
+	 *     .fill({ color: 0x00ff00 });
+	 * ```
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#getTransform} For getting the current transform
+	 * @see {@link Graphics#setTransform} For setting a specific transform
+	 * @see {@link Graphics#save} For saving the current transform state
+	 * @see {@link Graphics#restore} For restoring a previous transform state
+	 */
+	resetTransform(): this;
+	/**
+	 * Applies a rotation transformation to the graphics context around the current origin.
+	 * Positive angles rotate clockwise, while negative angles rotate counterclockwise.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Rotate 45 degrees clockwise
+	 * graphics
+	 *     .rotateTransform(Math.PI / 4)
+	 *     .rect(-25, -25, 50, 50)
+	 *     .fill({ color: 0xff0000 });
+	 * ```
+	 * @param angle - The angle of rotation in radians
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#scaleTransform} For scaling transformations
+	 * @see {@link Graphics#translateTransform} For position transformations
+	 */
+	rotateTransform(angle: number): this;
+	/**
+	 * Applies a scaling transformation to the graphics context, scaling drawings by x horizontally
+	 * and by y vertically relative to the current origin.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Uniform scaling
+	 * graphics
+	 *     .scaleTransform(2)  // Scale both dimensions by 2
+	 *     .circle(0, 0, 25)
+	 *     .fill({ color: 0xff0000 });
+	 *
+	 * // Non-uniform scaling
+	 * graphics
+	 *     .scaleTransform(0.5, 2)  // Half width, double height
+	 *     .rect(100, 100, 50, 50)
+	 *     .fill({ color: 0x00ff00 });
+	 * ```
+	 * @param x - The scale factor in the horizontal direction
+	 * @param y - The scale factor in the vertical direction. If omitted, equals x
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#rotateTransform} For rotation transformations
+	 * @see {@link Graphics#translateTransform} For position transformations
+	 */
+	scaleTransform(x: number, y?: number): this;
+	/**
+	 * Sets the current transformation matrix of the graphics context.
+	 *
+	 * This method can either
+	 * take a Matrix object or individual transform values to create a new transformation matrix.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Using a Matrix object
+	 * const matrix = new Matrix()
+	 *     .translate(100, 100)
+	 *     .rotate(Math.PI / 4);
+	 *
+	 * graphics
+	 *     .setTransform(matrix)
+	 *     .rect(0, 0, 50, 50)
+	 *     .fill({ color: 0xff0000 });
+	 *
+	 * // Using individual transform values
+	 * graphics
+	 *     .setTransform(
+	 *         2, 0,     // scale x by 2
+	 *         0, 1,     // no skew
+	 *         100, 100  // translate x,y by 100
+	 *     )
+	 *     .circle(0, 0, 25)
+	 *     .fill({ color: 0x00ff00 });
+	 * ```
+	 * @param transform - The matrix to set as the current transformation matrix.
+	 * @returns The instance of the current GraphicsContext for method chaining.
+	 */
+	setTransform(transform: Matrix): this;
+	/**
+	 * Sets the current transformation matrix of the graphics context to the specified matrix or values.
+	 * This replaces the current transformation matrix.
+	 * @param a - The value for the a property of the matrix, or a Matrix object to use directly.
+	 * @param b - The value for the b property of the matrix.
+	 * @param c - The value for the c property of the matrix.
+	 * @param d - The value for the d property of the matrix.
+	 * @param dx - The value for the tx (translate x) property of the matrix.
+	 * @param dy - The value for the ty (translate y) property of the matrix.
+	 * @returns The instance of the current GraphicsContext for method chaining.
+	 */
+	setTransform(a: number, b: number, c: number, d: number, dx: number, dy: number): this;
+	setTransform(a: number | Matrix, b?: number, c?: number, d?: number, dx?: number, dy?: number): this;
+	/**
+	 * Applies a transformation matrix to the current graphics context by multiplying
+	 * the current matrix with the specified matrix. This allows for complex transformations
+	 * combining multiple operations.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Using a Matrix object
+	 * const matrix = new Matrix()
+	 *     .scale(2, 1)      // Scale horizontally
+	 *     .rotate(Math.PI/6); // Rotate 30 degrees
+	 *
+	 * graphics
+	 *     .transform(matrix)
+	 *     .rect(0, 0, 50, 50)
+	 *     .fill({ color: 0xff0000 });
+	 *
+	 * // Using individual transform values
+	 * graphics
+	 *     .transform(
+	 *         1, 0.5,    // Skew horizontally
+	 *         0, 1,      // No vertical skew
+	 *         100, 100   // Translate
+	 *     )
+	 *     .circle(0, 0, 25)
+	 *     .fill({ color: 0x00ff00 });
+	 * ```
+	 * @param transform - The matrix to apply to the current transformation.
+	 * @returns The instance of the current GraphicsContext for method chaining.
+	 */
+	transform(transform: Matrix): this;
+	/**
+	 * Applies the specified transformation matrix to the current graphics context by multiplying
+	 * the current matrix with the specified matrix.
+	 * @param a - The value for the a property of the matrix, or a Matrix object to use directly.
+	 * @param b - The value for the b property of the matrix.
+	 * @param c - The value for the c property of the matrix.
+	 * @param d - The value for the d property of the matrix.
+	 * @param dx - The value for the tx (translate x) property of the matrix.
+	 * @param dy - The value for the ty (translate y) property of the matrix.
+	 * @returns The instance of the current GraphicsContext for method chaining.
+	 */
+	transform(a: number, b: number, c: number, d: number, dx: number, dy: number): this;
+	transform(a: number | Matrix, b?: number, c?: number, d?: number, dx?: number, dy?: number): this;
+	/**
+	 * Applies a translation transformation to the graphics context, moving the origin by the specified amounts.
+	 * This affects all subsequent drawing operations.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Basic translation
+	 * graphics
+	 *     .translateTransform(100, 100)
+	 *     .circle(0, 0, 25)
+	 *     .fill({ color: 0xff0000 });
+	 * ```
+	 * @param x - The amount to translate in the horizontal direction
+	 * @param y - The amount to translate in the vertical direction. If omitted, equals x
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#setTransform} For setting absolute transformations
+	 * @see {@link Graphics#transform} For applying complex transformations
+	 * @see {@link Graphics#save} For saving the current transform state
+	 */
+	translateTransform(x: number, y?: number): this;
+	/**
+	 * Clears all drawing commands from the graphics context, effectively resetting it.
+	 * This includes clearing the current path, fill style, stroke style, and transformations.
+	 *
+	 * > [!NOTE] Graphics objects are not designed to be continuously cleared and redrawn.
+	 * > Instead, they are intended to be used for static or semi-static graphics that
+	 * > can be redrawn as needed. Frequent clearing and redrawing may lead to performance issues.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Draw some shapes
+	 * graphics
+	 *     .circle(100, 100, 50)
+	 *     .fill({ color: 0xff0000 })
+	 *     .rect(200, 100, 100, 50)
+	 *     .fill({ color: 0x00ff00 });
+	 *
+	 * // Clear all graphics
+	 * graphics.clear();
+	 *
+	 * // Start fresh with new shapes
+	 * graphics
+	 *     .circle(150, 150, 30)
+	 *     .fill({ color: 0x0000ff });
+	 * ```
+	 * @returns The Graphics instance for method chaining
+	 * @see {@link Graphics#beginPath} For starting a new path without clearing styles
+	 * @see {@link Graphics#save} For saving the current state
+	 * @see {@link Graphics#restore} For restoring a previous state
+	 */
+	clear(): this;
+	/**
+	 * Gets or sets the current fill style for the graphics context. The fill style determines
+	 * how shapes are filled when using the fill() method.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Basic color fill
+	 * graphics.fillStyle = {
+	 *     color: 0xff0000,  // Red
+	 *     alpha: 1
+	 * };
+	 *
+	 * // Using gradients
+	 * const gradient = new FillGradient({
+	 *     end: { x: 0, y: 1 }, // Vertical gradient
+	 *     stops: [
+	 *         { offset: 0, color: 0xff0000, alpha: 1 }, // Start color
+	 *         { offset: 1, color: 0x0000ff, alpha: 1 }  // End color
+	 *     ]
+	 * });
+	 *
+	 * graphics.fillStyle = {
+	 *     fill: gradient,
+	 *     alpha: 0.8
+	 * };
+	 *
+	 * // Using patterns
+	 * graphics.fillStyle = {
+	 *     texture: myTexture,
+	 *     alpha: 1,
+	 *     matrix: new Matrix()
+	 *         .scale(0.5, 0.5)
+	 *         .rotate(Math.PI / 4)
+	 * };
+	 * ```
+	 * @type {ConvertedFillStyle}
+	 * @see {@link FillStyle} For all available fill style options
+	 * @see {@link FillGradient} For creating gradient fills
+	 * @see {@link Graphics#fill} For applying the fill to paths
+	 */
+	get fillStyle(): GraphicsContext["fillStyle"];
+	set fillStyle(value: FillInput);
+	/**
+	 * Gets or sets the current stroke style for the graphics context. The stroke style determines
+	 * how paths are outlined when using the stroke() method.
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Basic stroke style
+	 * graphics.strokeStyle = {
+	 *     width: 2,
+	 *     color: 0xff0000,
+	 *     alpha: 1
+	 * };
+	 *
+	 * // Using with gradients
+	 * const gradient = new FillGradient({
+	 *   end: { x: 0, y: 1 },
+	 *   stops: [
+	 *       { offset: 0, color: 0xff0000, alpha: 1 },
+	 *       { offset: 1, color: 0x0000ff, alpha: 1 }
+	 *   ]
+	 * });
+	 *
+	 * graphics.strokeStyle = {
+	 *     width: 4,
+	 *     fill: gradient,
+	 *     alignment: 0.5,
+	 *     join: 'round',
+	 *     cap: 'round'
+	 * };
+	 *
+	 * // Complex stroke settings
+	 * graphics.strokeStyle = {
+	 *     width: 6,
+	 *     color: 0x00ff00,
+	 *     alpha: 0.5,
+	 *     join: 'miter',
+	 *     miterLimit: 10,
+	 * };
+	 * ```
+	 * @see {@link StrokeStyle} For all available stroke style options
+	 * @see {@link Graphics#stroke} For applying the stroke to paths
+	 */
+	get strokeStyle(): GraphicsContext["strokeStyle"];
+	set strokeStyle(value: StrokeStyle);
+	/**
+	 * Creates a new Graphics object that copies the current graphics content.
+	 * The clone can either share the same context (shallow clone) or have its own independent
+	 * context (deep clone).
+	 * @example
+	 * ```ts
+	 * const graphics = new Graphics();
+	 *
+	 * // Create original graphics content
+	 * graphics
+	 *     .circle(100, 100, 50)
+	 *     .fill({ color: 0xff0000 });
+	 *
+	 * // Create a shallow clone (shared context)
+	 * const shallowClone = graphics.clone();
+	 *
+	 * // Changes to original affect the clone
+	 * graphics
+	 *     .circle(200, 100, 30)
+	 *     .fill({ color: 0x00ff00 });
+	 *
+	 * // Create a deep clone (independent context)
+	 * const deepClone = graphics.clone(true);
+	 *
+	 * // Modify deep clone independently
+	 * deepClone
+	 *     .translateTransform(100, 100)
+	 *     .circle(0, 0, 40)
+	 *     .fill({ color: 0x0000ff });
+	 * ```
+	 * @param deep - Whether to create a deep clone of the graphics object.
+	 *              If false (default), the context will be shared between objects.
+	 *              If true, creates an independent copy of the context.
+	 * @returns A new Graphics instance with either shared or copied context
+	 * @see {@link Graphics#context} For accessing the underlying graphics context
+	 * @see {@link GraphicsContext} For understanding the shared context behavior
+	 */
+	clone(deep?: boolean): Graphics;
+	/**
+	 * @param width
+	 * @param color
+	 * @param alpha
+	 * @deprecated since 8.0.0 Use {@link Graphics#setStrokeStyle} instead
+	 */
+	lineStyle(width?: number, color?: ColorSource, alpha?: number): this;
+	/**
+	 * @param color
+	 * @param alpha
+	 * @deprecated since 8.0.0 Use {@link Graphics#fill} instead
+	 */
+	beginFill(color: ColorSource, alpha?: number): this;
+	/**
+	 * @deprecated since 8.0.0 Use {@link Graphics#fill} instead
+	 */
+	endFill(): this;
+	/**
+	 * @param {...any} args
+	 * @deprecated since 8.0.0 Use {@link Graphics#circle} instead
+	 */
+	drawCircle(...args: Parameters<GraphicsContext["circle"]>): this;
+	/**
+	 * @param {...any} args
+	 * @deprecated since 8.0.0 Use {@link Graphics#ellipse} instead
+	 */
+	drawEllipse(...args: Parameters<GraphicsContext["ellipse"]>): this;
+	/**
+	 * @param {...any} args
+	 * @deprecated since 8.0.0 Use {@link Graphics#poly} instead
+	 */
+	drawPolygon(...args: Parameters<GraphicsContext["poly"]>): this;
+	/**
+	 * @param {...any} args
+	 * @deprecated since 8.0.0 Use {@link Graphics#rect} instead
+	 */
+	drawRect(...args: Parameters<GraphicsContext["rect"]>): this;
+	/**
+	 * @param {...any} args
+	 * @deprecated since 8.0.0 Use {@link Graphics#roundRect} instead
+	 */
+	drawRoundedRect(...args: Parameters<GraphicsContext["roundRect"]>): this;
+	/**
+	 * @param {...any} args
+	 * @deprecated since 8.0.0 Use {@link Graphics#star} instead
+	 */
+	drawStar(...args: Parameters<GraphicsContext["star"]>): this;
+}
+/**
+ * A batchable graphics object.
+ * @ignore
+ */
+export declare class BatchableGraphics implements DefaultBatchableMeshElement {
+	readonly packAsQuad = false;
+	batcherName: string;
+	texture: Texture;
+	topology: Topology;
+	renderable: Graphics;
+	indexOffset: number;
+	indexSize: number;
+	attributeOffset: number;
+	attributeSize: number;
+	baseColor: number;
+	alpha: number;
+	applyTransform: boolean;
+	roundPixels: 0 | 1;
+	_indexStart: number;
+	_textureId: number;
+	_attributeStart: number;
+	_batcher: Batcher;
+	_batch: Batch;
+	geometryData: {
+		vertices: number[];
+		uvs: number[];
+		indices: number[];
+	};
+	get uvs(): number[];
+	get positions(): number[];
+	get indices(): number[];
+	get blendMode(): BLEND_MODES;
+	get color(): number;
+	get transform(): Matrix;
+	copyTo(gpuBuffer: BatchableGraphics): void;
+	reset(): void;
+	destroy(): void;
+}
+interface GeometryData {
+	vertices: number[];
+	uvs: number[];
+	indices: number[];
+}
+/**
+ * A class that holds batchable graphics data for a GraphicsContext.
+ * @category rendering
+ * @ignore
+ */
+export declare class GpuGraphicsContext implements GPUData {
+	isBatchable: boolean;
+	context: GraphicsContext;
+	batches: BatchableGraphics[];
+	geometryData: GeometryData;
+	graphicsData: GraphicsContextRenderData;
+	reset(): void;
+	destroy(): void;
+}
+/**
+ * A class that holds the render data for a GraphicsContext.
+ * @category rendering
+ * @ignore
+ */
+export declare class GraphicsContextRenderData {
+	batcher: DefaultBatcher;
+	instructions: InstructionSet;
+	init(options: BatcherOptions): void;
+	/**
+	 * @deprecated since version 8.0.0
+	 * Use `batcher.geometry` instead.
+	 * @see {Batcher#geometry}
+	 */
+	get geometry(): BatchGeometry;
+	destroy(): void;
+}
+/**
+ * Options for the GraphicsContextSystem.
+ * @category rendering
+ * @advanced
+ */
+export interface GraphicsContextSystemOptions {
+	/** A value from 0 to 1 that controls the smoothness of bezier curves (the higher the smoother) */
+	bezierSmoothness?: number;
+}
+/**
+ * A system that manages the rendering of GraphicsContexts.
+ * @category rendering
+ * @advanced
+ */
+export declare class GraphicsContextSystem implements System<GraphicsContextSystemOptions> {
+	/** @ignore */
+	static extension: {
+		readonly type: readonly [
+			ExtensionType.WebGLSystem,
+			ExtensionType.WebGPUSystem,
+			ExtensionType.CanvasSystem
+		];
+		readonly name: "graphicsContext";
+	};
+	/** The default options for the GraphicsContextSystem. */
+	static readonly defaultOptions: GraphicsContextSystemOptions;
+	private readonly _renderer;
+	private readonly _managedContexts;
+	constructor(renderer: Renderer);
+	/**
+	 * Runner init called, update the default options
+	 * @ignore
+	 */
+	init(options?: GraphicsContextSystemOptions): void;
+	/**
+	 * Returns the render data for a given GraphicsContext.
+	 * @param context - The GraphicsContext to get the render data for.
+	 * @internal
+	 */
+	getContextRenderData(context: GraphicsContext): GraphicsContextRenderData;
+	/**
+	 * Updates the GPU context for a given GraphicsContext.
+	 * If the context is dirty, it will rebuild the batches and geometry data.
+	 * @param context - The GraphicsContext to update.
+	 * @returns The updated GpuGraphicsContext.
+	 * @internal
+	 */
+	updateGpuContext(context: GraphicsContext): GpuGraphicsContext;
+	/**
+	 * Returns the GpuGraphicsContext for a given GraphicsContext.
+	 * If it does not exist, it will initialize a new one.
+	 * @param context - The GraphicsContext to get the GpuGraphicsContext for.
+	 * @returns The GpuGraphicsContext for the given GraphicsContext.
+	 * @internal
+	 */
+	getGpuContext(context: GraphicsContext): GpuGraphicsContext;
+	private _initContextRenderData;
+	private _initContext;
+	destroy(): void;
+}
+/**
  * The mode for batching graphics instructions.
  *
  * It can be:
@@ -23847,7 +26020,16 @@ export type GraphicsInstructions = FillInstruction | StrokeInstruction | Texture
 export declare class GraphicsContext extends EventEmitter<{
 	update: GraphicsContext;
 	destroy: GraphicsContext;
-}> {
+	unload: GraphicsContext;
+}> implements GCable {
+	/** @internal */
+	_gpuData: Record<number | string, GpuGraphicsContext>;
+	/** @internal */
+	_gcData?: GCData;
+	/** If set to true, the resource will be garbage collected automatically when it is not used. */
+	autoGarbageCollect: boolean;
+	/** @internal */
+	_gcLastUsed: number;
 	/** The default fill style to use when none is provided. */
 	static defaultFillStyle: ConvertedFillStyle;
 	/** The default stroke style to use when none is provided. */
@@ -23871,6 +26053,8 @@ export declare class GraphicsContext extends EventEmitter<{
 	 * @advanced
 	 */
 	customShader?: Shader;
+	/** Whether the graphics context has been destroyed. */
+	destroyed: boolean;
 	private _activePath;
 	private _transform;
 	private _fillStyle;
@@ -24270,6 +26454,8 @@ export declare class GraphicsContext extends EventEmitter<{
 	 * @returns {boolean} `true` if the point is contained within geometry.
 	 */
 	containsPoint(point: PointData): boolean;
+	/** Unloads the GPU data from the graphics context. */
+	unload(): void;
 	/**
 	 * Destroys the GraphicsData object.
 	 * @param options - Options parameter. A boolean will act as if all options
@@ -25932,11 +28118,7 @@ export declare abstract class AbstractText<TEXT_STYLE extends TextStyle = TextSt
 export declare function ensureTextOptions<TEXT_OPTIONS extends TextOptions>(args: any[], name: string): TEXT_OPTIONS;
 /** @internal */
 export declare class BatchableText extends BatchableSprite {
-	private readonly _renderer;
 	currentKey: string;
-	constructor(renderer: Renderer);
-	resolutionChange(): void;
-	destroy(): void;
 }
 interface Text$1 extends PixiMixins.Text, AbstractText<TextStyle, TextStyleOptions, CanvasTextOptions, BatchableText> {
 }
@@ -26212,1837 +28394,6 @@ declare global {
 		interface CanvasPipes {
 		}
 	}
-}
-/** @internal */
-export interface GraphicsAdaptor {
-	shader: Shader;
-	contextChange(renderer: Renderer): void;
-	execute(graphicsPipe: GraphicsPipe, renderable: Graphics): void;
-	destroy(): void;
-}
-/** @internal */
-export declare class GraphicsGpuData {
-	batches: BatchableGraphics[];
-	batched: boolean;
-	destroy(): void;
-}
-/** @internal */
-export declare class GraphicsPipe implements RenderPipe<Graphics> {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGLPipes,
-			ExtensionType.WebGPUPipes,
-			ExtensionType.CanvasPipes
-		];
-		readonly name: "graphics";
-	};
-	renderer: Renderer;
-	state: State;
-	private _adaptor;
-	constructor(renderer: Renderer, adaptor: GraphicsAdaptor);
-	contextChange(): void;
-	validateRenderable(graphics: Graphics): boolean;
-	addRenderable(graphics: Graphics, instructionSet: InstructionSet): void;
-	updateRenderable(graphics: Graphics): void;
-	execute(graphics: Graphics): void;
-	private _rebuild;
-	private _addToBatcher;
-	private _getGpuDataForRenderable;
-	private _initGpuDataForRenderable;
-	private _updateBatchesForRenderable;
-	destroy(): void;
-}
-/**
- * Constructor options used for Graphics instances.
- * Configures the initial state and behavior of a Graphics object.
- * @example
- * ```ts
- * const graphics = new Graphics({
- *     roundPixels: true,
- *     position: { x: 100.5, y: 100.5 }
- * });
- *
- * // Reuse graphics context
- * const sharedContext = new GraphicsContext();
- * const graphics1 = new Graphics({ context: sharedContext });
- * const graphics2 = new Graphics({ context: sharedContext });
- * ```
- * @see {@link Graphics} For the graphics class implementation
- * @see {@link GraphicsContext} For the graphics context API
- * @category scene
- * @standard
- */
-export interface GraphicsOptions extends PixiMixins.GraphicsOptions, ViewContainerOptions {
-	/**
-	 * The GraphicsContext to use, useful for reuse and optimisation
-	 * If not provided, a new GraphicsContext will be created.
-	 * @example
-	 * ```ts
-	 * const sharedContext = new GraphicsContext();
-	 * const graphics1 = new Graphics({ context: sharedContext });
-	 * const graphics2 = new Graphics({ context: sharedContext });
-	 * ```
-	 */
-	context?: GraphicsContext;
-	/**
-	 * Whether or not to round the x/y position.
-	 * @default false
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics({ roundPixels: true });
-	 * ```
-	 */
-	roundPixels?: boolean;
-}
-export interface Graphics extends PixiMixins.Graphics, ViewContainer<GraphicsGpuData> {
-}
-/**
- * The Graphics class is primarily used to render primitive shapes such as lines, circles and
- * rectangles to the display, and to color and fill them. It can also be used to create complex
- * masks and hit areas for interaction.
- * @example
- * ```ts
- * // Create a new graphics object
- * const graphics = new Graphics();
- *
- * // Draw a filled rectangle with a stroke
- * graphics
- *     .rect(0, 0, 100, 100)
- *     .fill({ color: 0xff0000 }) // Fill with red
- *     .stroke({ width: 2, color: 0x000000 }); // Stroke with black
- *
- * // Draw a complex shape
- * graphics
- *     .moveTo(50, 50)
- *     .lineTo(100, 100)
- *     .arc(100, 100, 50, 0, Math.PI)
- *     .closePath()
- *     .fill({ color: 0x00ff00, alpha: 0.5 }); // Fill the shape
- *
- * // Use as a mask
- * sprite.mask = graphics;
- * ```
- * @see {@link GraphicsContext} For the underlying drawing API
- * @see {@link GraphicsPath} For path creation
- * @category scene
- * @standard
- */
-export declare class Graphics extends ViewContainer<GraphicsGpuData> implements Instruction {
-	/** @internal */
-	readonly renderPipeId: string;
-	/** @internal */
-	batched: boolean;
-	private _context;
-	private readonly _ownedContext;
-	/**
-	 * Creates a new Graphics object.
-	 * @param options - Options for the Graphics.
-	 */
-	constructor(options?: GraphicsOptions | GraphicsContext);
-	set context(context: GraphicsContext);
-	/**
-	 * The underlying graphics context used for drawing operations.
-	 * Controls how shapes and paths are rendered.
-	 * @example
-	 * ```ts
-	 * // Create a shared context
-	 * const sharedContext = new GraphicsContext();
-	 *
-	 * // Create graphics objects sharing the same context
-	 * const graphics1 = new Graphics();
-	 * const graphics2 = new Graphics();
-	 *
-	 * // Assign shared context
-	 * graphics1.context = sharedContext;
-	 * graphics2.context = sharedContext;
-	 *
-	 * // Both graphics will show the same shapes
-	 * sharedContext
-	 *     .rect(0, 0, 100, 100)
-	 *     .fill({ color: 0xff0000 });
-	 * ```
-	 * @see {@link GraphicsContext} For drawing operations
-	 * @see {@link GraphicsOptions} For context configuration
-	 */
-	get context(): GraphicsContext;
-	/**
-	 * The local bounds of the graphics object.
-	 * Returns the boundaries after all graphical operations but before any transforms.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Draw a shape
-	 * graphics
-	 *     .rect(0, 0, 100, 100)
-	 *     .fill({ color: 0xff0000 });
-	 *
-	 * // Get bounds information
-	 * const bounds = graphics.bounds;
-	 * console.log(bounds.width);  // 100
-	 * console.log(bounds.height); // 100
-	 * ```
-	 * @readonly
-	 * @see {@link Bounds} For bounds operations
-	 * @see {@link Container#getBounds} For transformed bounds
-	 */
-	get bounds(): Bounds;
-	/**
-	 * Graphics objects do not need to update their bounds as the context handles this.
-	 * @private
-	 */
-	protected updateBounds(): void;
-	/**
-	 * Checks if the object contains the given point.
-	 * Returns true if the point lies within the Graphics object's rendered area.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Draw a shape
-	 * graphics
-	 *     .rect(0, 0, 100, 100)
-	 *     .fill({ color: 0xff0000 });
-	 *
-	 * // Check point intersection
-	 * if (graphics.containsPoint({ x: 50, y: 50 })) {
-	 *     console.log('Point is inside rectangle!');
-	 * }
-	 * ```
-	 * @param point - The point to check in local coordinates
-	 * @returns True if the point is inside the Graphics object
-	 * @see {@link Graphics#bounds} For bounding box checks
-	 * @see {@link PointData} For point data structure
-	 */
-	containsPoint(point: PointData): boolean;
-	/**
-	 * Destroys this graphics renderable and optionally its context.
-	 * @param options - Options parameter. A boolean will act as if all options
-	 *
-	 * If the context was created by this graphics and `destroy(false)` or `destroy()` is called
-	 * then the context will still be destroyed.
-	 *
-	 * If you want to explicitly not destroy this context that this graphics created,
-	 * then you should pass destroy({ context: false })
-	 *
-	 * If the context was passed in as an argument to the constructor then it will not be destroyed
-	 * @example
-	 * ```ts
-	 * // Destroy the graphics and its context
-	 * graphics.destroy();
-	 * graphics.destroy(true);
-	 * graphics.destroy({ context: true, texture: true, textureSource: true });
-	 * ```
-	 */
-	destroy(options?: DestroyOptions): void;
-	private _callContextMethod;
-	/**
-	 * Sets the current fill style of the graphics context.
-	 * The fill style can be a color, gradient, pattern, or a complex style object.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Basic color fill
-	 * graphics
-	 *     .setFillStyle({ color: 0xff0000 }) // Red fill
-	 *     .rect(0, 0, 100, 100)
-	 *     .fill();
-	 *
-	 * // Gradient fill
-	 * const gradient = new FillGradient({
-	 *    end: { x: 1, y: 0 },
-	 *    colorStops: [
-	 *         { offset: 0, color: 0xff0000 }, // Red at start
-	 *         { offset: 0.5, color: 0x00ff00 }, // Green at middle
-	 *         { offset: 1, color: 0x0000ff }, // Blue at end
-	 *    ],
-	 * });
-	 *
-	 * graphics
-	 *     .setFillStyle(gradient)
-	 *     .circle(100, 100, 50)
-	 *     .fill();
-	 *
-	 * // Pattern fill
-	 * const pattern = new FillPattern(texture);
-	 * graphics
-	 *     .setFillStyle({
-	 *         fill: pattern,
-	 *         alpha: 0.5
-	 *     })
-	 *     .rect(0, 0, 200, 200)
-	 *     .fill();
-	 * ```
-	 * @param {FillInput} args - The fill style to apply
-	 * @returns The Graphics instance for chaining
-	 * @see {@link FillStyle} For fill style options
-	 * @see {@link FillGradient} For gradient fills
-	 * @see {@link FillPattern} For pattern fills
-	 */
-	setFillStyle(...args: Parameters<GraphicsContext["setFillStyle"]>): this;
-	/**
-	 * Sets the current stroke style of the graphics context.
-	 * Similar to fill styles, stroke styles can encompass colors, gradients, patterns, or more detailed configurations.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Basic color stroke
-	 * graphics
-	 *     .setStrokeStyle({
-	 *         width: 2,
-	 *         color: 0x000000
-	 *     })
-	 *     .rect(0, 0, 100, 100)
-	 *     .stroke();
-	 *
-	 * // Complex stroke style
-	 * graphics
-	 *     .setStrokeStyle({
-	 *         width: 4,
-	 *         color: 0xff0000,
-	 *         alpha: 0.5,
-	 *         join: 'round',
-	 *         cap: 'round',
-	 *         alignment: 0.5
-	 *     })
-	 *     .circle(100, 100, 50)
-	 *     .stroke();
-	 *
-	 * // Gradient stroke
-	 * const gradient = new FillGradient({
-	 *    end: { x: 1, y: 0 },
-	 *    colorStops: [
-	 *         { offset: 0, color: 0xff0000 }, // Red at start
-	 *         { offset: 0.5, color: 0x00ff00 }, // Green at middle
-	 *         { offset: 1, color: 0x0000ff }, // Blue at end
-	 *    ],
-	 * });
-	 *
-	 * graphics
-	 *     .setStrokeStyle({
-	 *         width: 10,
-	 *         fill: gradient
-	 *     })
-	 *     .poly([0,0, 100,50, 0,100])
-	 *     .stroke();
-	 * ```
-	 * @param {StrokeInput} args - The stroke style to apply
-	 * @returns The Graphics instance for chaining
-	 * @see {@link StrokeStyle} For stroke style options
-	 * @see {@link FillGradient} For gradient strokes
-	 * @see {@link FillPattern} For pattern strokes
-	 */
-	setStrokeStyle(...args: Parameters<GraphicsContext["setStrokeStyle"]>): this;
-	/**
-	 * Fills the current or given path with the current fill style or specified style.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Fill with direct color
-	 * graphics
-	 *     .circle(50, 50, 25)
-	 *     .fill('red'); // Red fill
-	 *
-	 * // Fill with texture
-	 * graphics
-	 *    .rect(0, 0, 100, 100)
-	 *    .fill(myTexture); // Fill with texture
-	 *
-	 * // Fill with complex style
-	 * graphics
-	 *     .rect(0, 0, 100, 100)
-	 *     .fill({
-	 *         color: 0x00ff00,
-	 *         alpha: 0.5,
-	 *         texture: myTexture,
-	 *         matrix: new Matrix()
-	 *     });
-	 *
-	 * // Fill with gradient
-	 * const gradient = new FillGradient({
-	 *     end: { x: 1, y: 0 },
-	 *     colorStops: [
-	 *         { offset: 0, color: 0xff0000 },
-	 *         { offset: 0.5, color: 0x00ff00 },
-	 *         { offset: 1, color: 0x0000ff },
-	 *     ],
-	 * });
-	 *
-	 * graphics
-	 *     .circle(100, 100, 50)
-	 *     .fill(gradient);
-	 * ```
-	 * @param {FillInput} style - The style to fill the path with. Can be:
-	 * - A ColorSource
-	 * - A gradient
-	 * - A pattern
-	 * - A complex style object
-	 * If omitted, uses current fill style.
-	 * @returns The Graphics instance for chaining
-	 * @see {@link FillStyle} For fill style options
-	 * @see {@link FillGradient} For gradient fills
-	 * @see {@link FillPattern} For pattern fills
-	 */
-	fill(style?: FillInput): this;
-	/** @deprecated 8.0.0 */
-	fill(color: ColorSource, alpha?: number): this;
-	/**
-	 * Strokes the current path with the current stroke style or specified style.
-	 * Outlines the shape using the stroke settings.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Stroke with direct color
-	 * graphics
-	 *     .circle(50, 50, 25)
-	 *     .stroke({
-	 *         width: 2,
-	 *         color: 0xff0000
-	 *     }); // 2px red stroke
-	 *
-	 * // Fill with texture
-	 * graphics
-	 *    .rect(0, 0, 100, 100)
-	 *    .stroke(myTexture); // Fill with texture
-	 *
-	 * // Stroke with gradient
-	 * const gradient = new FillGradient({
-	 *     end: { x: 1, y: 0 },
-	 *     colorStops: [
-	 *         { offset: 0, color: 0xff0000 },
-	 *         { offset: 0.5, color: 0x00ff00 },
-	 *         { offset: 1, color: 0x0000ff },
-	 *     ],
-	 * });
-	 *
-	 * graphics
-	 *     .rect(0, 0, 100, 100)
-	 *     .stroke({
-	 *         width: 4,
-	 *         fill: gradient,
-	 *         alignment: 0.5,
-	 *         join: 'round'
-	 *     });
-	 * ```
-	 * @param {StrokeStyle} args - Optional stroke style to apply. Can be:
-	 * - A stroke style object with width, color, etc.
-	 * - A gradient
-	 * - A pattern
-	 * If omitted, uses current stroke style.
-	 * @returns The Graphics instance for chaining
-	 * @see {@link StrokeStyle} For stroke style options
-	 * @see {@link FillGradient} For gradient strokes
-	 * @see {@link setStrokeStyle} For setting default stroke style
-	 */
-	stroke(...args: Parameters<GraphicsContext["stroke"]>): this;
-	/**
-	 * Adds a texture to the graphics context. This method supports multiple ways to draw textures
-	 * including basic textures, tinted textures, and textures with custom dimensions.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Basic texture drawing
-	 * graphics.texture(myTexture);
-	 *
-	 * // Tinted texture with position
-	 * graphics.texture(myTexture, 0xff0000); // Red tint
-	 *
-	 * // Texture with custom position and dimensions
-	 * graphics
-	 *     .texture(
-	 *         myTexture,    // texture
-	 *         0xffffff,     // white tint
-	 *         100, 100,     // position
-	 *         200, 150      // dimensions
-	 *     );
-	 * ```
-	 * Basic texture drawing:
-	 * @param texture - The Texture object to use.
-	 * @returns The instance of the current Graphics for chaining.
-	 *
-	 * Extended texture drawing:
-	 * @param texture - The Texture object to use.
-	 *        tint - A ColorSource to tint the texture (defaults to white).
-	 *        dx - The x-coordinate for the texture placement.
-	 *        dy - The y-coordinate for the texture placement.
-	 *        dw - The width to draw the texture (defaults to texture width).
-	 *        dh - The height to draw the texture (defaults to texture height).
-	 * @returns The instance of the current Graphics for chaining.
-	 * @see {@link Texture} For texture creation
-	 * @see {@link FillPattern} For pattern fills
-	 */
-	texture(texture: Texture): this;
-	texture(texture: Texture, tint?: ColorSource, dx?: number, dy?: number, dw?: number, dh?: number): this;
-	/**
-	 * Resets the current path. Any previous path and its commands are discarded and a new path is
-	 * started. This is typically called before beginning a new shape or series of drawing commands.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 * graphics
-	 *     .circle(150, 150, 50)
-	 *     .fill({ color: 0x00ff00 })
-	 *     .beginPath() // Starts a new path
-	 *     .circle(250, 150, 50)
-	 *     .fill({ color: 0x0000ff });
-	 * ```
-	 * @returns The Graphics instance for chaining
-	 * @see {@link Graphics#moveTo} For starting a new subpath
-	 * @see {@link Graphics#closePath} For closing the current path
-	 */
-	beginPath(): this;
-	/**
-	 * Applies a cutout to the last drawn shape. This is used to create holes or complex shapes by
-	 * subtracting a path from the previously drawn path.
-	 *
-	 * If a hole is not completely in a shape, it will fail to cut correctly.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Draw outer circle
-	 * graphics
-	 *     .circle(100, 100, 50)
-	 *     .fill({ color: 0xff0000 });
-	 *     .circle(100, 100, 25) // Inner circle
-	 *     .cut() // Cuts out the inner circle from the outer circle
-	 * ```
-	 */
-	cut(): this;
-	/**
-	 * Adds an arc to the current path, which is centered at (x, y) with the specified radius,
-	 * starting and ending angles, and direction.
-	 * @example
-	 * ```ts
-	 * // Draw a simple arc (quarter circle)
-	 * const graphics = new Graphics();
-	 * graphics
-	 *     .arc(100, 100, 50, 0, Math.PI/2)
-	 *     .stroke({ width: 2, color: 0xff0000 });
-	 *
-	 * // Draw a full circle using an arc
-	 * graphics
-	 *     .arc(200, 200, 30, 0, Math.PI * 2)
-	 *     .stroke({ color: 0x00ff00 });
-	 *
-	 * // Draw a counterclockwise arc
-	 * graphics
-	 *     .arc(150, 150, 40, Math.PI, 0, true)
-	 *     .stroke({ width: 2, color: 0x0000ff });
-	 * ```
-	 * @param x - The x-coordinate of the arc's center
-	 * @param y - The y-coordinate of the arc's center
-	 * @param radius - The arc's radius (must be positive)
-	 * @param startAngle - The starting point of the arc, in radians
-	 * @param endAngle - The end point of the arc, in radians
-	 * @param counterclockwise - Optional. If true, draws the arc counterclockwise.
-	 *                          If false (default), draws clockwise.
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#circle} For drawing complete circles
-	 * @see {@link Graphics#arcTo} For drawing arcs between points
-	 * @see {@link Graphics#arcToSvg} For SVG-style arc drawing
-	 */
-	arc(x: number, y: number, radius: number, startAngle: number, endAngle: number, counterclockwise?: boolean): this;
-	/**
-	 * Adds an arc to the current path that connects two points using a radius.
-	 * The arc is drawn between the current point and the specified end point,
-	 * using the given control point to determine the curve of the arc.
-	 * @example
-	 * ```ts
-	 * // Draw a simple curved corner
-	 * const graphics = new Graphics();
-	 * graphics
-	 *     .moveTo(50, 50)
-	 *     .arcTo(100, 50, 100, 100, 20) // Rounded corner with 20px radius
-	 *     .stroke({ width: 2, color: 0xff0000 });
-	 *
-	 * // Create a rounded rectangle using arcTo
-	 * graphics
-	 *     .moveTo(150, 150)
-	 *     .arcTo(250, 150, 250, 250, 30) // Top right corner
-	 *     .arcTo(250, 250, 150, 250, 30) // Bottom right corner
-	 *     .arcTo(150, 250, 150, 150, 30) // Bottom left corner
-	 *     .arcTo(150, 150, 250, 150, 30) // Top left corner
-	 *     .fill({ color: 0x00ff00 });
-	 * ```
-	 * @param x1 - The x-coordinate of the control point
-	 * @param y1 - The y-coordinate of the control point
-	 * @param x2 - The x-coordinate of the end point
-	 * @param y2 - The y-coordinate of the end point
-	 * @param radius - The radius of the arc in pixels (must be positive)
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#arc} For drawing arcs using center point and angles
-	 * @see {@link Graphics#arcToSvg} For SVG-style arc drawing
-	 * @see {@link Graphics#roundRect} For drawing rectangles with rounded corners
-	 */
-	arcTo(x1: number, y1: number, x2: number, y2: number, radius: number): this;
-	/**
-	 * Adds an SVG-style arc to the path, allowing for elliptical arcs based on the SVG spec.
-	 * This is particularly useful when converting SVG paths to Graphics or creating complex curved shapes.
-	 * @example
-	 * ```ts
-	 * // Draw a simple elliptical arc
-	 * const graphics = new Graphics();
-	 * graphics
-	 *     .moveTo(100, 100)
-	 *     .arcToSvg(50, 30, 0, 0, 1, 200, 100)
-	 *     .stroke({ width: 2, color: 0xff0000 });
-	 *
-	 * // Create a complex path with rotated elliptical arc
-	 * graphics
-	 *     .moveTo(150, 150)
-	 *     .arcToSvg(
-	 *         60,    // rx
-	 *         30,    // ry
-	 *         45,    // x-axis rotation (45 degrees)
-	 *         1,     // large arc flag
-	 *         0,     // sweep flag
-	 *         250,   // end x
-	 *         200    // end y
-	 *     )
-	 *     .stroke({ width: 4, color: 0x00ff00 });
-	 *
-	 * // Chain multiple arcs for complex shapes
-	 * graphics
-	 *     .moveTo(300, 100)
-	 *     .arcToSvg(40, 20, 0, 0, 1, 350, 150)
-	 *     .arcToSvg(40, 20, 0, 0, 1, 300, 200)
-	 *     .fill({ color: 0x0000ff, alpha: 0.5 });
-	 * ```
-	 * @param rx - The x-radius of the ellipse (must be non-negative)
-	 * @param ry - The y-radius of the ellipse (must be non-negative)
-	 * @param xAxisRotation - The rotation of the ellipse's x-axis relative to the x-axis, in degrees
-	 * @param largeArcFlag - Either 0 or 1, determines if the larger of the two possible arcs is chosen (1) or not (0)
-	 * @param sweepFlag - Either 0 or 1, determines if the arc should be swept in
-	 *                    a positive angle direction (1) or negative (0)
-	 * @param x - The x-coordinate of the arc's end point
-	 * @param y - The y-coordinate of the arc's end point
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#arc} For simple circular arcs
-	 * @see {@link Graphics#arcTo} For connecting points with circular arcs
-	 * @see {@link Graphics#svg} For parsing complete SVG paths
-	 */
-	arcToSvg(rx: number, ry: number, xAxisRotation: number, largeArcFlag: number, sweepFlag: number, x: number, y: number): this;
-	/**
-	 * Adds a cubic Bézier curve to the path, from the current point to the specified end point.
-	 * The curve is influenced by two control points that define its shape and curvature.
-	 * @example
-	 * ```ts
-	 * // Draw a simple curved line
-	 * const graphics = new Graphics();
-	 * graphics
-	 *     .moveTo(50, 50)
-	 *     .bezierCurveTo(
-	 *         100, 25,   // First control point
-	 *         150, 75,   // Second control point
-	 *         200, 50    // End point
-	 *     )
-	 *     .stroke({ width: 2, color: 0xff0000 });
-	 *
-	 * // Adjust curve smoothness
-	 * graphics
-	 *     .moveTo(50, 200)
-	 *     .bezierCurveTo(
-	 *         100, 150,
-	 *         200, 250,
-	 *         250, 200,
-	 *         0.5         // Smoothness factor
-	 *     )
-	 *     .stroke({ width: 4, color: 0x0000ff });
-	 * ```
-	 * @param cp1x - The x-coordinate of the first control point
-	 * @param cp1y - The y-coordinate of the first control point
-	 * @param cp2x - The x-coordinate of the second control point
-	 * @param cp2y - The y-coordinate of the second control point
-	 * @param x - The x-coordinate of the end point
-	 * @param y - The y-coordinate of the end point
-	 * @param smoothness - Optional parameter to adjust the curve's smoothness (0-1)
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#quadraticCurveTo} For simpler curves with one control point
-	 * @see {@link Graphics#arc} For circular arcs
-	 * @see {@link Graphics#arcTo} For connecting points with circular arcs
-	 */
-	bezierCurveTo(cp1x: number, cp1y: number, cp2x: number, cp2y: number, x: number, y: number, smoothness?: number): this;
-	/**
-	 * Closes the current path by drawing a straight line back to the start point.
-	 *
-	 * This is useful for completing shapes and ensuring they are properly closed for fills.
-	 * @example
-	 * ```ts
-	 * // Create a triangle with closed path
-	 * const graphics = new Graphics();
-	 * graphics
-	 *     .moveTo(50, 50)
-	 *     .lineTo(100, 100)
-	 *     .lineTo(0, 100)
-	 *     .closePath()
-	 * ```
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#beginPath} For starting a new path
-	 * @see {@link Graphics#fill} For filling closed paths
-	 * @see {@link Graphics#stroke} For stroking paths
-	 */
-	closePath(): this;
-	/**
-	 * Draws an ellipse at the specified location and with the given x and y radii.
-	 * An optional transformation can be applied, allowing for rotation, scaling, and translation.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Draw a basic ellipse
-	 * graphics
-	 *     .ellipse(100, 100, 50, 30)
-	 *     .fill({ color: 0xff0000 });
-	 *
-	 * // Draw an ellipse with stroke
-	 * graphics
-	 *     .ellipse(200, 100, 70, 40)
-	 *     .stroke({ width: 2, color: 0x00ff00 });
-	 * ```
-	 * @param x - The x-coordinate of the center of the ellipse
-	 * @param y - The y-coordinate of the center of the ellipse
-	 * @param radiusX - The horizontal radius of the ellipse
-	 * @param radiusY - The vertical radius of the ellipse
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#circle} For drawing perfect circles
-	 * @see {@link Graphics#arc} For drawing partial circular arcs
-	 */
-	ellipse(x: number, y: number, radiusX: number, radiusY: number): this;
-	/**
-	 * Draws a circle shape at the specified location with the given radius.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Draw a simple filled circle
-	 * graphics
-	 *     .circle(100, 100, 50)
-	 *     .fill({ color: 0xff0000 });
-	 *
-	 * // Draw a circle with gradient fill
-	 * const gradient = new FillGradient({
-	 *     end: { x: 1, y: 0 },
-	 *     colorStops: [
-	 *           { offset: 0, color: 0xff0000 }, // Red at start
-	 *           { offset: 0.5, color: 0x00ff00 }, // Green at middle
-	 *           { offset: 1, color: 0x0000ff }, // Blue at end
-	 *     ],
-	 * });
-	 *
-	 * graphics
-	 *     .circle(250, 100, 40)
-	 *     .fill({ fill: gradient });
-	 * ```
-	 * @param x - The x-coordinate of the center of the circle
-	 * @param y - The y-coordinate of the center of the circle
-	 * @param radius - The radius of the circle
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#ellipse} For drawing ellipses
-	 * @see {@link Graphics#arc} For drawing partial circles
-	 */
-	circle(x: number, y: number, radius: number): this;
-	/**
-	 * Adds another `GraphicsPath` to this path, optionally applying a transformation.
-	 * This allows for reuse of complex paths and shapes across different graphics instances.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 * // Create a reusable path
-	 * const heartPath = new GraphicsPath()
-	 *     .moveTo(0, 0)
-	 *     .bezierCurveTo(-50, -25, -50, -75, 0, -100)
-	 *     .bezierCurveTo(50, -75, 50, -25, 0, 0);
-	 *
-	 * // Use the path multiple times
-	 * graphics
-	 *     .path(heartPath)
-	 *     .fill({ color: 0xff0000 })
-	 *     .translateTransform(200, 200)
-	 *     .path(heartPath)
-	 *     .fill({ color: 0xff0000, alpha: 0.5 });
-	 * ```
-	 * @param path - The `GraphicsPath` to add to the current path
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link GraphicsPath} For creating reusable paths
-	 * @see {@link Matrix} For creating transformations
-	 * @see {@link Graphics#transform} For applying transformations
-	 */
-	path(path: GraphicsPath): this;
-	/**
-	 * Connects the current point to a new point with a straight line.
-	 * Any subsequent drawing commands will start from this new point.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Draw a triangle
-	 * graphics
-	 *     .moveTo(50, 50)
-	 *     .lineTo(100, 100)
-	 *     .lineTo(0, 100)
-	 *     .fill({ color: 0xff0000 });
-	 *
-	 * // Create a complex shape with multiple lines
-	 * graphics
-	 *     .moveTo(200, 50)
-	 *     .lineTo(250, 50)
-	 *     .lineTo(250, 100)
-	 *     .lineTo(200, 100)
-	 *     .stroke({ width: 2, color: 0x00ff00 });
-	 * ```
-	 * @param x - The x-coordinate of the line's end point
-	 * @param y - The y-coordinate of the line's end point
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#moveTo} For starting a new sub-path
-	 */
-	lineTo(x: number, y: number): this;
-	/**
-	 * Sets the starting point for a new sub-path.
-	 *
-	 * Moves the "pen" to a new location without drawing a line.
-	 * Any subsequent drawing commands will start from this point.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Create multiple separate lines
-	 * graphics
-	 *     .moveTo(50, 50)
-	 *     .lineTo(100, 50)
-	 *     .moveTo(50, 100)    // Start a new line
-	 *     .lineTo(100, 100)
-	 *     .stroke({ width: 2, color: 0xff0000 });
-	 *
-	 * // Create disconnected shapes
-	 * graphics
-	 *     .moveTo(150, 50)
-	 *     .rect(150, 50, 50, 50)
-	 *     .fill({ color: 0x00ff00 })
-	 *     .moveTo(250, 50)    // Start a new shape
-	 *     .circle(250, 75, 25)
-	 *     .fill({ color: 0x0000ff });
-	 *
-	 * // Position before curved paths
-	 * graphics
-	 *     .moveTo(300, 50)
-	 *     .bezierCurveTo(
-	 *         350, 25,   // Control point 1
-	 *         400, 75,   // Control point 2
-	 *         450, 50    // End point
-	 *     )
-	 *     .stroke({ width: 3, color: 0xff00ff });
-	 * ```
-	 * @param x - The x-coordinate to move to
-	 * @param y - The y-coordinate to move to
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#lineTo} For drawing lines
-	 * @see {@link Graphics#beginPath} For starting a completely new path
-	 */
-	moveTo(x: number, y: number): this;
-	/**
-	 * Adds a quadratic curve to the path. It requires two points: the control point and the end point.
-	 * The starting point is the last point in the current path.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Draw a simple curve
-	 * graphics
-	 *     .moveTo(50, 50)
-	 *     .quadraticCurveTo(100, 25, 150, 50)
-	 *     .stroke({ width: 2, color: 0xff0000 });
-	 *
-	 * // Adjust curve smoothness
-	 * graphics
-	 *     .moveTo(50, 200)
-	 *     .quadraticCurveTo(
-	 *         150, 150,   // Control point
-	 *         250, 200,   // End point
-	 *         0.5         // Smoothness factor
-	 *     )
-	 *     .stroke({
-	 *         width: 4,
-	 *         color: 0x0000ff,
-	 *         alpha: 0.7
-	 *     });
-	 * ```
-	 * @param cpx - The x-coordinate of the control point
-	 * @param cpy - The y-coordinate of the control point
-	 * @param x - The x-coordinate of the end point
-	 * @param y - The y-coordinate of the end point
-	 * @param smoothness - Optional parameter to adjust the curve's smoothness (0-1)
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#bezierCurveTo} For curves with two control points
-	 * @see {@link Graphics#arc} For circular arcs
-	 * @see {@link Graphics#arcTo} For connecting points with circular arcs
-	 */
-	quadraticCurveTo(cpx: number, cpy: number, x: number, y: number, smoothness?: number): this;
-	/**
-	 * Draws a rectangle shape.
-	 *
-	 * This method adds a new rectangle path to the current drawing.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Draw a simple filled rectangle
-	 * graphics
-	 *     .rect(50, 50, 100, 75)
-	 *     .fill({ color: 0xff0000 });
-	 *
-	 * // Rectangle with stroke
-	 * graphics
-	 *     .rect(200, 50, 100, 75)
-	 *     .stroke({ width: 2, color: 0x00ff00 });
-	 * ```
-	 * @param x - The x-coordinate of the top-left corner of the rectangle
-	 * @param y - The y-coordinate of the top-left corner of the rectangle
-	 * @param w - The width of the rectangle
-	 * @param h - The height of the rectangle
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#roundRect} For drawing rectangles with rounded corners
-	 * @see {@link Graphics#filletRect} For drawing rectangles with filleted corners
-	 * @see {@link Graphics#chamferRect} For drawing rectangles with chamfered corners
-	 */
-	rect(x: number, y: number, w: number, h: number): this;
-	/**
-	 * Draws a rectangle with rounded corners. The corner radius can be specified to
-	 * determine how rounded the corners should be.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Basic rounded rectangle
-	 * graphics
-	 *     .roundRect(50, 50, 100, 75, 15)
-	 *     .fill({ color: 0xff0000 });
-	 * ```
-	 * @param x - The x-coordinate of the top-left corner of the rectangle
-	 * @param y - The y-coordinate of the top-left corner of the rectangle
-	 * @param w - The width of the rectangle
-	 * @param h - The height of the rectangle
-	 * @param radius - The radius of the rectangle's corners (must be non-negative)
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#rect} For drawing rectangles with sharp corners
-	 * @see {@link Graphics#filletRect} For drawing rectangles with filleted corners
-	 * @see {@link Graphics#chamferRect} For drawing rectangles with chamfered corners
-	 */
-	roundRect(x: number, y: number, w: number, h: number, radius?: number): this;
-	/**
-	 * Draws a polygon shape by specifying a sequence of points. This method allows for the creation of complex polygons,
-	 * which can be both open and closed.
-	 *
-	 * An optional transformation can be applied, enabling the polygon to be scaled,
-	 * rotated, or translated as needed.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Draw a triangle using array of numbers [x1,y1, x2,y2, x3,y3]
-	 * graphics
-	 *     .poly([50,50, 100,100, 0,100], true)
-	 *     .fill({ color: 0xff0000 });
-	 *
-	 * // Draw a polygon using point objects
-	 * graphics
-	 *     .poly([
-	 *         { x: 200, y: 50 },
-	 *         { x: 250, y: 100 },
-	 *         { x: 200, y: 150 },
-	 *         { x: 150, y: 100 }
-	 *     ])
-	 *     .fill({ color: 0x00ff00 });
-	 *
-	 * // Draw an open polygon with stroke
-	 * graphics
-	 *     .poly([300,50, 350,50, 350,100, 300,100], false)
-	 *     .stroke({
-	 *         width: 2,
-	 *         color: 0x0000ff,
-	 *         join: 'round'
-	 *     });
-	 * ```
-	 * @param points - An array of numbers [x1,y1, x2,y2, ...] or an array of point objects [{x,y}, ...]
-	 *                representing the vertices of the polygon in sequence
-	 * @param close - Whether to close the polygon path by connecting the last point to the first.
-	 *               Default is true.
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#regularPoly} For drawing regular polygons
-	 * @see {@link Graphics#roundPoly} For drawing polygons with rounded corners
-	 * @see {@link Graphics#star} For drawing star shapes
-	 */
-	poly(points: number[] | PointData[], close?: boolean): this;
-	/**
-	 * Draws a regular polygon with a specified number of sides. All sides and angles are equal,
-	 * making shapes like triangles, squares, pentagons, etc.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Draw a simple triangle (3 sides)
-	 * graphics
-	 *     .regularPoly(100, 100, 50, 3)
-	 *     .fill({ color: 0xff0000 });
-	 *
-	 * // Draw a hexagon (6 sides) with rotation
-	 * graphics
-	 *     .regularPoly(
-	 *         250, 100,    // center position
-	 *         40,          // radius
-	 *         6,           // sides
-	 *         Math.PI / 6  // rotation (30 degrees)
-	 *     )
-	 *     .fill({ color: 0x00ff00 })
-	 *     .stroke({ width: 2, color: 0x000000 });
-	 *
-	 * // Draw an octagon (8 sides) with transform
-	 * const transform = new Matrix()
-	 *     .scale(1.5, 1)      // stretch horizontally
-	 *     .rotate(Math.PI/4); // rotate 45 degrees
-	 *
-	 * graphics
-	 *     .regularPoly(400, 100, 30, 8, 0, transform)
-	 *     .fill({ color: 0x0000ff, alpha: 0.5 });
-	 * ```
-	 * @param x - The x-coordinate of the center of the polygon
-	 * @param y - The y-coordinate of the center of the polygon
-	 * @param radius - The radius of the circumscribed circle of the polygon
-	 * @param sides - The number of sides of the polygon (must be 3 or more)
-	 * @param rotation - The rotation angle of the polygon in radians (default: 0)
-	 * @param transform - Optional Matrix to transform the polygon's shape
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#poly} For drawing custom polygons
-	 * @see {@link Graphics#roundPoly} For drawing polygons with rounded corners
-	 * @see {@link Graphics#star} For drawing star shapes
-	 */
-	regularPoly(x: number, y: number, radius: number, sides: number, rotation?: number, transform?: Matrix): this;
-	/**
-	 * Draws a polygon with rounded corners.
-	 *
-	 * Similar to `regularPoly` but with the ability to round the corners of the polygon.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Draw a basic rounded triangle
-	 * graphics
-	 *     .roundPoly(100, 100, 50, 3, 10)
-	 *     .fill({ color: 0xff0000 });
-	 *
-	 * // Draw a rounded hexagon with rotation
-	 * graphics
-	 *     .roundPoly(
-	 *         250, 150,     // center position
-	 *         40,           // radius
-	 *         6,            // sides
-	 *         8,            // corner radius
-	 *         Math.PI / 6   // rotation (30 degrees)
-	 *     )
-	 *     .fill({ color: 0x00ff00 })
-	 *     .stroke({ width: 2, color: 0x000000 });
-	 * ```
-	 * @param x - The x-coordinate of the center of the polygon
-	 * @param y - The y-coordinate of the center of the polygon
-	 * @param radius - The radius of the circumscribed circle of the polygon
-	 * @param sides - The number of sides of the polygon (must be 3 or more)
-	 * @param corner - The radius of the corner rounding (must be non-negative)
-	 * @param rotation - The rotation angle of the polygon in radians (default: 0)
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#regularPoly} For drawing polygons without rounded corners
-	 * @see {@link Graphics#poly} For drawing custom polygons
-	 * @see {@link Graphics#roundRect} For drawing rectangles with rounded corners
-	 */
-	roundPoly(x: number, y: number, radius: number, sides: number, corner: number, rotation?: number): this;
-	/**
-	 * Draws a shape with rounded corners. This function supports custom radius for each corner of the shape.
-	 * Optionally, corners can be rounded using a quadratic curve instead of an arc, providing a different aesthetic.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Draw a custom shape with rounded corners
-	 * graphics
-	 *     .roundShape([
-	 *         { x: 100, y: 100, radius: 20 },
-	 *         { x: 200, y: 100, radius: 10 },
-	 *         { x: 200, y: 200, radius: 15 },
-	 *         { x: 100, y: 200, radius: 5 }
-	 *     ], 10)
-	 *     .fill({ color: 0xff0000 });
-	 *
-	 * // Using quadratic curves for corners
-	 * graphics
-	 *     .roundShape([
-	 *         { x: 250, y: 100 },
-	 *         { x: 350, y: 100 },
-	 *         { x: 350, y: 200 },
-	 *         { x: 250, y: 200 }
-	 *     ], 15, true, 0.5)
-	 *     .fill({ color: 0x00ff00 })
-	 *     .stroke({ width: 2, color: 0x000000 });
-	 *
-	 * // Shape with varying corner radii
-	 * graphics
-	 *     .roundShape([
-	 *         { x: 400, y: 100, radius: 30 },
-	 *         { x: 500, y: 100, radius: 5 },
-	 *         { x: 450, y: 200, radius: 15 }
-	 *     ], 10)
-	 *     .fill({ color: 0x0000ff, alpha: 0.5 });
-	 * ```
-	 * @param points - An array of `RoundedPoint` representing the corners of the shape.
-	 *                Each point can have its own radius or use the default.
-	 *                A minimum of 3 points is required.
-	 * @param radius - The default radius for corners without a specific radius defined.
-	 *                Applied to any point that doesn't specify its own radius.
-	 * @param useQuadratic - When true, corners are drawn using quadratic curves instead
-	 *                      of arcs, creating a different visual style. Defaults to false.
-	 * @param smoothness - Controls the smoothness of quadratic corners when useQuadratic
-	 *                    is true. Values range from 0-1, higher values create smoother curves.
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#roundRect} For drawing rectangles with rounded corners
-	 * @see {@link Graphics#roundPoly} For drawing regular polygons with rounded corners
-	 */
-	roundShape(points: RoundedPoint[], radius: number, useQuadratic?: boolean, smoothness?: number): this;
-	/**
-	 * Draws a rectangle with fillet corners. Unlike rounded rectangles, this supports negative corner
-	 * radii which create external rounded corners rather than internal ones.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Draw a rectangle with internal fillets
-	 * graphics
-	 *     .filletRect(50, 50, 100, 80, 15)
-	 *     .fill({ color: 0xff0000 });
-	 *
-	 * // Draw a rectangle with external fillets
-	 * graphics
-	 *     .filletRect(200, 50, 100, 80, -20)
-	 *     .fill({ color: 0x00ff00 })
-	 *     .stroke({ width: 2, color: 0x000000 });
-	 * ```
-	 * @param x - The x-coordinate of the top-left corner of the rectangle
-	 * @param y - The y-coordinate of the top-left corner of the rectangle
-	 * @param width - The width of the rectangle
-	 * @param height - The height of the rectangle
-	 * @param fillet - The radius of the corner fillets (can be positive or negative)
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#roundRect} For standard rounded corners
-	 * @see {@link Graphics#chamferRect} For angled corners
-	 */
-	filletRect(x: number, y: number, width: number, height: number, fillet: number): this;
-	/**
-	 * Draws a rectangle with chamfered (angled) corners. Each corner is cut off at
-	 * a 45-degree angle based on the chamfer size.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Draw a basic chamfered rectangle
-	 * graphics
-	 *     .chamferRect(50, 50, 100, 80, 15)
-	 *     .fill({ color: 0xff0000 });
-	 *
-	 * // Add transform and stroke
-	 * const transform = new Matrix()
-	 *     .rotate(Math.PI / 4); // 45 degrees
-	 *
-	 * graphics
-	 *     .chamferRect(200, 50, 100, 80, 20, transform)
-	 *     .fill({ color: 0x00ff00 })
-	 *     .stroke({ width: 2, color: 0x000000 });
-	 * ```
-	 * @param x - The x-coordinate of the top-left corner of the rectangle
-	 * @param y - The y-coordinate of the top-left corner of the rectangle
-	 * @param width - The width of the rectangle
-	 * @param height - The height of the rectangle
-	 * @param chamfer - The size of the corner chamfers (must be non-zero)
-	 * @param transform - Optional Matrix to transform the rectangle
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#roundRect} For rounded corners
-	 * @see {@link Graphics#filletRect} For rounded corners with negative radius support
-	 */
-	chamferRect(x: number, y: number, width: number, height: number, chamfer: number, transform?: Matrix): this;
-	/**
-	 * Draws a star shape centered at a specified location. This method allows for the creation
-	 * of stars with a variable number of points, outer radius, optional inner radius, and rotation.
-	 *
-	 * The star is drawn as a closed polygon with alternating outer and inner vertices to create the star's points.
-	 * An optional transformation can be applied to scale, rotate, or translate the star as needed.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Draw a basic 5-pointed star
-	 * graphics
-	 *     .star(100, 100, 5, 50)
-	 *     .fill({ color: 0xff0000 });
-	 *
-	 * // Star with custom inner radius
-	 * graphics
-	 *     .star(250, 100, 6, 50, 20)
-	 *     .fill({ color: 0x00ff00 })
-	 *     .stroke({ width: 2, color: 0x000000 });
-	 * ```
-	 * @param x - The x-coordinate of the center of the star
-	 * @param y - The y-coordinate of the center of the star
-	 * @param points - The number of points on the star (must be >= 3)
-	 * @param radius - The outer radius of the star (distance from center to point tips)
-	 * @param innerRadius - Optional. The inner radius of the star (distance from center to inner vertices).
-	 *                     If not specified, defaults to half of the outer radius
-	 * @param rotation - Optional. The rotation of the star in radians. Default is 0,
-	 *                  which aligns one point straight up
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#regularPoly} For drawing regular polygons
-	 * @see {@link Graphics#poly} For drawing custom polygons
-	 * @see {@link Graphics#path} For creating custom shapes
-	 */
-	star(x: number, y: number, points: number, radius: number, innerRadius?: number, rotation?: number): this;
-	/**
-	 * Parses and renders an SVG string into the graphics context. This allows for complex shapes
-	 * and paths defined in SVG format to be drawn within the graphics context.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 * graphics
-	 *     .svg(`
-	 *         <path d="M 50,50 L 100,50 L 100,100 L 50,100 Z"
-	 *               fill="blue" />
-	 *         <circle cx="150" cy="75" r="25"
-	 *               fill="green" />
-	 *     `)
-	 *     .stroke({ width: 2, color: 0x000000 });
-	 * ```
-	 * @param svg - The SVG string to be parsed and rendered
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#path} For adding custom paths
-	 * @see {@link Graphics#fill} For filling shapes after SVG parsing
-	 * @see {@link Graphics#stroke} For stroking shapes after SVG parsing
-	 */
-	svg(svg: string): this;
-	/**
-	 * Restores the most recently saved graphics state by popping the top of the graphics state stack.
-	 * This includes transformations, fill styles, and stroke styles.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Save current state
-	 * graphics.save();
-	 *
-	 * // Make temporary changes
-	 * graphics
-	 *     .translateTransform(100, 100)
-	 *     .setFillStyle({ color: 0xff0000 })
-	 *     .circle(0, 0, 50)
-	 *     .fill();
-	 *
-	 * // Restore to previous state
-	 * graphics.restore();
-	 *
-	 * // Draw with original transform and styles
-	 * graphics
-	 *     .circle(50, 50, 30)
-	 *     .fill();
-	 * ```
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#save} For saving the current state
-	 */
-	restore(): this;
-	/**
-	 * Saves the current graphics state onto a stack. The state includes:
-	 * - Current transformation matrix
-	 * - Current fill style
-	 * - Current stroke style
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Save state before complex operations
-	 * graphics.save();
-	 *
-	 * // Create transformed and styled shape
-	 * graphics
-	 *     .translateTransform(100, 100)
-	 *     .rotateTransform(Math.PI / 4)
-	 *     .setFillStyle({
-	 *         color: 0xff0000,
-	 *         alpha: 0.5
-	 *     })
-	 *     .rect(-25, -25, 50, 50)
-	 *     .fill();
-	 *
-	 * // Restore to original state
-	 * graphics.restore();
-	 *
-	 * // Continue drawing with previous state
-	 * graphics
-	 *     .circle(50, 50, 25)
-	 *     .fill();
-	 * ```
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#restore} For restoring the saved state
-	 * @see {@link Graphics#setTransform} For setting transformations
-	 */
-	save(): this;
-	/**
-	 * Returns the current transformation matrix of the graphics context.
-	 * This matrix represents all accumulated transformations including translate, scale, and rotate.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Apply some transformations
-	 * graphics
-	 *     .translateTransform(100, 100)
-	 *     .rotateTransform(Math.PI / 4);
-	 *
-	 * // Get the current transform matrix
-	 * const matrix = graphics.getTransform();
-	 * console.log(matrix.tx, matrix.ty); // 100, 100
-	 *
-	 * // Use the matrix for other operations
-	 * graphics
-	 *     .setTransform(matrix)
-	 *     .circle(0, 0, 50)
-	 *     .fill({ color: 0xff0000 });
-	 * ```
-	 * @returns The current transformation matrix.
-	 * @see {@link Graphics#setTransform} For setting the transform matrix
-	 * @see {@link Matrix} For matrix operations
-	 */
-	getTransform(): Matrix;
-	/**
-	 * Resets the current transformation matrix to the identity matrix, effectively removing
-	 * any transformations (rotation, scaling, translation) previously applied.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Apply transformations
-	 * graphics
-	 *     .translateTransform(100, 100)
-	 *     .scaleTransform(2, 2)
-	 *     .circle(0, 0, 25)
-	 *     .fill({ color: 0xff0000 });
-	 * // Reset transform to default state
-	 * graphics
-	 *     .resetTransform()
-	 *     .circle(50, 50, 25) // Will draw at actual coordinates
-	 *     .fill({ color: 0x00ff00 });
-	 * ```
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#getTransform} For getting the current transform
-	 * @see {@link Graphics#setTransform} For setting a specific transform
-	 * @see {@link Graphics#save} For saving the current transform state
-	 * @see {@link Graphics#restore} For restoring a previous transform state
-	 */
-	resetTransform(): this;
-	/**
-	 * Applies a rotation transformation to the graphics context around the current origin.
-	 * Positive angles rotate clockwise, while negative angles rotate counterclockwise.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Rotate 45 degrees clockwise
-	 * graphics
-	 *     .rotateTransform(Math.PI / 4)
-	 *     .rect(-25, -25, 50, 50)
-	 *     .fill({ color: 0xff0000 });
-	 * ```
-	 * @param angle - The angle of rotation in radians
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#scaleTransform} For scaling transformations
-	 * @see {@link Graphics#translateTransform} For position transformations
-	 */
-	rotateTransform(angle: number): this;
-	/**
-	 * Applies a scaling transformation to the graphics context, scaling drawings by x horizontally
-	 * and by y vertically relative to the current origin.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Uniform scaling
-	 * graphics
-	 *     .scaleTransform(2)  // Scale both dimensions by 2
-	 *     .circle(0, 0, 25)
-	 *     .fill({ color: 0xff0000 });
-	 *
-	 * // Non-uniform scaling
-	 * graphics
-	 *     .scaleTransform(0.5, 2)  // Half width, double height
-	 *     .rect(100, 100, 50, 50)
-	 *     .fill({ color: 0x00ff00 });
-	 * ```
-	 * @param x - The scale factor in the horizontal direction
-	 * @param y - The scale factor in the vertical direction. If omitted, equals x
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#rotateTransform} For rotation transformations
-	 * @see {@link Graphics#translateTransform} For position transformations
-	 */
-	scaleTransform(x: number, y?: number): this;
-	/**
-	 * Sets the current transformation matrix of the graphics context.
-	 *
-	 * This method can either
-	 * take a Matrix object or individual transform values to create a new transformation matrix.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Using a Matrix object
-	 * const matrix = new Matrix()
-	 *     .translate(100, 100)
-	 *     .rotate(Math.PI / 4);
-	 *
-	 * graphics
-	 *     .setTransform(matrix)
-	 *     .rect(0, 0, 50, 50)
-	 *     .fill({ color: 0xff0000 });
-	 *
-	 * // Using individual transform values
-	 * graphics
-	 *     .setTransform(
-	 *         2, 0,     // scale x by 2
-	 *         0, 1,     // no skew
-	 *         100, 100  // translate x,y by 100
-	 *     )
-	 *     .circle(0, 0, 25)
-	 *     .fill({ color: 0x00ff00 });
-	 * ```
-	 * @param transform - The matrix to set as the current transformation matrix.
-	 * @returns The instance of the current GraphicsContext for method chaining.
-	 */
-	setTransform(transform: Matrix): this;
-	/**
-	 * Sets the current transformation matrix of the graphics context to the specified matrix or values.
-	 * This replaces the current transformation matrix.
-	 * @param a - The value for the a property of the matrix, or a Matrix object to use directly.
-	 * @param b - The value for the b property of the matrix.
-	 * @param c - The value for the c property of the matrix.
-	 * @param d - The value for the d property of the matrix.
-	 * @param dx - The value for the tx (translate x) property of the matrix.
-	 * @param dy - The value for the ty (translate y) property of the matrix.
-	 * @returns The instance of the current GraphicsContext for method chaining.
-	 */
-	setTransform(a: number, b: number, c: number, d: number, dx: number, dy: number): this;
-	setTransform(a: number | Matrix, b?: number, c?: number, d?: number, dx?: number, dy?: number): this;
-	/**
-	 * Applies a transformation matrix to the current graphics context by multiplying
-	 * the current matrix with the specified matrix. This allows for complex transformations
-	 * combining multiple operations.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Using a Matrix object
-	 * const matrix = new Matrix()
-	 *     .scale(2, 1)      // Scale horizontally
-	 *     .rotate(Math.PI/6); // Rotate 30 degrees
-	 *
-	 * graphics
-	 *     .transform(matrix)
-	 *     .rect(0, 0, 50, 50)
-	 *     .fill({ color: 0xff0000 });
-	 *
-	 * // Using individual transform values
-	 * graphics
-	 *     .transform(
-	 *         1, 0.5,    // Skew horizontally
-	 *         0, 1,      // No vertical skew
-	 *         100, 100   // Translate
-	 *     )
-	 *     .circle(0, 0, 25)
-	 *     .fill({ color: 0x00ff00 });
-	 * ```
-	 * @param transform - The matrix to apply to the current transformation.
-	 * @returns The instance of the current GraphicsContext for method chaining.
-	 */
-	transform(transform: Matrix): this;
-	/**
-	 * Applies the specified transformation matrix to the current graphics context by multiplying
-	 * the current matrix with the specified matrix.
-	 * @param a - The value for the a property of the matrix, or a Matrix object to use directly.
-	 * @param b - The value for the b property of the matrix.
-	 * @param c - The value for the c property of the matrix.
-	 * @param d - The value for the d property of the matrix.
-	 * @param dx - The value for the tx (translate x) property of the matrix.
-	 * @param dy - The value for the ty (translate y) property of the matrix.
-	 * @returns The instance of the current GraphicsContext for method chaining.
-	 */
-	transform(a: number, b: number, c: number, d: number, dx: number, dy: number): this;
-	transform(a: number | Matrix, b?: number, c?: number, d?: number, dx?: number, dy?: number): this;
-	/**
-	 * Applies a translation transformation to the graphics context, moving the origin by the specified amounts.
-	 * This affects all subsequent drawing operations.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Basic translation
-	 * graphics
-	 *     .translateTransform(100, 100)
-	 *     .circle(0, 0, 25)
-	 *     .fill({ color: 0xff0000 });
-	 * ```
-	 * @param x - The amount to translate in the horizontal direction
-	 * @param y - The amount to translate in the vertical direction. If omitted, equals x
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#setTransform} For setting absolute transformations
-	 * @see {@link Graphics#transform} For applying complex transformations
-	 * @see {@link Graphics#save} For saving the current transform state
-	 */
-	translateTransform(x: number, y?: number): this;
-	/**
-	 * Clears all drawing commands from the graphics context, effectively resetting it.
-	 * This includes clearing the current path, fill style, stroke style, and transformations.
-	 *
-	 * > [!NOTE] Graphics objects are not designed to be continuously cleared and redrawn.
-	 * > Instead, they are intended to be used for static or semi-static graphics that
-	 * > can be redrawn as needed. Frequent clearing and redrawing may lead to performance issues.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Draw some shapes
-	 * graphics
-	 *     .circle(100, 100, 50)
-	 *     .fill({ color: 0xff0000 })
-	 *     .rect(200, 100, 100, 50)
-	 *     .fill({ color: 0x00ff00 });
-	 *
-	 * // Clear all graphics
-	 * graphics.clear();
-	 *
-	 * // Start fresh with new shapes
-	 * graphics
-	 *     .circle(150, 150, 30)
-	 *     .fill({ color: 0x0000ff });
-	 * ```
-	 * @returns The Graphics instance for method chaining
-	 * @see {@link Graphics#beginPath} For starting a new path without clearing styles
-	 * @see {@link Graphics#save} For saving the current state
-	 * @see {@link Graphics#restore} For restoring a previous state
-	 */
-	clear(): this;
-	/**
-	 * Gets or sets the current fill style for the graphics context. The fill style determines
-	 * how shapes are filled when using the fill() method.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Basic color fill
-	 * graphics.fillStyle = {
-	 *     color: 0xff0000,  // Red
-	 *     alpha: 1
-	 * };
-	 *
-	 * // Using gradients
-	 * const gradient = new FillGradient({
-	 *     end: { x: 0, y: 1 }, // Vertical gradient
-	 *     stops: [
-	 *         { offset: 0, color: 0xff0000, alpha: 1 }, // Start color
-	 *         { offset: 1, color: 0x0000ff, alpha: 1 }  // End color
-	 *     ]
-	 * });
-	 *
-	 * graphics.fillStyle = {
-	 *     fill: gradient,
-	 *     alpha: 0.8
-	 * };
-	 *
-	 * // Using patterns
-	 * graphics.fillStyle = {
-	 *     texture: myTexture,
-	 *     alpha: 1,
-	 *     matrix: new Matrix()
-	 *         .scale(0.5, 0.5)
-	 *         .rotate(Math.PI / 4)
-	 * };
-	 * ```
-	 * @type {ConvertedFillStyle}
-	 * @see {@link FillStyle} For all available fill style options
-	 * @see {@link FillGradient} For creating gradient fills
-	 * @see {@link Graphics#fill} For applying the fill to paths
-	 */
-	get fillStyle(): GraphicsContext["fillStyle"];
-	set fillStyle(value: FillInput);
-	/**
-	 * Gets or sets the current stroke style for the graphics context. The stroke style determines
-	 * how paths are outlined when using the stroke() method.
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Basic stroke style
-	 * graphics.strokeStyle = {
-	 *     width: 2,
-	 *     color: 0xff0000,
-	 *     alpha: 1
-	 * };
-	 *
-	 * // Using with gradients
-	 * const gradient = new FillGradient({
-	 *   end: { x: 0, y: 1 },
-	 *   stops: [
-	 *       { offset: 0, color: 0xff0000, alpha: 1 },
-	 *       { offset: 1, color: 0x0000ff, alpha: 1 }
-	 *   ]
-	 * });
-	 *
-	 * graphics.strokeStyle = {
-	 *     width: 4,
-	 *     fill: gradient,
-	 *     alignment: 0.5,
-	 *     join: 'round',
-	 *     cap: 'round'
-	 * };
-	 *
-	 * // Complex stroke settings
-	 * graphics.strokeStyle = {
-	 *     width: 6,
-	 *     color: 0x00ff00,
-	 *     alpha: 0.5,
-	 *     join: 'miter',
-	 *     miterLimit: 10,
-	 * };
-	 * ```
-	 * @see {@link StrokeStyle} For all available stroke style options
-	 * @see {@link Graphics#stroke} For applying the stroke to paths
-	 */
-	get strokeStyle(): GraphicsContext["strokeStyle"];
-	set strokeStyle(value: StrokeStyle);
-	/**
-	 * Creates a new Graphics object that copies the current graphics content.
-	 * The clone can either share the same context (shallow clone) or have its own independent
-	 * context (deep clone).
-	 * @example
-	 * ```ts
-	 * const graphics = new Graphics();
-	 *
-	 * // Create original graphics content
-	 * graphics
-	 *     .circle(100, 100, 50)
-	 *     .fill({ color: 0xff0000 });
-	 *
-	 * // Create a shallow clone (shared context)
-	 * const shallowClone = graphics.clone();
-	 *
-	 * // Changes to original affect the clone
-	 * graphics
-	 *     .circle(200, 100, 30)
-	 *     .fill({ color: 0x00ff00 });
-	 *
-	 * // Create a deep clone (independent context)
-	 * const deepClone = graphics.clone(true);
-	 *
-	 * // Modify deep clone independently
-	 * deepClone
-	 *     .translateTransform(100, 100)
-	 *     .circle(0, 0, 40)
-	 *     .fill({ color: 0x0000ff });
-	 * ```
-	 * @param deep - Whether to create a deep clone of the graphics object.
-	 *              If false (default), the context will be shared between objects.
-	 *              If true, creates an independent copy of the context.
-	 * @returns A new Graphics instance with either shared or copied context
-	 * @see {@link Graphics#context} For accessing the underlying graphics context
-	 * @see {@link GraphicsContext} For understanding the shared context behavior
-	 */
-	clone(deep?: boolean): Graphics;
-	/**
-	 * @param width
-	 * @param color
-	 * @param alpha
-	 * @deprecated since 8.0.0 Use {@link Graphics#setStrokeStyle} instead
-	 */
-	lineStyle(width?: number, color?: ColorSource, alpha?: number): this;
-	/**
-	 * @param color
-	 * @param alpha
-	 * @deprecated since 8.0.0 Use {@link Graphics#fill} instead
-	 */
-	beginFill(color: ColorSource, alpha?: number): this;
-	/**
-	 * @deprecated since 8.0.0 Use {@link Graphics#fill} instead
-	 */
-	endFill(): this;
-	/**
-	 * @param {...any} args
-	 * @deprecated since 8.0.0 Use {@link Graphics#circle} instead
-	 */
-	drawCircle(...args: Parameters<GraphicsContext["circle"]>): this;
-	/**
-	 * @param {...any} args
-	 * @deprecated since 8.0.0 Use {@link Graphics#ellipse} instead
-	 */
-	drawEllipse(...args: Parameters<GraphicsContext["ellipse"]>): this;
-	/**
-	 * @param {...any} args
-	 * @deprecated since 8.0.0 Use {@link Graphics#poly} instead
-	 */
-	drawPolygon(...args: Parameters<GraphicsContext["poly"]>): this;
-	/**
-	 * @param {...any} args
-	 * @deprecated since 8.0.0 Use {@link Graphics#rect} instead
-	 */
-	drawRect(...args: Parameters<GraphicsContext["rect"]>): this;
-	/**
-	 * @param {...any} args
-	 * @deprecated since 8.0.0 Use {@link Graphics#roundRect} instead
-	 */
-	drawRoundedRect(...args: Parameters<GraphicsContext["roundRect"]>): this;
-	/**
-	 * @param {...any} args
-	 * @deprecated since 8.0.0 Use {@link Graphics#star} instead
-	 */
-	drawStar(...args: Parameters<GraphicsContext["star"]>): this;
-}
-/**
- * A batchable graphics object.
- * @ignore
- */
-export declare class BatchableGraphics implements DefaultBatchableMeshElement {
-	readonly packAsQuad = false;
-	batcherName: string;
-	texture: Texture;
-	topology: Topology;
-	renderable: Graphics;
-	indexOffset: number;
-	indexSize: number;
-	attributeOffset: number;
-	attributeSize: number;
-	baseColor: number;
-	alpha: number;
-	applyTransform: boolean;
-	roundPixels: 0 | 1;
-	_indexStart: number;
-	_textureId: number;
-	_attributeStart: number;
-	_batcher: Batcher;
-	_batch: Batch;
-	geometryData: {
-		vertices: number[];
-		uvs: number[];
-		indices: number[];
-	};
-	get uvs(): number[];
-	get positions(): number[];
-	get indices(): number[];
-	get blendMode(): BLEND_MODES;
-	get color(): number;
-	get transform(): Matrix;
-	copyTo(gpuBuffer: BatchableGraphics): void;
-	reset(): void;
-	destroy(): void;
-}
-interface GeometryData {
-	vertices: number[];
-	uvs: number[];
-	indices: number[];
-}
-/**
- * A class that holds batchable graphics data for a GraphicsContext.
- * @category rendering
- * @ignore
- */
-export declare class GpuGraphicsContext {
-	isBatchable: boolean;
-	context: GraphicsContext;
-	batches: BatchableGraphics[];
-	geometryData: GeometryData;
-	graphicsData: GraphicsContextRenderData;
-}
-/**
- * A class that holds the render data for a GraphicsContext.
- * @category rendering
- * @ignore
- */
-export declare class GraphicsContextRenderData {
-	batcher: DefaultBatcher;
-	instructions: InstructionSet;
-	init(options: BatcherOptions): void;
-	/**
-	 * @deprecated since version 8.0.0
-	 * Use `batcher.geometry` instead.
-	 * @see {Batcher#geometry}
-	 */
-	get geometry(): BatchGeometry;
-	destroy(): void;
-}
-/**
- * Options for the GraphicsContextSystem.
- * @category rendering
- * @advanced
- */
-export interface GraphicsContextSystemOptions {
-	/** A value from 0 to 1 that controls the smoothness of bezier curves (the higher the smoother) */
-	bezierSmoothness?: number;
-}
-/**
- * A system that manages the rendering of GraphicsContexts.
- * @category rendering
- * @advanced
- */
-export declare class GraphicsContextSystem implements System<GraphicsContextSystemOptions> {
-	/** @ignore */
-	static extension: {
-		readonly type: readonly [
-			ExtensionType.WebGLSystem,
-			ExtensionType.WebGPUSystem,
-			ExtensionType.CanvasSystem
-		];
-		readonly name: "graphicsContext";
-	};
-	/** The default options for the GraphicsContextSystem. */
-	static readonly defaultOptions: GraphicsContextSystemOptions;
-	private _gpuContextHash;
-	private _graphicsDataContextHash;
-	private readonly _renderer;
-	constructor(renderer: Renderer);
-	/**
-	 * Runner init called, update the default options
-	 * @ignore
-	 */
-	init(options?: GraphicsContextSystemOptions): void;
-	/**
-	 * Returns the render data for a given GraphicsContext.
-	 * @param context - The GraphicsContext to get the render data for.
-	 * @internal
-	 */
-	getContextRenderData(context: GraphicsContext): GraphicsContextRenderData;
-	/**
-	 * Updates the GPU context for a given GraphicsContext.
-	 * If the context is dirty, it will rebuild the batches and geometry data.
-	 * @param context - The GraphicsContext to update.
-	 * @returns The updated GpuGraphicsContext.
-	 * @internal
-	 */
-	updateGpuContext(context: GraphicsContext): GpuGraphicsContext;
-	/**
-	 * Returns the GpuGraphicsContext for a given GraphicsContext.
-	 * If it does not exist, it will initialize a new one.
-	 * @param context - The GraphicsContext to get the GpuGraphicsContext for.
-	 * @returns The GpuGraphicsContext for the given GraphicsContext.
-	 * @internal
-	 */
-	getGpuContext(context: GraphicsContext): GpuGraphicsContext;
-	private _initContextRenderData;
-	private _initContext;
-	protected onGraphicsContextDestroy(context: GraphicsContext): void;
-	private _cleanGraphicsContextData;
-	destroy(): void;
 }
 declare global {
 	namespace PixiMixins {
@@ -32389,7 +32740,7 @@ export interface ParticleBufferOptions {
  * It also contains the upload functions for the static and dynamic properties.
  * @internal
  */
-export declare class ParticleBuffer {
+export declare class ParticleBuffer implements GPUData {
 	/** The buffer containing static attribute data for all elements in the batch. */
 	staticAttributeBuffer: ViewableBuffer;
 	/** The buffer containing dynamic attribute data for all elements in the batch. */
@@ -32502,11 +32853,11 @@ export interface ParticleProperties {
  * ```
  * @see {@link ParticleContainer} For the main particle container class
  * @see {@link ParticleProperties} For dynamic property configuration
- * @category scene
+ * @template T The type of particles in the container. Must implement {@link IParticle}. * @category scene
  * @standard
  * @noInheritDoc
  */
-export interface ParticleContainerOptions extends PixiMixins.ParticleContainerOptions, Omit<ViewContainerOptions, "children"> {
+export interface ParticleContainerOptions<T extends IParticle = IParticle> extends PixiMixins.ParticleContainerOptions, Omit<ViewContainerOptions, "children"> {
 	/**
 	 * Specifies which particle properties should update each frame.
 	 * Set properties to true for per-frame updates, false for static values.
@@ -32530,7 +32881,7 @@ export interface ParticleContainerOptions extends PixiMixins.ParticleContainerOp
 	 */
 	texture?: Texture;
 	/** Initial array of particles to add to the container. All particles must share the same base texture. */
-	particles?: IParticle[];
+	particles?: T[];
 }
 export interface ParticleContainer extends PixiMixins.ParticleContainer, ViewContainer<ParticleBuffer> {
 }
@@ -32584,10 +32935,11 @@ export interface ParticleContainer extends PixiMixins.ParticleContainer, ViewCon
  *     container.addParticle(particle);
  * }
  * ```
+ * @template T The type of particles in the container. Must implement {@link IParticle}.
  * @category scene
  * @standard
  */
-export declare class ParticleContainer extends ViewContainer<ParticleBuffer> implements Instruction {
+export declare class ParticleContainer<T extends IParticle = IParticle> extends ViewContainer<ParticleBuffer> implements Instruction {
 	/**
 	 * Defines the default options for creating a ParticleContainer.
 	 * @example
@@ -32605,9 +32957,9 @@ export declare class ParticleContainer extends ViewContainer<ParticleBuffer> imp
 	 * };
 	 * ```
 	 * @property {Record<string, boolean>} dynamicProperties - Specifies which properties are dynamic.
-	 * @property {boolean} roundPixels - Indicates if pixels should be  rounded.
+	 * @property {boolean} roundPixels - Indicates if pixels should be rounded.
 	 */
-	static defaultOptions: ParticleContainerOptions;
+	static defaultOptions: Pick<ParticleContainerOptions, "dynamicProperties" | "roundPixels">;
 	/**
 	 * The unique identifier for the render pipe of this ParticleContainer.
 	 * @internal
@@ -32653,7 +33005,7 @@ export declare class ParticleContainer extends ViewContainer<ParticleBuffer> imp
 	 * @see {@link ParticleContainer#addParticle} For a safer way to add particles
 	 * @see {@link ParticleContainer#removeParticle} For a safer way to remove particles
 	 */
-	particleChildren: IParticle[];
+	particleChildren: T[];
 	/**
 	 * The shader used for rendering particles in this ParticleContainer.
 	 * @advanced
@@ -32685,7 +33037,7 @@ export declare class ParticleContainer extends ViewContainer<ParticleBuffer> imp
 	/**
 	 * @param options - The options for creating the sprite.
 	 */
-	constructor(options?: ParticleContainerOptions);
+	constructor(options?: ParticleContainerOptions<T>);
 	/**
 	 * Adds one or more particles to the container. The particles will be rendered using the container's shared texture
 	 * and properties. When adding multiple particles, they must all share the same base texture.
@@ -32711,7 +33063,7 @@ export declare class ParticleContainer extends ViewContainer<ParticleBuffer> imp
 	 * @see {@link ParticleContainer#texture} For setting the shared texture
 	 * @see {@link ParticleContainer#update} For updating after modifications
 	 */
-	addParticle(...children: IParticle[]): IParticle;
+	addParticle(...children: T[]): T;
 	/**
 	 * Removes one or more particles from the container. The particles must already be children
 	 * of this container to be removed.
@@ -32729,7 +33081,7 @@ export declare class ParticleContainer extends ViewContainer<ParticleBuffer> imp
 	 * @see {@link ParticleContainer#removeParticles} For removing particles by index
 	 * @see {@link ParticleContainer#removeParticleAt} For removing a particle at a specific index
 	 */
-	removeParticle(...children: IParticle[]): IParticle;
+	removeParticle(...children: T[]): T;
 	/**
 	 * Updates the particle container's internal state. Call this method after manually modifying
 	 * the particleChildren array or when changing static properties of particles.
@@ -32797,13 +33149,13 @@ export declare class ParticleContainer extends ViewContainer<ParticleBuffer> imp
 	 * @param endIndex - The ending position. Default value is size of the container.
 	 * @returns - List of removed particles
 	 */
-	removeParticles(beginIndex?: number, endIndex?: number): IParticle[];
+	removeParticles(beginIndex?: number, endIndex?: number): T[];
 	/**
 	 * Removes a particle from the specified index position.
 	 * @param index - The index to get the particle from
 	 * @returns The particle that was removed.
 	 */
-	removeParticleAt<U extends IParticle>(index: number): U;
+	removeParticleAt<U extends T = T>(index: number): U;
 	/**
 	 * Adds a particle to the container at a specified index. If the index is out of bounds an error will be thrown.
 	 * If the particle is already in this container, it will be moved to the specified index.
@@ -32811,7 +33163,7 @@ export declare class ParticleContainer extends ViewContainer<ParticleBuffer> imp
 	 * @param {number} index - The absolute index where the particle will be positioned at the end of the operation.
 	 * @returns {Container} The particle that was added.
 	 */
-	addParticleAt<U extends IParticle>(child: U, index: number): U;
+	addParticleAt<U extends T = T>(child: U, index: number): U;
 	/**
 	 * This method is not available in ParticleContainer.
 	 *
@@ -32933,6 +33285,7 @@ export declare class ParticleContainerPipe implements RenderPipe<ParticleContain
 	readonly state: State;
 	/** @internal */
 	readonly renderer: Renderer;
+	private readonly _managedContainers;
 	/** Local uniforms that are used for rendering particles. */
 	readonly localUniforms: UniformGroup<{
 		uTranslationMatrix: {
@@ -33788,7 +34141,7 @@ export declare class NineSliceGeometry extends PlaneGeometry {
  * GPU data for NineSliceSprite.
  * @internal
  */
-export declare class NineSliceSpriteGpuData extends BatchableMesh {
+export declare class NineSliceSpriteGpuData extends BatchableMesh implements GPUData {
 	constructor();
 	destroy(): void;
 }
@@ -33807,6 +34160,7 @@ export declare class NineSliceSpritePipe implements RenderPipe<NineSliceSprite> 
 		readonly name: "nineSliceSprite";
 	};
 	private readonly _renderer;
+	private readonly _managedSprites;
 	constructor(renderer: Renderer);
 	addRenderable(sprite: NineSliceSprite, instructionSet: InstructionSet): void;
 	updateRenderable(sprite: NineSliceSprite): void;
@@ -34523,7 +34877,7 @@ export declare class Transform {
 	set rotation(value: number);
 }
 /** @internal */
-export declare class TilingSpriteGpuData {
+export declare class TilingSpriteGpuData implements GPUData {
 	canBatch: boolean;
 	renderable: TilingSprite;
 	batchableMesh?: BatchableMesh;
@@ -34549,6 +34903,7 @@ export declare class TilingSpritePipe implements RenderPipe<TilingSprite> {
 	};
 	private _renderer;
 	private readonly _state;
+	private readonly _managedTilingSprites;
 	constructor(renderer: Renderer);
 	validateRenderable(renderable: TilingSprite): boolean;
 	addRenderable(tilingSprite: TilingSprite, instructionSet: InstructionSet): void;
@@ -38251,7 +38606,7 @@ export declare const loadBitmapFont: {
 	unload(bitmapFont: BitmapFont, _resolvedAsset: ResolvedAsset<any>, loader: Loader): Promise<void>;
 };
 /** @internal */
-export declare class BitmapTextGraphics extends Graphics {
+export declare class BitmapTextGraphics extends Graphics implements GPUData {
 	destroy(): void;
 }
 /** @internal */
@@ -38266,6 +38621,7 @@ export declare class BitmapTextPipe implements RenderPipe<BitmapText> {
 		readonly name: "bitmapText";
 	};
 	private _renderer;
+	private readonly _managedBitmapTexts;
 	constructor(renderer: Renderer);
 	validateRenderable(bitmapText: BitmapText): boolean;
 	addRenderable(bitmapText: BitmapText, instructionSet: InstructionSet): void;
@@ -38395,6 +38751,11 @@ export declare class BitmapText extends AbstractText<TextStyle, TextStyleOptions
 	constructor(options?: TextOptions);
 	/** @deprecated since 8.0.0 */
 	constructor(text?: TextString, options?: Partial<TextStyle>);
+	/**
+	 * @param now - The current time in milliseconds.
+	 * @internal
+	 */
+	_onTouch(now: number): void;
 	/** @private */
 	protected updateBounds(): void;
 	/**
@@ -39113,17 +39474,9 @@ export declare function resolveCharacters(chars: string | (string | string[])[])
  * @internal
  */
 export declare class BatchableHTMLText extends BatchableSprite {
-	private readonly _renderer;
 	texturePromise: Promise<Texture>;
 	generatingTexture: boolean;
 	currentKey: string;
-	/**
-	 * Creates an instance of BatchableHTMLText.
-	 * @param renderer - The renderer instance to be used.
-	 */
-	constructor(renderer: Renderer);
-	/** Handles resolution changes for the HTML text. If the text has auto resolution enabled, it triggers a view update. */
-	resolutionChange(): void;
 	/** Destroys the BatchableHTMLText instance. Returns the texture promise to the renderer and cleans up references. */
 	destroy(): void;
 }
@@ -39195,7 +39548,7 @@ export interface HTMLText extends PixiMixins.HTMLText, AbstractText<HTMLTextStyl
  * This allows for rich text formatting using standard HTML tags and CSS styling.
  *
  * Key features:
- * - HTML tag support (<strong>, <em>, etc.)
+ * - HTML tag support (&lt;strong&gt;, &lt;em&gt;, etc.)
  * - CSS styling and custom style overrides
  * - Emoji and special character support
  * - Line breaking and word wrapping
@@ -39334,13 +39687,16 @@ export declare class HTMLTextPipe implements RenderPipe<HTMLText> {
 		readonly name: "htmlText";
 	};
 	private _renderer;
+	private readonly _managedTexts;
 	constructor(renderer: Renderer);
+	protected resolutionChange(): void;
 	validateRenderable(htmlText: HTMLText): boolean;
 	addRenderable(htmlText: HTMLText, instructionSet: InstructionSet): void;
 	updateRenderable(htmlText: HTMLText): void;
 	private _updateGpuText;
 	private _getGpuText;
 	initGpuText(htmlText: HTMLText): BatchableHTMLText;
+	protected onTextUnload(text: HTMLText): void;
 	destroy(): void;
 }
 /** @internal */
@@ -39772,13 +40128,16 @@ export declare class CanvasTextPipe implements RenderPipe<Text$1> {
 		readonly name: "text";
 	};
 	private _renderer;
+	private readonly _managedTexts;
 	constructor(renderer: Renderer);
+	protected resolutionChange(): void;
 	validateRenderable(text: Text$1): boolean;
 	addRenderable(text: Text$1, instructionSet: InstructionSet): void;
 	updateRenderable(text: Text$1): void;
 	private _updateGpuText;
 	private _getGpuText;
 	initGpuText(text: Text$1): BatchableText;
+	protected onTextUnload(text: Text$1): void;
 	destroy(): void;
 }
 /**

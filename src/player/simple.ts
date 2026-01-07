@@ -11,11 +11,11 @@ export const makeSimple = async (
     mainTexture: prefabTextures.player.Simple,
     hitboxTexture: prefabTextures.player.hitbox,
     slowModeRingTexture: prefabTextures.player.slow_mode,
+    invincibleRingTexture: prefabTextures.player.invincible_ring,
     hue1: 208.8,
     hitboxRadius: 3, highSpeed: 4, slowSpeed: 1.6,
     updateFn(options = {}) {
-        this.move(options);
-        this.updateState();
+        this._defaultUpdate(options);
     },
     hitByEnemyFn(options = {}) {
         if (options.danmaku) {
