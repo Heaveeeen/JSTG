@@ -539,7 +539,6 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
 export {
     LoadAsset,
     LoadSvg,
-    //LoadPrefabTextures,
     Key,
     Player,
     makeRng,
