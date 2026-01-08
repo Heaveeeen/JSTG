@@ -5,36 +5,16 @@ export function LoadAsset<T = pixi.Texture>(url: string, options?: pixi.LoadOpti
     return pixi.Assets.load(url, options);
 }
 
-/** @private */
-let svgRes = 2;
-
-/**
- * {@linkcode LoadSvg} 的默认分辨率  
- * ⚠️请使用 set() 和 get() 方法访问该数值  
- * @default 2
- * @example
- * console.log(JSTG.loadSvgDefaultResolution.get()); // 2
- * JSTG.loadSvgDefaultResolution.set(4); // 可能会让加载出来的矢量图更清晰一些
- */
-// TODO: 把这玩意删了，改成 jstg.Launch 的参数
-export const loadSvgDefaultResolution = {
-    get: () => svgRes,
-    set: (resolution: number) => svgRes = resolution,
-}
-
 /** @async 加载一个 svg 图像。加载其他图像时请使用 {@linkcode LoadAsset} */
 export function LoadSvg(
     /** ⚠️该路径是基于 index.html 的！别问我到底是怎么回事，我也不太懂这玩意。请自行开控制台调试。 */
     svgUrl: string,
-    /**
-     * 加载分辨率倍数。如果发现图像是糊的，请调高该参数。  
-     * 默认值为 {@linkcode loadSvgDefaultResolution} 的值
-     */
-    resolution?: number
+    /** 加载分辨率倍数。如果发现图像是糊的，请调高该参数。 */
+    resolution: number
 ): Promise<pixi.Texture> {
     return pixi.loadSvg.load!(svgUrl, {
         data: {
-            resolution: resolution ?? svgRes,
+            resolution: resolution,
             crossOrigin: null,
             parseAsGraphicsContext: false,
         }
@@ -47,7 +27,7 @@ export interface LoadPrefabTexturesOptions {
      * @default "./assets/images/"
      */
     baseUrl?: string,
-    /** 默认值为 {@linkcode loadSvgDefaultResolution} 的值 */
+    /** @default 2 */
     resolution?: number,
 }
 
@@ -56,7 +36,7 @@ export interface LoadPrefabTexturesOptions {
  */
 export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions = {}) {
     const base = options.baseUrl ?? "./assets/images/";
-    const res = options.resolution;
+    const res = options.resolution ?? 2;
     return {
         danmaku: {
             danmaku: {
@@ -130,7 +110,9 @@ export interface LoadPrefabSoundsOptions {
      */
     volume?: number
 }
-
+// TODO: 把 Howler 改成别的库，或者自己用 web audio 实现一个
+// 因为 Howler 不能在播放一个音频前改变它的音量，要么在它播出来的一瞬间之后再改，要么就得把这个音频的所有实例全改了
+// 而且音频池（？）没有上限也有点恶心
 export async function LoadPrefabSounds(options: LoadPrefabSoundsOptions = {}) {
     const base = options.baseUrl ?? "./assets/sounds/";
     const pool = options.pool ?? 1;

@@ -1,5 +1,5 @@
 import * as pixi from "pixi";
-import { LoadAsset, LoadPrefabSounds, LoadPrefabSoundsOptions, LoadPrefabTextures, LoadPrefabTexturesOptions, LoadSvg, loadSvgDefaultResolution, PrefabDanmakuNames } from "./assets.js";
+import { LoadAsset, LoadPrefabSounds, LoadPrefabSoundsOptions, LoadPrefabTextures, LoadPrefabTexturesOptions, LoadSvg, PrefabDanmakuNames } from "./assets.js";
 import { Key, makeInput } from "./Input.js";
 import { MakePlayerOptions, Player } from "./player/player.js";
 import { makeSimple } from "./player/simple.js";
@@ -539,7 +539,6 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
 export {
     LoadAsset,
     LoadSvg,
-    loadSvgDefaultResolution,
     //LoadPrefabTextures,
     Key,
     Player,
