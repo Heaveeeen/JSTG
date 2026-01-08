@@ -16,6 +16,7 @@ let svgRes = 2;
  * console.log(JSTG.loadSvgDefaultResolution.get()); // 2
  * JSTG.loadSvgDefaultResolution.set(4); // 可能会让加载出来的矢量图更清晰一些
  */
+// TODO: 把这玩意删了，改成 jstg.Launch 的参数
 export const loadSvgDefaultResolution = {
     get: () => svgRes,
     set: (resolution: number) => svgRes = resolution,

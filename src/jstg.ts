@@ -18,7 +18,7 @@ export interface LoopController {
     stop(): void,
     /**
      * @readonly
-     * 该循环进行到了第几帧。  
+     * 该循环进行到了第几帧。第一帧为0。  
      * 会考虑 timeScale，并且尽可能根据 timeScale 向下取整。（取整机制与弹幕引擎略有不同，我感觉我写的这个应该稍微好点）
      */
     get clock(): number,
@@ -321,7 +321,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
 
     let frameCompCount = 0;
     // 跳帧补偿
-    forever(() => {
+    const endingLoop = forever(() => {
         if (app.ticker.deltaMS > (frameCompCount + 1.5) * 16.66 && fps < 63) {
             frameCompCount ++;
             const rawfps = app.ticker.maxFPS;
@@ -339,9 +339,15 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
             dieCount: 0,
         };
 
+        let showHitbox = {
+            isOn: false,
+            isShowDanmakuBoth: true,
+        };
+
         return {
             godMode,
-        }
+            showHitbox,
+        };
     })();
 
     const game = {
@@ -479,13 +485,22 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         danmakuPool,
         /** 调试模式工具，如上帝模式 */
         debug,
+        /**
+         * @readonly
+         * 从游戏启动后过了多少帧。第一帧为0。  
+         * 会考虑 timeScale，并且尽可能根据 timeScale 向下取整。（取整机制与弹幕引擎略有不同，我感觉我写的这个应该稍微好点）
+         */
+        get clock() {
+            return endingLoop.clock;
+        },
     };
 
     const makePrefabPlayer = (()=>{
         const simple = (options: MakePlayerOptions = {}) => makeSimple(game, mainBoard, prefabTextures, options);
-        // TODO: simple.homingOnly = (options: MakePlayerOptions = {}) => ... 以及其他类型的机体
-        // TODO: maple, icu
-        // TODO: reimu, marisa, sanae
+        /* TODO: simple.homingOnly = (options: MakePlayerOptions = {}) => ...
+         * maple, icu
+         * reimu, marisa, sanae
+         */
         return {
             /** 创建预置自机：Simple */
             simple,

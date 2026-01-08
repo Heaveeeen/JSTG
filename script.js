@@ -14,19 +14,15 @@ import { deg } from "./dist/utils.js";
 
     const game = await jstg.LaunchGame();
     const { LoadAsset, LoadSvg, Key } = jstg;
-    const { input, forever, coDo, app, board, ingameUI } = game;
+    const { input, forever, coDo, app, board, ingameUI, debug } = game;
     const { isDown, isUp, isHold, isIdle } = input;
 
     console.log("game:", game);
-
-    /*const txt = new pixi.Text({
+    const txt = new pixi.Text({
         parent: board.root,
         text: 
-`Hello, PIXI & JSTG!
-测试文本你好你好你好
-1\t2\t3\t
-45\t67\t890
-这是小 simple，她很可爱，我借来用用，而且她很可爱`,
+`Hello, JSTG!
+按 P 显示判定范围。`,
         x: 0,
         y: 0,
         anchor: 0.5,
@@ -41,10 +37,10 @@ import { deg } from "./dist/utils.js";
             }
         },
         zIndex: -200,
-    });*/
+    });
 
     /** 自机 */
-    const pl = await game.prefabPlayers.makeSimple({
+    const pl = await game.makePrefabPlayer.simple({
         autoUpdateSelf: false,
     });
     const se = game.prefabSounds.thse;
@@ -123,9 +119,15 @@ import { deg } from "./dist/utils.js";
             attack: [Key.KeyZ, Key.KeyK],
             bomb: [Key.KeyX, Key.KeyJ],
         }});
-        if (isDown(Key.KeyG)) {
-            pl.destroy();
-            loop.stop();
+        if (isDown(Key.KeyP)) {
+            if (!debug.showHitbox.isOn) {
+                debug.showHitbox.isOn = true;
+                debug.showHitbox.isShowDanmakuBoth = true;
+            } else if (debug.showHitbox.isShowDanmakuBoth) {
+                debug.showHitbox.isShowDanmakuBoth = false;
+            } else {
+                debug.showHitbox.isOn = false;
+            }
         }
     });
 

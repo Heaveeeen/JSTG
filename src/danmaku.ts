@@ -33,8 +33,18 @@ export class Danmaku {
     readonly type: string;
     readonly game: Game;
     readonly board: Board;
-    /** 弹幕判定圆的半径 */
-    readonly hitboxRadius: number;
+    /** @private */
+    private _hitboxRadius: number;
+    /* 弹幕判定圆的半径 */
+    get hitboxRadius() { return this._hitboxRadius; }
+    set hitboxRadius(n: number) {
+        this._hitboxRadius = n;
+        if (this.hitboxGraphics) {
+            this.hitboxGraphics.destroy();
+            this.hitboxGraphics = null;
+        }
+    }
+    hitboxGraphics: pixi.Graphics | null = null;
     /** 弹幕所对应的 Sprite */
     readonly sprite: pixi.Sprite;
 
@@ -76,7 +86,7 @@ export class Danmaku {
         this.type = options.type;
         this.game = options.game;
         this.board = options.board;
-        this.hitboxRadius = options.hitboxRadius * options.scale;
+        this._hitboxRadius = options.hitboxRadius * options.scale;
         this.sprite = options.sprite;
         this.sprite.scale.x *= options.scale;
         this.sprite.scale.y *= options.scale;
@@ -86,9 +96,41 @@ export class Danmaku {
         this.game.danmakuPool.push(this);
     }
 
+    /** 更新调试用的那个碰撞箱 */
+    updateDebugHitbox(player: Player) {
+        if (!this.isDamageToPlayer) {
+            if (this.hitboxGraphics) {
+                this.hitboxGraphics.destroy();
+                this.hitboxGraphics = null;
+            }
+        }
+        const { showHitbox } = this.game.debug;
+        if (showHitbox.isOn) {
+            if (this.hitboxGraphics === null) {
+                // 如果没有碰撞圆，就画一个
+                this.hitboxGraphics = new pixi.Graphics({
+                    parent: this.sprite.parent ?? undefined,
+                });
+                this.hitboxGraphics.circle(
+                    0, 0, Math.sqrt(this.hitboxRadius ** 2 + player.hitboxRadius ** 2)
+                ).fill("hsla(180, 100%, 60%, 0.60)").stroke("#ffffff");
+            }
+            this.sprite.visible = showHitbox.isShowDanmakuBoth;
+        } else {
+            if (this.hitboxGraphics) {
+                this.hitboxGraphics.destroy();
+                this.hitboxGraphics = null;
+            }
+            this.sprite.visible = true;
+        }
+    }
+
     /** 更新该弹幕与玩家的交互逻辑（即伤害判定），如果 isHasDamage 属性为 true ，该函数什么也不会做 */
     updateDamageToPlayer(player: Player) {
         if (!this.isDamageToPlayer) return;
+
+        this.updateDebugHitbox(player);
+
         const isHit = ( // 先粗判
             Math.abs(player.x - this.x) <= 30 && Math.abs(player.y - this.y) <= 30
         ) && getPointToSegmentDist2(
@@ -112,9 +154,15 @@ export class Danmaku {
     }
 
     get x() { return this.sprite.x; }
-    set x(n: number) { this.sprite.x = n; }
+    set x(n: number) {
+        this.sprite.x = n;
+        if (this.hitboxGraphics) { this.hitboxGraphics.x = n; }
+    }
     get y() { return this.sprite.y; }
-    set y(n: number) { this.sprite.y = n; }
+    set y(n: number) {
+        this.sprite.y = n;
+        if (this.hitboxGraphics) { this.hitboxGraphics.y = n; }
+    }
     get rotation() { return this.sprite.rotation; }
     set rotation(n: number) { this.sprite.rotation = n; }
     speed = 0;
@@ -161,17 +209,19 @@ export class Danmaku {
         eraseEffectType?: "common" | "bubble",
     } = {}) {
         if (!this.canBeErase || this.destroyed) return;
-        if (this.board.isDanmakuInBoundary(this)) {
+        if (this.board.isDanmakuInBoundary(this) && this.sprite.visible && this.sprite.alpha > 0) {
+            // 如果能看见，则生成消弹特效，之后再删除
             options.eraseEffectType ??= this.type === "bubble" || this.type === "nuclear" ? "bubble" : "common";
-            if (this.sprite.visible && this.sprite.alpha > 0) {
-                if (options.eraseEffectType === "common") {
-                    // 常规消弹
-                    this.game.coDo(this._EraseEffectBehaviorCommon.bind(this));
-                } else {
-                    // 大玉消弹
-                    this.game.coDo(this._EraseEffectBehaviorBubble.bind(this));
-                }
+            if (options.eraseEffectType === "common") {
+                // 常规消弹
+                this.game.coDo(this._EraseEffectBehaviorCommon.bind(this));
+            } else {
+                // 大玉消弹
+                this.game.coDo(this._EraseEffectBehaviorBubble.bind(this));
             }
+        } else {
+            // 如果看不见，直接删除
+            this.destroy();
         }
     }
 
@@ -219,6 +269,7 @@ export class Danmaku {
 
     destroy() {
         if (this.destroyed) return;
+        this.hitboxGraphics?.destroy();
         this.sprite.destroy();
     }
 
