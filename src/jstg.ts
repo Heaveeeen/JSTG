@@ -22,7 +22,7 @@ export interface LoopController {
      * 会考虑 timeScale，并且尽可能根据 timeScale 向下取整。（取整机制与弹幕引擎略有不同，我感觉我写的这个应该稍微好点）
      */
     get clock(): number,
-    // TODO: then(): void,
+    then(callback: () => any): void,
 }
 
 export interface Destroyable {
@@ -136,9 +136,11 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         const kills = [...new Set([...utils.makeElements(options.kills), ...owns])];
 
         let clock = 0;
+        const callbacks: (() => any)[] = [];
         const loop: LoopController = {
             stop,
             get clock() { return clock },
+            then(callback: () => any) { callbacks.push(callback); }
         };
         const tickerFn = () => {
             if (refs.some(r => r.destroyed)) {
@@ -154,6 +156,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         function stop() {
             app.ticker.remove(tickerFn);
             kills.forEach(d => d.destroy());
+            callbacks.forEach(fn => fn());
         }
         app.ticker.add(tickerFn, undefined, options.priority);
         return loop;
@@ -419,7 +422,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          * JSTG 预置的自机
          * @example
          * // 简单的例子
-         * const player = game.prefabPlayers.makeSimple();
+         * const player = game.makePrefabPlayer.simple();
          * 
          * // 一个手动更新以设置键位的例子
          * const player = game.prefabPlayers.makeSimple({ autoUpdateSelf: false });
@@ -435,11 +438,11 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          *     });
          * });
          */
-        prefabPlayers: null as unknown as typeof prefabPlayers, // 奇技淫巧
+        makePrefabPlayer: null as unknown as typeof makePrefabPlayer, // 奇技淫巧
         /** 
          * 创建一个 JSTG 预置的弹幕  
          * @example
-         * const myPlayer = game.prefabPlayers.makeSimple();
+         * const myPlayer = game.makePrefabPlayer.simple();
          * const myDanmaku = game.makeDanmaku("smallball");
          * myDanmaku.x = 0;
          * myDanmaku.y = 0;
@@ -478,11 +481,17 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         debug,
     };
 
-    const prefabPlayers = {// TODO: 重命名为 make 开头的风格
-        /** @async 创建预置自机：Simple */
-        makeSimple: (options: MakePlayerOptions = {}) => makeSimple(game, mainBoard, prefabTextures, options),
-    };
-    game.prefabPlayers = prefabPlayers;
+    const makePrefabPlayer = (()=>{
+        const simple = (options: MakePlayerOptions = {}) => makeSimple(game, mainBoard, prefabTextures, options);
+        // TODO: simple.homingOnly = (options: MakePlayerOptions = {}) => ... 以及其他类型的机体
+        // TODO: maple, icu
+        // TODO: reimu, marisa, sanae
+        return {
+            /** 创建预置自机：Simple */
+            simple,
+        }
+    })();
+    game.makePrefabPlayer = makePrefabPlayer;
 
     type MakeDanmakuOptions<T = PrefabDanmakuNames> = {
         type: T,
