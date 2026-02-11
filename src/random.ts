@@ -8,9 +8,9 @@
 export function makeRng(
     /** 随机种子，可选，留空会自动帮你填上一个随机数 */
     seed = Math.round(Math.random() * 1e8),
-    a = 1103515245,
-    c = 0,
-    m = 2**31-1
+    a = 1664525,
+    c = 1013904223,
+    m = 2**32
 ) {
     let initSeed = seed;
     const next = () => seed = (a * seed + c) % m;
