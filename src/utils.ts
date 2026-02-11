@@ -46,3 +46,5 @@ export const staticAssert = <T>(x: T) => x;
 
 /** 仅限向下转换的 as 断言 */
 export const cast = <T, U extends T>(x: T) => x as U;
+
+export const asAny = (x: any) => x as any;

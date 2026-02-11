@@ -177,7 +177,7 @@ export class Player {
         this.hitboxPoint = new pixi.Sprite({
             parent: this.frontParts,
             texture: options.hitboxTexture,
-            scale: this.hitboxRadius * 0.04 + 0.12, anchor: 0.5,
+            scale: this.hitboxRadius * 0.06 + 0.12, anchor: 0.5,
             filters: plColorFilter,
             alpha: 0,
         });

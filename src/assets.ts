@@ -66,7 +66,6 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions = {}
                 crystal: await LoadSvg(`${base}danmaku/danmaku/crystal.svg`, res),
                 particle: await LoadSvg(`${base}danmaku/danmaku/particle.svg`, res),
                 nova: await LoadSvg(`${base}danmaku/danmaku/nova.svg`, res),
-                needle: await LoadSvg(`${base}danmaku/danmaku/needle.svg`, res),
                 coin: await LoadSvg(`${base}danmaku/danmaku/coin.svg`, res),
                 knife: await LoadSvg(`${base}danmaku/danmaku/knife.svg`, res),
                 sword: await LoadSvg(`${base}danmaku/danmaku/sword.svg`, res),

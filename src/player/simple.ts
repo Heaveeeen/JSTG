@@ -13,7 +13,7 @@ export const makeSimple = async (
     slowModeRingTexture: prefabTextures.player.slow_mode,
     invincibleRingTexture: prefabTextures.player.invincible_ring,
     hue1: 208.8,
-    hitboxRadius: 3, highSpeed: 4, slowSpeed: 1.6,
+    hitboxRadius: 2, highSpeed: 4, slowSpeed: 1.6,
     updateFn(options = {}) {
         this._defaultUpdate(options);
     },

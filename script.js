@@ -7,6 +7,7 @@
 import * as jstg from "./dist/jstg.js";
 import * as pixi from "pixi";
 import { deg } from "./dist/utils.js";
+import { Danmaku, prefabDanmakuHitboxRadius } from "./dist/danmaku.js";
 
 
 // 启动游戏
@@ -14,15 +15,17 @@ import { deg } from "./dist/utils.js";
 
     const game = await jstg.LaunchGame();
     const { LoadAsset, LoadSvg, Key } = jstg;
-    const { input, forever, coDo, app, board, ingameUI, debug } = game;
+    const { input, forever, coDo, app, board, ingameUI, debug, makeDanmaku } = game;
     const { isDown, isUp, isHold, isIdle } = input;
+    const { asAny } = jstg.utils;
 
     console.log("game:", game);
     const txt = new pixi.Text({
         parent: board.root,
         text: 
 `Hello, JSTG!
-按 P 显示判定范围。`,
+按 P 显示判定范围。
+按 O 开启上帝模式。`,
         x: 0,
         y: 0,
         anchor: 0.5,
@@ -53,7 +56,8 @@ import { deg } from "./dist/utils.js";
     greenFilter.hue(140, false);
     //greenContainer.filters = greenFilter;
 
-    se.tan00.volume(0.05);
+    // 示例：山城高岭非符
+    /*se.tan00.volume(0.05);
     se.kira00.volume(0.05);
     // 旋转米弹
     coDo(function*(){
@@ -67,7 +71,7 @@ import { deg } from "./dist/utils.js";
                 se.tan00.play();
                 se.kira00.play();
                 for (let i = 0; i < 7; i++) {
-                    const dan = game.makeDanmaku("grain");
+                    const dan = makeDanmaku("grain");
                     dan.sprite.filters = greenFilter;
                     dan.y = -80;
                     dan.rotation = gunDir + deg((i - 3) * 25);
@@ -95,7 +99,7 @@ import { deg } from "./dist/utils.js";
         while (true) {
             let gunDir = Math.atan2(pl.y, pl.x);
             for (let i = 0; i < 32; i++) {
-                const dan = game.makeDanmaku("middleball");
+                const dan = makeDanmaku("middleball");
                 dan.sprite.filters = blueFilter;
                 dan.y = -80;
                 dan.rotation = gunDir + deg(i / 32 * 360);
@@ -107,7 +111,25 @@ import { deg } from "./dist/utils.js";
             }
             yield* game.Sleep(180);
         }
-    });
+    });*/
+
+    // 弹幕一览
+    
+    let x = -180, y = -200;
+    let maxR = 0;
+    for (const danType in prefabDanmakuHitboxRadius) {
+        const dan = asAny(makeDanmaku(danType));
+        x += dan.hitboxRadius * 2 + 20;
+        dan.x = x;
+        dan.y = y;
+        dan.canBeErase = false;
+        x += dan.hitboxRadius * 2 + 20;
+        maxR = Math.max(maxR, dan.hitboxRadius)
+        if (x >= 160) {
+            x = -180;
+            y += maxR * 4 + 40;
+        }
+    }
 
     forever(loop => {
         pl.update({input, keyMap: {
@@ -118,7 +140,7 @@ import { deg } from "./dist/utils.js";
             slow: [Key.ShiftLeft, Key.KeyL, Key.Space],
             attack: [Key.KeyZ, Key.KeyK],
             bomb: [Key.KeyX, Key.KeyJ],
-        }});
+        }, slowSpeed: debug.godMode.isOn ? 0.2 : undefined});
         if (isDown(Key.KeyP)) {
             if (!debug.showHitbox.isOn) {
                 debug.showHitbox.isOn = true;
@@ -128,6 +150,9 @@ import { deg } from "./dist/utils.js";
             } else {
                 debug.showHitbox.isOn = false;
             }
+        }
+        if (isDown(Key.KeyO)) {
+            debug.godMode.isOn = !debug.godMode.isOn;
         }
     });
 

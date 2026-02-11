@@ -4,22 +4,22 @@
 	 width="20px" height="20px" viewBox="0 0 20 20" style="enable-background:new 0 0 20 20;" xml:space="preserve">
 <style type="text/css">
 	.st0{fill:url(#SVGID_1_);}
-	.st1{fill:#FFBBBB;stroke:#FF3333;stroke-miterlimit:10;}
+	.st1{fill:#FFBBBB;stroke:#FF3333;stroke-width:1.125;stroke-miterlimit:10;}
 	.st2{fill:#FFCCCC;}
 	.st3{fill:#FFB2B2;}
 	.st4{fill:#FF8080;}
 	.st5{fill:#FF9999;}
 </style>
-<radialGradient id="SVGID_1_" cx="150.3125" cy="-67.6875" r="7.9639" gradientTransform="matrix(1 0 0 -1 -140.3125 -57.6875)" gradientUnits="userSpaceOnUse">
+<radialGradient id="SVGID_1_" cx="150.3125" cy="835.6875" r="8.9594" gradientTransform="matrix(1 0 0 1 -140.3125 -825.6875)" gradientUnits="userSpaceOnUse">
 	<stop  offset="0" style="stop-color:#FF3333"/>
 	<stop  offset="1" style="stop-color:#FF3333;stop-opacity:0"/>
 </radialGradient>
-<path class="st0" d="M2,10c0-4.4,3.6-8,8-8c4.4,0,8,3.6,8,8c0,4.4-3.6,8-8,8C5.6,18,2,14.4,2,10z"/>
-<path class="st1" d="M10,14.4L4.2,10L10,5.6l5.8,4.4L10,14.4z"/>
+<path class="st0" d="M1,10c0-5,4-9,9-9s9,4,9,9s-4.1,9-9,9S1,14.9,1,10z"/>
+<path class="st1" d="M10,14.9L3.5,10L10,5l6.5,5L10,14.9z"/>
 <g>
-	<path class="st2" d="M10,5.6l5.8,4.4l-6.6,0L10,5.6z"/>
-	<path class="st3" d="M15.8,10L10,14.4L9.2,10H15.8z"/>
-	<path class="st4" d="M10,14.4L4.2,10l5,0L10,14.4z"/>
-	<path class="st5" d="M4.2,10L10,5.6L9.2,10H4.2z"/>
+	<path class="st2" d="M10,5l6.5,5H9.1L10,5z"/>
+	<path class="st3" d="M16.5,10L10,14.9L9.1,10H16.5z"/>
+	<path class="st4" d="M10,14.9L3.5,10h5.6L10,14.9z"/>
+	<path class="st5" d="M3.5,10L10,5l-0.9,5H3.5z"/>
 </g>
 </svg>

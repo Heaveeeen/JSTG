@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Generator: Adobe Illustrator 26.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
 <svg version="1.1" id="图层_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
-	 width="20px" height="20px" viewBox="0 0 20 20" style="enable-background:new 0 0 20 20;" xml:space="preserve">
+	 width="25px" height="25px" viewBox="0 0 25 25" style="enable-background:new 0 0 25 25;" xml:space="preserve">
 <style type="text/css">
 	.st0{fill:url(#SVGID_1_);}
-	.st1{fill:#FFE5E5;stroke:#FF6666;stroke-width:0.75;stroke-miterlimit:10;}
-	.st2{fill:none;stroke:#FF6666;stroke-width:0.75;stroke-miterlimit:10;}
-	.st3{fill:none;stroke:#FF6666;stroke-width:0.75;stroke-linecap:round;stroke-miterlimit:10;}
+	.st1{fill:#FFE5E5;stroke:#FF6666;stroke-width:1.0312;stroke-miterlimit:10;}
+	.st2{fill:none;stroke:#FF6666;stroke-width:1.0312;stroke-miterlimit:10;}
+	.st3{fill:none;stroke:#FF6666;stroke-width:1.0312;stroke-linecap:round;stroke-miterlimit:10;}
 </style>
-<radialGradient id="SVGID_1_" cx="203.1749" cy="-120.8252" r="7.9636" gradientTransform="matrix(1 0 0 -1 -193.1748 -110.8252)" gradientUnits="userSpaceOnUse">
+<radialGradient id="SVGID_1_" cx="205.6748" cy="891.3252" r="10.95" gradientTransform="matrix(1 0 0 1 -193.1748 -878.8252)" gradientUnits="userSpaceOnUse">
 	<stop  offset="0" style="stop-color:#FF3333"/>
 	<stop  offset="1" style="stop-color:#FF3333;stop-opacity:0"/>
 </radialGradient>
-<path class="st0" d="M2,10c0-4.4,3.6-8,8-8s8,3.6,8,8s-3.6,8-8,8S2,14.4,2,10z"/>
-<path class="st1" d="M5,5.6h10v8.8H5V5.6z"/>
+<path class="st0" d="M1.5,12.5c0-6.1,4.9-11,11-11s11,4.9,11,11s-5,11-11,11S1.5,18.5,1.5,12.5z"/>
+<path class="st1" d="M5.6,6.4h13.8v12.1H5.6V6.4z"/>
 <g>
-	<path class="st2" d="M7.1,7.7h2.1v4.6H7.1V7.7z"/>
-	<path class="st3" d="M9.4,10h1.1"/>
-	<path class="st3" d="M11.9,12.3h-1.2V7.7"/>
-	<path class="st3" d="M12,7.7h1.2"/>
-	<path class="st3" d="M12.9,9.5H12"/>
+	<path class="st2" d="M8.5,9.3h2.9v6.3H8.5V9.3z"/>
+	<path class="st3" d="M11.7,12.5h1.5"/>
+	<path class="st3" d="M15.1,15.7h-1.6V9.3"/>
+	<path class="st3" d="M15.2,9.3h1.6"/>
+	<path class="st3" d="M16.5,11.8h-1.2"/>
 </g>
 </svg>

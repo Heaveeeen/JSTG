@@ -1,7 +1,7 @@
 import * as pixi from "pixi";
 import { Board, Game, LoopController } from "./jstg.js";
 import { Player } from "./player/player.js";
-import { alphaTo } from "./utils.js";
+import { alphaTo, staticAssert } from "./utils.js";
 import { PrefabDanmakuNames } from "./assets.js";
 
 interface Point {
@@ -110,10 +110,12 @@ export class Danmaku {
                 // 如果没有碰撞圆，就画一个
                 this.hitboxGraphics = new pixi.Graphics({
                     parent: this.sprite.parent ?? undefined,
+                    x: this.x,
+                    y: this.y,
                 });
                 this.hitboxGraphics.circle(
-                    0, 0, Math.sqrt(this.hitboxRadius ** 2 + player.hitboxRadius ** 2)
-                ).fill("hsla(180, 100%, 60%, 0.60)").stroke("#ffffff");
+                    0, 0, this.getHitToPlayerRadius(player)
+                ).fill("hsla(180, 100%, 60%, 0.50)").stroke("#ffffff");
             }
             this.sprite.visible = showHitbox.isShowDanmakuBoth;
         } else {
@@ -132,7 +134,8 @@ export class Danmaku {
         this.updateDebugHitbox(player);
 
         const isHit = ( // 先粗判
-            Math.abs(player.x - this.x) <= 30 && Math.abs(player.y - this.y) <= 30
+            Math.abs(player.x - this.x) <= this.hitboxRadius + 30 &&
+            Math.abs(player.y - this.y) <= this.hitboxRadius + 30
         ) && getPointToSegmentDist2(
             { // D'D - P'P
                 x: (this.x - this._lastX) - (player.x - player._lastX),
@@ -140,8 +143,8 @@ export class Danmaku {
             },
             { // D'->P'
                 x: (player._lastX - this._lastX), y: (player._lastY - this._lastY)
-            }// TODO: 改成相交圆判定
-        ) < this.hitboxRadius ** 2 + player.hitboxRadius ** 2; // 牢 zun 的神秘正交圆判定
+            }
+        ) < this.getHitToPlayerRadius(player) ** 2;
 
         this._lastX = this.x;
         this._lastY = this.y;
@@ -151,6 +154,10 @@ export class Danmaku {
         if (isHit) {
             player.hitByDanmaku(this);
         }
+    }
+
+    getHitToPlayerRadius(player: Player) {
+        return this.hitboxRadius + player.hitboxRadius;
     }
 
     get x() { return this.sprite.x; }
@@ -282,40 +289,39 @@ export class Danmaku {
     }
 }
 
-/** 此处的数值与弹幕引擎有所不同 */ //TODO: 改成圆相交判定
+/** 此处的数值与弹幕引擎有所不同 */
 export const prefabDanmakuHitboxRadius = {
-    smallball: 4,
-    ringball: 4,
-    glowball: 4,
-    fireball: 4,
-    dot: 2.4,
-    grain: 3,
-    chain: 3,
-    seed: 3,
-    scale: 3,
-    bullet: 3,
-    drip: 3,
-    card: 3.2,
-    note: 4,
-    arrow: 4,
-    butterfly: 4,
-    smallstar: 4,
-    bigstar: 8,
-    ellipse: 5,
-    heart: 8,
-    middleball: 8,
-    lightball: 8,
-    bubble: 16,
-    crystal: 3,
-    particle: 3,
-    nova: 4,
-    needle: 2,
-    coin: 4,
-    knife: 4,
-    sword: 6,
+    smallball: 3,
+    ringball: 3,
+    glowball: 3,
+    fireball: 3,
+    dot: 1.8,
+    grain: 2.1,
+    chain: 2.1,
+    seed: 2.1,
+    scale: 2.1,
+    bullet: 2.1,
+    drip: 2.1,
+    card: 2.4,
+    note: 3,
+    arrow: 3,
+    butterfly: 3,
+    smallstar: 3,
+    bigstar: 7,
+    ellipse: 4.7,
+    heart: 7,
+    middleball: 7,
+    lightball: 9.4,
+    bubble: 14,
+    crystal: 2.25,
+    particle: 2.25,
+    nova: 3,
+    coin: 3,
+    knife: 3,
+    sword: 4.7,
     /** 弹幕引擎里没填这个，我姑且这么填 */
-    nuclear: 48,
-};
+    nuclear: 45.6,
+} as const;
 
 export const makePrefabDanmaku = (game: Game, board: Board, type: PrefabDanmakuNames, parent?: pixi.Container, scale: number = 1) => new Danmaku({
     type, game, board,
@@ -326,4 +332,4 @@ export const makePrefabDanmaku = (game: Game, board: Board, type: PrefabDanmakuN
         anchor: 0.5,
     }),
     scale
-})
+});
