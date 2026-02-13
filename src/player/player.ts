@@ -355,7 +355,6 @@ export class Player {
         if (this.state.type === "common") {
             if (this.state.invincibleTime === 0) {
                 const { pldead00 } = this.game.prefabSounds.thse;
-                pldead00.stop();
                 pldead00.play();
                 if (this.game.debug.godMode.isOn) {
                     this.game.debug.godMode.dieCount += 1;

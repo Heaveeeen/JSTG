@@ -26,27 +26,10 @@ pixi（或 pixi.js）是一个图形库，JSTG 依靠 pixi 来加载资源、绘
 * 自述文档 `README.md` 为了确保版权信息的完整， **应当保留**。
 * 版权声明 `LICENSE` 在原则上 **必须保留**。
 
-## howler
-
-howler（或 howler.js）是一个音频库，可以用它来低延迟地播放音乐或音效。
-
-* [./howler/howler.min.js](./howler/howler.min.js) 包含了 howler 的主要功能，程序运行的时候须导入这个文件。
-* [./howler/howler.d.ts](./howler/howler.d.ts) 是 howler 的类型注释，能在编程时提示你 Howl 的用法，非常有用。*（howler 好像没有官方的类型注释，这个是我拿 ai 写的）*
-* [./howler/README.md](./howler/README.md) 是 howler 的自述文档。
-* [./howler/LICENSE.md](./howler/LICENSE.md) 是 howler 的版权信息。howler 采用 MIT 开源许可证。（参见上文）
-
-总之：
-
-* 程序运行 **必须依赖** `howler.min.js` 。
-* `howler.d.ts` 仅供开发和调试用，发布时可以不包含。
-* 自述文档 `README.md` 为了确保版权信息的完整， **应当保留**。
-* 版权声明 `LICENSE.md` 在原则上 **必须保留**。
-
 ## 版本信息
 
 以下列出了当前版本 JSTG 所引用的外部库的版本：
 
 * pixi - v8.15.0
-* howler - v2.2.4
 
 可以在其源文件中找到相应的版本信息。

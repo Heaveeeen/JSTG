@@ -1,5 +1,5 @@
 import * as pixi from "pixi";
-import { LoadAsset, LoadPrefabSounds, LoadPrefabSoundsOptions, LoadPrefabTextures, LoadPrefabTexturesOptions, LoadSvg, PrefabDanmakuNames } from "./assets.js";
+import { LoadPixiAsset, LoadPrefabTextures, LoadPrefabTexturesOptions, LoadSvg, PrefabDanmakuNames } from "./textures.js";
 import { Key, makeInput } from "./Input.js";
 import { MakePlayerOptions, Player } from "./player/player.js";
 import { makeSimple } from "./player/simple.js";
@@ -7,6 +7,7 @@ import { makeRng } from "./random.js";
 import * as utils from './utils.js';
 import { Danmaku, makePrefabDanmaku } from "./danmaku.js";
 import { makeObjPool } from "./objPool.js";
+import { LoadPrefabSounds, LoadPrefabSoundsOptions, LoadSound } from "./sounds.js";
 
 /**
  * 循环的控制器对象，用于控制该循环
@@ -537,8 +538,9 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
 };
 
 export {
-    LoadAsset,
+    LoadPixiAsset,
     LoadSvg,
+    LoadSound,
     Key,
     Player,
     makeRng,

@@ -2,7 +2,7 @@ import * as pixi from "pixi";
 import { Board, Game, LoopController } from "./jstg.js";
 import { Player } from "./player/player.js";
 import { alphaTo, staticAssert } from "./utils.js";
-import { PrefabDanmakuNames } from "./assets.js";
+import { PrefabDanmakuNames } from "./textures.js";
 
 interface Point {
     x: number,

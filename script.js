@@ -1,8 +1,7 @@
 // @ts-check
 
 /// <reference path="./lib/pixi/pixi.d.ts" />
-/// <reference path="./lib/howler/howler.d.ts" />
-// ↑ 上面这两行用来联动 pixi 和 howler 的类型注释
+// ↑ 上面这行用来联动 pixi 的类型注释
 
 import * as jstg from "./dist/jstg.js";
 import * as pixi from "pixi";
@@ -14,7 +13,7 @@ import { Danmaku, prefabDanmakuHitboxRadius } from "./dist/danmaku.js";
 (async () => {
 
     const game = await jstg.LaunchGame();
-    const { LoadAsset, LoadSvg, Key } = jstg;
+    const { Key } = jstg;
     const { input, forever, coDo, app, board, ingameUI, debug, makeDanmaku } = game;
     const { isDown, isUp, isHold, isIdle } = input;
     const { asAny } = jstg.utils;
@@ -57,8 +56,6 @@ import { Danmaku, prefabDanmakuHitboxRadius } from "./dist/danmaku.js";
     //greenContainer.filters = greenFilter;
 
     // 示例：山城高岭非符
-    /*se.tan00.volume(0.05);
-    se.kira00.volume(0.05);
     // 旋转米弹
     coDo(function*(){
         let gunOmega = deg(28.5);
@@ -68,8 +65,8 @@ import { Danmaku, prefabDanmakuHitboxRadius } from "./dist/danmaku.js";
             gunOmega *= -1;
             for (let i = 0; i < 16; i++) {
                 gunDir += gunOmega;
-                se.tan00.play();
-                se.kira00.play();
+                se.tan00.play({volume: 0.1});
+                se.kira00.play({volume: 0.1});
                 for (let i = 0; i < 7; i++) {
                     const dan = makeDanmaku("grain");
                     dan.sprite.filters = greenFilter;
@@ -98,23 +95,24 @@ import { Danmaku, prefabDanmakuHitboxRadius } from "./dist/danmaku.js";
     coDo(function*(){
         while (true) {
             let gunDir = Math.atan2(pl.y, pl.x);
-            for (let i = 0; i < 32; i++) {
+            for (let i = 0; i < 36; i++) {
                 const dan = makeDanmaku("middleball");
                 dan.sprite.filters = blueFilter;
                 dan.y = -80;
-                dan.rotation = gunDir + deg(i / 32 * 360);
-                dan.speed = 0.8;
+                dan.rotation = gunDir + deg(i / 36 * 360);
+                dan.speed = 4;
                 forever(loop => {
+                    dan.speedToA(0.8, 0.1);
                     dan.move();
                     dan.boundaryDelete();
                 }, { owns: dan });
             }
             yield* game.Sleep(180);
         }
-    });*/
+    });
 
     // 弹幕一览
-    
+    /*
     let x = -180, y = -200;
     let maxR = 0;
     for (const danType in prefabDanmakuHitboxRadius) {
@@ -129,7 +127,7 @@ import { Danmaku, prefabDanmakuHitboxRadius } from "./dist/danmaku.js";
             x = -180;
             y += maxR * 4 + 40;
         }
-    }
+    }*/
 
     forever(loop => {
         pl.update({input, keyMap: {
