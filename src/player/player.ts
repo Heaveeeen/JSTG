@@ -177,7 +177,7 @@ export class Player {
         this.hitboxPoint = new pixi.Sprite({
             parent: this.frontParts,
             texture: options.hitboxTexture,
-            scale: this.hitboxRadius * 0.06 + 0.12, anchor: 0.5,
+            scale: 0.24, anchor: 0.5,// 这里的 scale 只是个临时的值，实际上 scale每帧都会更新
             filters: plColorFilter,
             alpha: 0,
         });
@@ -306,6 +306,9 @@ export class Player {
                 alphaTo(this.slowModeRing, 0, 0.1 * ts);
             }
             alphaTo(this, 1, 0.1 * ts);
+
+            this.hitboxPoint.scale = this.hitboxRadius * 0.036 + 0.16;
+
             yield;
         };
         if (this.state.type === "dying") {

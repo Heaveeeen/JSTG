@@ -57,7 +57,7 @@ import { Danmaku, prefabDanmakuHitboxRadius } from "./dist/danmaku.js";
 
     // 示例：山城高岭非符
     // 旋转米弹
-    coDo(function*(){
+    /*coDo(function*(){
         let gunOmega = deg(28.5);
         while (true) {
             //let gunDir = Math.atan2(pl.y, pl.x) - Math.sign(gunOmega) * 2;
@@ -109,10 +109,10 @@ import { Danmaku, prefabDanmakuHitboxRadius } from "./dist/danmaku.js";
             }
             yield* game.Sleep(180);
         }
-    });
+    });*/
 
     // 弹幕一览
-    /*
+    
     let x = -180, y = -200;
     let maxR = 0;
     for (const danType in prefabDanmakuHitboxRadius) {
@@ -127,7 +127,7 @@ import { Danmaku, prefabDanmakuHitboxRadius } from "./dist/danmaku.js";
             x = -180;
             y += maxR * 4 + 40;
         }
-    }*/
+    }/**/
 
     forever(loop => {
         pl.update({input, keyMap: {
