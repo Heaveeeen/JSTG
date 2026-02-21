@@ -138,12 +138,17 @@ import { Danmaku, prefabDanmakuHitboxRadius } from "./dist/danmaku.js";
             startPoint: {}, endPoint: {},
             x: 0, y: [-200,-180,-150,-50,80][i], rotation: deg(30),
             width: [1,3,5,10,20][i], length: 150,
-        });
+        });/**/
+        /*game.makeDanmaku({
+            type: "smallball",
+            x: 0, y: 70 * i - 180,
+            radius: [1,3,5,10,20][i],
+        });/**/
     }
 
     game.makeDanmaku({
         type: "smallball",
-        x: -100, y: -100
+        x: -100, y: -100,
     });
 
     forever(loop => {

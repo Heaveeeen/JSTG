@@ -545,7 +545,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         rotation?: number
         /** @default game.commonDanmakuLayer */
         parent?: pixi.Container,
-        /** @default 1 */
+        /** @default 2 */
         width?: number,
         /** @default 400 */
         length?: number,

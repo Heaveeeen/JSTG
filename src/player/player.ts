@@ -307,7 +307,7 @@ export class Player {
             }
             alphaTo(this, 1, 0.1 * ts);
 
-            this.hitboxPoint.scale = this.hitboxRadius * 0.036 + 0.16;
+            this.hitboxPoint.scale = this.hitboxRadius * 0.072 + 0.16;
 
             yield;
         };

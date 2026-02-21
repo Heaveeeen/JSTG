@@ -195,23 +195,23 @@ export const makePrefabLaserBeam = (options: {
     game: Game, board: Board, type: PrefabDanmakuNames,
     x: number | null, y: number | null, rotation: number | null
     parent: pixi.Container | null,
-    /** @default 1 */
+    /** @default 2 */
     halfWidth: number | null,
     /** @default 400 */
     length: number | null,
-    startPoint: { type?: PrefabDanmakuNames, pos?: number, } | null,
-    endPoint: { type?: PrefabDanmakuNames, pos?: number, } | null,
+    startPoint: { type?: PrefabDanmakuNames, scale?: number, pos?: number, } | null,
+    endPoint: { type?: PrefabDanmakuNames, scale?: number, pos?: number, } | null,
     // TODO: zIndex
 }) => {
     const { type, game, board, x, y, rotation } = options;
     const parent = options.parent ?? board.commonDanmakuLayer;
     const texture = game.prefabTextures.danmaku.danmaku[type];
-    const baseHalfWidth = prefabDanmakuHitboxRadius[type] * 1.2; // TODO: 把这几个数据改成 PrefabDanmakuLaserWidth 啥的，手写一套高质量数据
-    const baseHalfLength = prefabDanmakuHitboxRadius[type] + 2.5;
-    const hitboxHalfWidth = options.halfWidth ?? 1;
+    const baseHalfWidth = prefabDanmakuHitboxRadius[type]; // TODO: 把这几个数据改成 PrefabDanmakuLaserWidth 啥的，手写一套高质量数据
+    const baseHalfLength = prefabDanmakuHitboxRadius[type] + 2;
+    const hitboxHalfWidth = options.halfWidth ?? 2;
     const hitboxLength = options.length ?? 400;
 
-    const getLaserPointByOpt = (point: { type?: PrefabDanmakuNames, pos?: number, } | null, defaultPos: number) => {
+    const getLaserPointByOpt = (point: { type?: PrefabDanmakuNames, scale?: number, pos?: number, } | null, defaultPos: number) => {
         if (point === null) {
             return null
         } else {
@@ -219,11 +219,12 @@ export const makePrefabLaserBeam = (options: {
             const texture = game.prefabTextures.danmaku.danmaku[type];
             const pointBaseRadius = prefabDanmakuHitboxRadius[type];
             const pos = point.pos ?? defaultPos;
+            const scale = point.scale ?? (1 * hitboxHalfWidth / pointBaseRadius) + 0.3;// 这里可以考虑加个sqrt，防止端点大的太大、小的太小；另外，这个尺寸应当能够随激光尺寸的变化而变化0
             return {
                 sprite: new pixi.Sprite({
                     parent, texture,
                     anchor: 0.5,
-                    scale: 2 * hitboxHalfWidth / pointBaseRadius,// 这里可以考虑加个sqrt，防止端点大的太大、小的太小；另外，这个尺寸应当能够随激光尺寸的变化而变化0
+                    scale,
                     blendMode: "add",
                 }), pos
             };
