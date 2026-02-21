@@ -31,6 +31,7 @@ export abstract class AbstractDanmaku {
     abstract x: number;
     abstract y: number;
     abstract rotation: number;
+    abstract visible: boolean;
     speed = 0;
 
     /** 向着 this.rotation 的方向前进 d 步，若 d 留空则为 this.speed * game.timeScale */
@@ -56,6 +57,13 @@ export abstract class AbstractDanmaku {
     }
 
     hitboxGraphics: pixi.Graphics | null = null;
+    clearHitboxGraphics() {
+        if (this.hitboxGraphics) {
+            this.hitboxGraphics.destroy();
+            this.hitboxGraphics = null;
+        }
+    }
+
     /**
      * 该弹幕是否会与玩家交互并造成伤害
      * @example
@@ -75,7 +83,14 @@ export abstract class AbstractDanmaku {
      * 预置的消弹效果，立即摧毁该弹幕，并生成一个消弹特效
      * 如果 canBeErase 为 false ，则该函数什么也不做
      */
-    abstract erase(): void;
+    abstract erase(options?: {
+        /**
+         * 消弹时的回调函数。可以利用这个回调函数，把消掉的弹幕转换成别的东西。例如，转化为得分道具，或者死尸弹。  
+         * 对于普通弹幕，该回调函数只会调用一次；对于激光，该回调函数会对激光的每一个“体节”都调用一次。  
+         * 如果该弹幕最终没有被消除（例如因为这个该弹幕无法被消除），则该回调函数不会被调用。  
+         */
+        forEachCorpse?: (corpseInfo: { x: number, y: number }) => unknown,
+    }): void;
 
     /**
      * 更新该弹幕，每帧都会调用一次这个函数。

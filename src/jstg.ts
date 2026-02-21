@@ -90,7 +90,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
     } else {
         let isResizing = false;
         globalThis.addEventListener("resize", () => {
-            if (isResizing) return;
+            if (isResizing) { return };
             isResizing = true;
             setTimeout(() => {
                 rendererResolution = Math.min(globalThis.innerWidth, globalThis.innerHeight * stageProportion) / stageWidth;
@@ -340,6 +340,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         let showHitbox = {
             isOn: false,
             isShowDanmakuBoth: true,
+            // TODO: isContainsPlayerRadius
         };
 
         return {

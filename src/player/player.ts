@@ -387,7 +387,7 @@ export class Player {
     }
 
     destroy() {
-        if (this.destroyed) return;
+        if (this.destroyed) { return };
         this.backParts.destroy();
         this.frontParts.destroy();
     }

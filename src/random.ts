@@ -55,7 +55,7 @@ export function makeRng(
             const totalWeight = results.reduce((a, b) => a + b[0], 0);
             let r = float(0, totalWeight);
             for (const [weight, result] of results) {
-                if (r < weight) return result;
+                if (r < weight) { return result };
                 r -= weight;
             }
             return results[results.length - 1][1];

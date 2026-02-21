@@ -48,10 +48,7 @@ export class LaserBeam extends AbstractDanmaku {
     get hitboxHalfWidth() { return this._hitboxHalfWidth; }
     set hitboxHalfWidth(n: number) {
         this._hitboxHalfWidth = n;
-        if (this.hitboxGraphics) {// TODO: clearHitboxGraphics()
-            this.hitboxGraphics.destroy();
-            this.hitboxGraphics = null;
-        }
+        this.clearHitboxGraphics();
     }
 
     private _hitboxLength: number;
@@ -59,10 +56,7 @@ export class LaserBeam extends AbstractDanmaku {
     get hitboxLength() { return this._hitboxLength; }
     set hitboxLength(n: number) {
         this._hitboxLength = n;
-        if (this.hitboxGraphics) {
-            this.hitboxGraphics.destroy();
-            this.hitboxGraphics = null;
-        }
+        this.clearHitboxGraphics();
     }
 
     /** 激光本体所对应的 Sprite */
@@ -97,6 +91,12 @@ export class LaserBeam extends AbstractDanmaku {
         this.mainSprite.rotation = n;
         if (this.hitboxGraphics) { this.hitboxGraphics.rotation = n; }
     }
+    get visible() { return this.mainSprite.visible; }
+    set visible(v: boolean) {
+        this.mainSprite.visible = v;
+        if (this.startPoint !== null) { this.startPoint.sprite.visible = v; }
+        if (this.endPoint !== null) { this.endPoint.sprite.visible = v; }
+    }
 
     updateLaserPoints() {
         for (const point of [this.startPoint, this.endPoint]) {
@@ -105,17 +105,14 @@ export class LaserBeam extends AbstractDanmaku {
             point.sprite.x = this.x + len * Math.cos(this.rotation);
             point.sprite.y = this.y + len * Math.sin(this.rotation);
             point.sprite.rotation = this.rotation;
-            // 端点还得会闪烁
+            // TODO: 端点还得会闪烁
         }
     }
 
     /** 更新调试用的那个碰撞箱 */
     updateDebugHitbox(player: Player) {
         if (!this.isDamageToPlayer) {
-            if (this.hitboxGraphics) {
-                this.hitboxGraphics.destroy();
-                this.hitboxGraphics = null;
-            }
+            this.clearHitboxGraphics();
         }
         const { showHitbox } = this.game.debug;
         if (showHitbox.isOn) {
@@ -131,13 +128,10 @@ export class LaserBeam extends AbstractDanmaku {
                 ).fill("hsla(180, 100%, 60%, 0.50)").stroke("#ffffff");
                 this.hitboxGraphics.rotation = this.rotation
             }
-            this.mainSprite.visible = showHitbox.isShowDanmakuBoth;
+            this.visible = showHitbox.isShowDanmakuBoth;
         } else {
-            if (this.hitboxGraphics) {
-                this.hitboxGraphics.destroy();
-                this.hitboxGraphics = null;
-            }
-            this.mainSprite.visible = true;
+            this.clearHitboxGraphics();
+            this.visible = true;
         }
     }
 
@@ -158,9 +152,23 @@ export class LaserBeam extends AbstractDanmaku {
         // TODO: 擦弹
     }
 
-    erase() {
+    erase(options: {
+        /**
+         * 每隔多长的距离算作一个“体节”并调用一次消弹回调函数。  
+         * 例如：长度为70的激光，每隔20的距离就算作一个体节并产生一个得分道具，最终会产生3个得分道具；  
+         * 再例如，长度为160的激光，每隔10的距离就算作一个体节并产生一个得分道具，最终会产生16个得分道具。  
+         * @default 10
+         */
+        lengthPerCorpse?: number,
+        /**
+         * 消弹时的回调函数。可以利用这个回调函数，把消掉的弹幕转换成别的东西。例如，转化为得分道具，或者死尸弹。  
+         * 该回调函数会对激光的每一个“体节”都调用一次。  
+         * 如果该弹幕最终没有被消除（例如因为这个该弹幕无法被消除），则该回调函数不会被调用。  
+         */
+        forEachCorpse?: (corpseInfo: { x: number, y: number }) => unknown,
+    } = {}) {
         // TODO: 激光消弹
-        if (!this.canBeErase || this.destroyed) return;
+        if (!this.canBeErase || this.destroyed) { return; }
         this.destroy();
     }
 
@@ -179,7 +187,7 @@ export class LaserBeam extends AbstractDanmaku {
     }
 
     destroy() {
-        if (this.destroyed) return;
+        if (this.destroyed) { return };
         this.hitboxGraphics?.destroy();
         this.startPoint?.sprite.destroy();
         this.endPoint?.sprite.destroy();
@@ -206,7 +214,7 @@ export const makePrefabLaserBeam = (options: {
     const { type, game, board, x, y, rotation } = options;
     const parent = options.parent ?? board.commonDanmakuLayer;
     const texture = game.prefabTextures.danmaku.danmaku[type];
-    const baseHalfWidth = prefabDanmakuHitboxRadius[type]; // TODO: 把这几个数据改成 PrefabDanmakuLaserWidth 啥的，手写一套高质量数据
+    const baseHalfWidth = prefabDanmakuHitboxRadius[type]; // MAY TODO: 把这几个数据改成 PrefabDanmakuLaserWidth 啥的，手写一套高质量数据
     const baseHalfLength = prefabDanmakuHitboxRadius[type] + 2;
     const hitboxHalfWidth = options.halfWidth ?? 2;
     const hitboxLength = options.length ?? 400;

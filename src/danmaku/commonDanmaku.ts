@@ -28,10 +28,7 @@ export class CommonDanmaku extends AbstractDanmaku {
     get hitboxRadius() { return this._hitboxRadius; }
     set hitboxRadius(n: number) {
         this._hitboxRadius = n;
-        if (this.hitboxGraphics) {
-            this.hitboxGraphics.destroy();
-            this.hitboxGraphics = null;
-        }
+        this.clearHitboxGraphics();
     }
 
     /** @private 弹幕在上一次判定时的 x */
@@ -53,10 +50,7 @@ export class CommonDanmaku extends AbstractDanmaku {
     /** 更新调试用的那个碰撞箱 */
     updateDebugHitbox(player: Player) {
         if (!this.isDamageToPlayer) {
-            if (this.hitboxGraphics) {
-                this.hitboxGraphics.destroy();
-                this.hitboxGraphics = null;
-            }
+            this.clearHitboxGraphics();
         }
         const { showHitbox } = this.game.debug;
         if (showHitbox.isOn) {
@@ -71,13 +65,10 @@ export class CommonDanmaku extends AbstractDanmaku {
                     0, 0, this.hitboxRadius + player.hitboxRadius
                 ).fill("hsla(180, 100%, 60%, 0.50)").stroke("#ffffff");
             }
-            this.sprite.visible = showHitbox.isShowDanmakuBoth;
+            this.visible = showHitbox.isShowDanmakuBoth;
         } else {
-            if (this.hitboxGraphics) {
-                this.hitboxGraphics.destroy();
-                this.hitboxGraphics = null;
-            }
-            this.sprite.visible = true;
+            this.clearHitboxGraphics();
+            this.visible = true;
         }
     }
 
@@ -121,6 +112,8 @@ export class CommonDanmaku extends AbstractDanmaku {
     }
     get rotation() { return this.sprite.rotation; }
     set rotation(n: number) { this.sprite.rotation = n; }
+    get visible() { return this.sprite.visible; }
+    set visible(v: boolean) { this.sprite.visible = v; }
 
     /**
      * 预置的消弹效果，立即摧毁该弹幕，并生成一个消弹特效  
@@ -130,13 +123,12 @@ export class CommonDanmaku extends AbstractDanmaku {
         /** 根据 this.type 自动决定。对于一般的弹幕，消弹特效为雾化消失；对于大玉和核弹，缩小虚化至消失。 */
         eraseEffectType?: "fog" | "reduce",
         /**
-         * 消弹时的回调函数。可以利用这个回调函数，把消掉的弹幕转换成别的东西。例如，转化为得分道具，或者死尸弹。
-         * 对于普通弹幕，该回调函数只会调用一次；对于激光，该回调函数会对激光的每一个“体节”都调用一次。
-         * 如果该弹幕无法被消除，则该回调函数不会被调用。
+         * 消弹时的回调函数。可以利用这个回调函数，把消掉的弹幕转换成别的东西。例如，转化为得分道具，或者死尸弹。  
+         * 如果该弹幕最终没有被消除（例如因为这个该弹幕无法被消除），则该回调函数不会被调用。  
          */
         forEachCorpse?: (corpseInfo: { x: number, y: number }) => unknown,
     } = {}) {
-        if (!this.canBeErase || this.destroyed) return;
+        if (!this.canBeErase || this.destroyed) { return };
         options.forEachCorpse?.({ x: this.x, y: this.y });
         if (this.isInBoundary() && this.sprite.visible && this.sprite.alpha > 0) {
             // 如果能看见，则生成消弹特效，之后再删除
@@ -202,7 +194,7 @@ export class CommonDanmaku extends AbstractDanmaku {
     }
 
     destroy() {
-        if (this.destroyed) return;
+        if (this.destroyed) { return };
         this.hitboxGraphics?.destroy();
         this.sprite.destroy();
     }
@@ -243,7 +235,7 @@ export const prefabDanmakuHitboxRadius = {
     knife: 4,
     sword: 5.7,
     nuclear: 46.6,
-    // TODO: 菌弹，杆菌弹
+    // TODO: 菌弹，杆菌弹，激光段
     // MAY TODO: 阴阳玉，休止符
 } as const;
 
