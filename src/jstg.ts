@@ -5,9 +5,11 @@ import { MakePlayerOptions, Player } from "./player/player.js";
 import { makeSimple } from "./player/simple.js";
 import { makeRng } from "./random.js";
 import * as utils from './utils.js';
-import { Danmaku, makePrefabDanmaku } from "./danmaku.js";
+import { CommonDanmaku, makePrefabDanmaku, prefabDanmakuHitboxRadius } from "./danmaku/commonDanmaku.js";
+import { AbstractDanmaku } from "./danmaku/abstractDanmaku.js";
 import { makeObjPool } from "./objPool.js";
 import { LoadPrefabSounds, LoadPrefabSoundsOptions, LoadSound } from "./sounds.js";
+import { LaserBeam, makePrefabLaserBeam } from "./danmaku/laserBeam.js";
 
 /**
  * 循环的控制器对象，用于控制该循环
@@ -192,12 +194,14 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
     if (options.autoUpdateInput ?? true) { forever(() => input._update(), { priority: 30000 }); }
 
     const danmakuPool = (() => {
-        const { objects: danmakus, push, clean, _validCount } = makeObjPool<Danmaku>();
+        const { objects: danmakus, push, clean, _validCount } = makeObjPool<AbstractDanmaku>();
 
         const update = (player: Player) => {
             for (let i = 0; i < danmakus.length; i++) {
-                if (!danmakus[i].destroyed) danmakus[i].updateDamageToPlayer(player);
+                if (!danmakus[i].destroyed) { danmakus[i].update(player); }
             }
+            player._lastX = player.x;
+            player._lastY = player.y;
         };
 
         return {
@@ -235,41 +239,34 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
             y: stageHeight / 2,
         });
 
-        const commonDanmakuSprites = new pixi.Sprite({
+        const commonDanmakuLayer = new pixi.Sprite({
             parent: root,
             zIndex: 0, // 在 -100 到 100 中间
         });
 
-        const danmakuEraseSprites = new pixi.Sprite({
+        const danmakuEraseLayer = new pixi.Sprite({
             parent: root,
             zIndex: -10,
         });
 
+        // 弹幕引擎的场地尺寸是 150 * 180，这里放大到了 4/3 倍
         let width = 200;
         let height = 240;
-
-        const isInBoundary = (x: number, y: number) => Math.abs(x) <= width && Math.abs(y) <= height;
-        const isDanmakuInBoundary = (danmaku: Danmaku) =>
-            Math.abs(danmaku.x) <= width + 5 + danmaku.hitboxRadius * 1.5 &&
-            Math.abs(danmaku.y) <= height + 5 + danmaku.hitboxRadius * 1.5
 
         return {
             /** 根节点 */
             root,
             /** 装有所有普通弹幕节点的根节点 */
-            commonDanmakuSprites,
+            commonDanmakuLayer,
             /** 装有所有消弹特效的根节点 */
-            danmakuEraseSprites,
+            danmakuEraseLayer,
             /** 场地宽度的一半 */
             get width() { return width; },
-            set width(n: number) { width = n; },
+            // set width(n: number) { width = n; },
             /** 场地高度的一半 */
             get height() { return height; },
-            set height(n: number) { height = n; },
-            /** 检查一个点是否在版面内 */
-            isInBoundary,
-            /** 检查一个弹幕是否在版面内 */
-            isDanmakuInBoundary,
+            // set height(n: number) { height = n; },
+            // MAY TODO: 改变场地尺寸
         };
     })();
 
@@ -461,6 +458,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          * }, { with: myDanmaku, rely: myPlayer });
          */
         makeDanmaku: null as unknown as typeof makeDanmaku, // 又是奇技淫巧
+        makeLaserBeam: null as unknown as typeof makeLaserBeam, // 又是奇技淫巧
         /** JSTG 预置的一些贴图 */
         prefabTextures,
         /** JSTG 预置的一些音效，部分音效解包自东方原作 */
@@ -509,27 +507,77 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
     })();
     game.makePrefabPlayer = makePrefabPlayer;
 
-    type MakeDanmakuOptions<T = PrefabDanmakuNames> = {
-        type: T,
-        /** @default game.commonDanmakuSprites */
+    type MakeDanmakuOptions = {
+        type: PrefabDanmakuNames,
+        /** @default game.commonDanmakuLayer */
         parent?: pixi.Container,
-        /** @default 1 */
-        scale?: number,
+        /** @default 0 */
+        x?: number,
+        /** @default 0 */
+        y?: number,
+        /** @default 0 */
+        rotation?: number,
+        /** 该弹幕的判定半径，默认值请参考 prefabDanmakuHitboxRadius */
+        radius?: number,
     };
 
-    function makeDanmaku(type: PrefabDanmakuNames): Danmaku
-    function makeDanmaku(options: MakeDanmakuOptions): Danmaku
-    function makeDanmaku(type: string): unknown
-    function makeDanmaku(options: MakeDanmakuOptions<string>): unknown
-    function makeDanmaku(options: PrefabDanmakuNames | MakeDanmakuOptions | string | MakeDanmakuOptions<string>) {
+    function makeDanmaku(options: PrefabDanmakuNames | MakeDanmakuOptions) {
         if (typeof options === "string") {
-            options = { type: options }
+            options = { type: options };
         };
-        // @ts-expect-error 这里如果输入 string 会引发未定义行为，忽略错误
-        return makePrefabDanmaku(game, mainBoard, options.type, options.parent, options.scale);
+        const { type, parent, x, y, rotation, radius } = options;
+        return makePrefabDanmaku({
+            game, board: mainBoard,
+            type, parent: parent ?? null,
+            x: x ?? null, y: y ?? null, rotation: rotation ?? null,
+            radius: radius ?? null,
+        });
     }
-
     game.makeDanmaku = makeDanmaku;
+
+    type MakeLaserBeamOptions = {
+        type: PrefabDanmakuNames,
+        /** @default 0 */
+        x?: number, 
+        /** @default 0 */
+        y?: number, 
+        /** @default 0 */
+        rotation?: number
+        /** @default game.commonDanmakuLayer */
+        parent?: pixi.Container,
+        /** @default 1 */
+        width?: number,
+        /** @default 400 */
+        length?: number,
+        /**
+         * 如果不填写此参数，则激光没有起始端点。
+         * 若填写 startPoint: {} ，则默认为：
+         * @default{ type: "nova", pos: 0 }
+         */
+        startPoint?: { type?: PrefabDanmakuNames, pos?: number, },
+        /**
+         * 如果不填写此参数，则激光没有末尾端点。
+         * 若填写 endPoint: {} ，则默认为：
+         * @default{ type: "nova", pos: 1 }
+         */
+        endPoint?: { type?: PrefabDanmakuNames, pos?: number, },
+    };
+
+    function makeLaserBeam(options: PrefabDanmakuNames | MakeLaserBeamOptions) {
+        if (typeof options === "string") {
+            options = { type: options };
+        };
+        const { type, parent, x, y, rotation, width, length, startPoint, endPoint } = options;
+        return makePrefabLaserBeam({
+            game, board: mainBoard,
+            type: type as PrefabDanmakuNames,
+            x: x ?? null, y: y ?? null, rotation: rotation ?? null,
+            parent: parent ?? null,
+            halfWidth: width ?? null, length: length ?? null,
+            startPoint: startPoint ?? null, endPoint: endPoint ?? null,
+        });
+    }
+    game.makeLaserBeam = makeLaserBeam;
 
     //#endregion
 

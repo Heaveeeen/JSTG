@@ -111,9 +111,10 @@ import { Danmaku, prefabDanmakuHitboxRadius } from "./dist/danmaku.js";
         }
     });*/
 
-    // 弹幕一览
-    
-    let x = -180, y = -200;
+
+
+    // 弹幕一览 
+    /*let x = -180, y = -200;
     let maxR = 0;
     for (const danType in prefabDanmakuHitboxRadius) {
         const dan = asAny(makeDanmaku(danType));
@@ -128,6 +129,22 @@ import { Danmaku, prefabDanmakuHitboxRadius } from "./dist/danmaku.js";
             y += maxR * 4 + 40;
         }
     }/**/
+
+
+
+    for (let i = 0; i < 5; i++) {
+        game.makeLaserBeam({
+            type: "smallball",
+            startPoint: {}, endPoint: {},
+            x: 0, y: [-200,-180,-150,-50,80][i], rotation: deg(30),
+            width: [1,3,5,10,20][i], length: 150,
+        });
+    }
+
+    game.makeDanmaku({
+        type: "smallball",
+        x: -100, y: -100
+    });
 
     forever(loop => {
         pl.update({input, keyMap: {

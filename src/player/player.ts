@@ -2,7 +2,7 @@ import * as pixi from "pixi";
 import { Input, Key } from "../Input.js";
 import { Board, Game } from "../jstg.js";
 import { alphaTo, deg, clamp, staticAssert } from "../utils.js";
-import { Danmaku } from "../danmaku.js";
+import { AbstractDanmaku } from "../danmaku/abstractDanmaku.js";
 
 interface PlayerKeyMapOptions {
     /** @default Key.ArrowUp */
@@ -38,7 +38,7 @@ interface PlayerUpdateOptions {
 }
 
 interface PlayerHitByEnemyOptions {
-    danmaku?: Danmaku,
+    danmaku?: AbstractDanmaku,
 }
 
 export interface MakePlayerOptions {
@@ -354,7 +354,7 @@ export class Player {
         }
     }}.call(this);
 
-    hitByDanmaku(danmaku: Danmaku) {
+    hitByDanmaku(danmaku: AbstractDanmaku) {
         if (this.state.type === "common") {
             if (this.state.invincibleTime === 0) {
                 const { pldead00 } = this.game.prefabSounds.thse;
@@ -366,7 +366,7 @@ export class Player {
                     this.state = { type: "dying", timeSinceDying: 0 };
                 }
             }
-            danmaku.erase();
+            //danmaku.erase();
         }
     }
 

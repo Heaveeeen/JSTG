@@ -10,10 +10,12 @@ export interface PlaySoundOptions {
     autoStart?: boolean,
 }
 
-const globalMusicGain = ctx.createGain();
+export const globalMusicGain = ctx.createGain();
 globalMusicGain.connect(ctx.destination);
-const globalSfxGain = ctx.createGain();
+globalMusicGain.gain.value = 0.8;
+export const globalSfxGain = ctx.createGain();
 globalSfxGain.connect(ctx.destination);
+globalSfxGain.gain.value = 0.8;
 
 interface PlaySoundPoolItem {
     controller: PlaySoundController | null,
@@ -25,12 +27,19 @@ export interface PlaySoundController extends Destroyable {
     localGain: GainNode;
 }
 
-export async function LoadSound(loadOptions: { src: string, poolSize: number, globalGainType: "music" | "sfx" }) {
-    const { src, poolSize, globalGainType } = loadOptions;
+export async function LoadSound(loadOptions: {
+    src: string,
+    /** @default 1 */
+    poolSize?: number,
+    /** @default "sfx" */
+    globalGainType?: "music" | "sfx"
+}) {
+    const { src } = loadOptions;
+    const poolSize = loadOptions.poolSize ?? 1;
     const response = await fetch(src);
     const arrayBuffer = await response.arrayBuffer();
     const buffer = await ctx.decodeAudioData(arrayBuffer);
-    const globalGain = globalGainType === "music" ? globalMusicGain : globalSfxGain
+    const globalGain = (loadOptions.globalGainType ?? "sfx") === "music" ? globalMusicGain : globalSfxGain
     const sourcePool: PlaySoundPoolItem[] = [];
 
     for (let i = 0; i < poolSize; i++) {

@@ -39,12 +39,49 @@ export const deg = (n: number) => n * Math.PI / 180;
 export const makeElements = <T>(input?: T | T[]): T[] =>
     input === undefined ? [] : (Array.isArray(input) ? input : [input]);
 
+export interface Vec2 {
+    x: number,
+    y: number,
+}
+
+/** 计算点 P 到线段 AB 距离的平方 */
+export const getPointToSegmentDist2 = (AB: Vec2, AP: Vec2) => {
+    /** AB * AP */
+    const dot = AB.x * AP.x + AB.y * AP.y;
+    if (dot <= 0) {
+        return AP.x ** 2 + AP.y ** 2;
+    }
+    /** AB^2 */
+    const len2 = AB.x ** 2 + AB.y ** 2;
+    if (dot >= len2) {
+        return (AP.x - AB.x) ** 2 + (AP.y - AB.y) ** 2;
+    }
+    return (AB.y * AP.x - AB.x * AP.y) ** 2 / (AB.x ** 2 + AB.y ** 2);
+};
+
+/** 转轴公式，把 {x, y} 绕坐标原点旋转 theta 弧度。注意转的是向量，不是坐标轴。 */
+export const rotateVec = ({x, y}: Readonly<Vec2>, theta: number) => cast<Vec2>({
+    x: x * Math.cos(theta) + y * Math.sin(theta),
+    y: y * Math.cos(theta) - x * Math.sin(theta),
+});
+
+/**
+ * 把分贝数转化为振幅倍数。
+ * @example
+ * decibel(0) // 1，即不变
+ * decibel(-6) // 约为 0.5，即减半
+ * decibel(6) // 约为 2，即翻倍
+ */
+export const decibel = (db: number) => 10 ** (db / 20);
+/** 把振幅倍数转化为分贝数，是 decibel 的逆运算。 */
+export const gainToDecibel = (gain: number) => Math.log10(gain) * 20;
+
 
 
 /** 如果给定参数不属于 T，让 ts 报错 */
 export const staticAssert = <T>(x: T) => x;
 
 /** 仅限向下转换的 as 断言 */
-export const cast = <T, U extends T>(x: T) => x as U;
+export const cast = <T, U extends T = T>(x: T) => x as U;
 
 export const asAny = (x: any) => x as any;
