@@ -1,12 +1,13 @@
 import { MakePlayerOptions, Player } from './player.js';
-import { Board, Game } from "../jstg.js";
+import { Board, Combat, Game } from "../jstg.js";
 import { PrefabTextures } from '../textures.js';
 
 export const makeSimple = async (
-    game: Game, board: Board, prefabTextures: PrefabTextures, options: MakePlayerOptions = {}
+    game: Game, combat: Combat, board: Board, prefabTextures: PrefabTextures, options: MakePlayerOptions = {}
 ) => new Player({
     name: "Simple",
     game,
+    combat,
     board,
     mainTexture: prefabTextures.player.Simple,
     hitboxTexture: prefabTextures.player.hitbox,

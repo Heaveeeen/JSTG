@@ -1,5 +1,5 @@
 import * as pixi from "pixi";
-import { Game, Board, Player } from "../jstg.js";
+import { Game, Board, Player, Combat } from "../jstg.js";
 
 
 export abstract class AbstractDanmaku {
@@ -10,6 +10,7 @@ export abstract class AbstractDanmaku {
      */
     readonly type: string;
     readonly game: Game;
+    readonly combat: Combat;
     readonly board: Board;
 
     constructor(options: {
@@ -20,12 +21,14 @@ export abstract class AbstractDanmaku {
          */
         type: string;
         game: Game;
+        combat: Combat;
         board: Board;
     }) {
         this.type = options.type;
         this.game = options.game;
+        this.combat = options.combat;
         this.board = options.board;
-        this.game.danmakuPool.push(this);
+        this.combat.danmakuPool.push(this);
     }
 
     abstract x: number;

@@ -1,5 +1,5 @@
 import * as pixi from "pixi";
-import { Board, Game, LoopController } from "../jstg.js";
+import { Board, Combat, Game, LoopController } from "../jstg.js";
 import { Player } from "../player/player.js";
 import { alphaTo, getPointToSegmentDist2, staticAssert, Vec2 } from "../utils.js";
 import { PrefabDanmakuNames } from "../textures.js";
@@ -15,6 +15,7 @@ export interface NewCommonDanmakuOptions {
      */
     type: string;
     game: Game;
+    combat: Combat;
     board: Board;
     /** 弹幕判定圆的半径 */
     hitboxRadius: number;
@@ -236,17 +237,17 @@ export const prefabDanmakuHitboxRadius = {
 } as const;
 
 export const makePrefabDanmaku = (options: {
-    game: Game, board: Board, type: PrefabDanmakuNames,
+    game: Game, combat: Combat, board: Board, type: PrefabDanmakuNames,
     x: number | null, y: number | null, rotation: number | null,
     parent: pixi.Container | null,
     radius: number | null,
     // TODO: zIndex
 }) => {
-    const { type, game, board, x, y, rotation } = options;
+    const { type, game, combat, board, x, y, rotation } = options;
     const parent = options.parent ?? board.commonDanmakuLayer;
     const hitboxRadius = options.radius ?? prefabDanmakuHitboxRadius[type];
     const danmaku = new CommonDanmaku({
-        type, game, board,
+        type, game, combat, board,
         hitboxRadius,
         mainSprite: new pixi.Sprite({
             parent, x: x ?? undefined, y: y ?? undefined, rotation: rotation ?? undefined,

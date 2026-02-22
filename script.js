@@ -11,12 +11,14 @@ import { Danmaku, prefabDanmakuHitboxRadius } from "./dist/danmaku.js";
 
 // 启动游戏
 (async () => {
-
     const game = await jstg.LaunchGame();
     const { Key } = jstg;
-    const { input, forever, coDo, app, board, ingameUI, debug, makeDanmaku } = game;
+    const { input, forever, coDo, app, debug } = game;
     const { isDown, isUp, isHold, isIdle } = input;
     const { asAny } = jstg.utils;
+
+    const combat = await game.StartCombat()
+    const { board, ingameUI, makeDanmaku } = combat;
 
     console.log("game:", game);
     const txt = new pixi.Text({
@@ -42,7 +44,7 @@ import { Danmaku, prefabDanmakuHitboxRadius } from "./dist/danmaku.js";
     });
 
     /** 自机 */
-    const pl = await game.makePrefabPlayer.simple({
+    const pl = await combat.makePrefabPlayer.simple({
         autoUpdateSelf: false,
     });
     const se = game.prefabSounds.thse;
@@ -133,20 +135,20 @@ import { Danmaku, prefabDanmakuHitboxRadius } from "./dist/danmaku.js";
 
 
     for (let i = 0; i < 5; i++) {
-        game.makeLaserBeam({
+        combat.makeLaserBeam({
             type: "smallball",
             startPoint: {}, endPoint: {},
             x: 0, y: [-200,-180,-150,-50,80][i], rotation: deg(30),
             width: [1,3,5,10,20][i], length: 150,
         });/**/
-        /*game.makeDanmaku({
+        /*combat.makeDanmaku({
             type: "smallball",
             x: 0, y: 70 * i - 180,
             radius: [1,3,5,10,20][i],
         });/**/
     }
 
-    game.makeDanmaku({
+    combat.makeDanmaku({
         type: "smallball",
         x: -100, y: -100,
     });

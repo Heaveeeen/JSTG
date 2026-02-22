@@ -26,10 +26,19 @@ export const makeObjPool = <T extends Destroyable>() => {
         lastValidCount = Math.max(validCount, 60);
     }
 
+    let destroyed = false;
+    const destroy = () => {
+        if (destroyed) { return; }
+        for (const obj of objects) { obj.destroy(); }
+        destroyed = true;
+    }
+
     return {
         objects,
         push,
         clean,
         get _validCount() { return validCount; },
+        destroy,
+        get destroyed() { return destroyed; }
     };
 }

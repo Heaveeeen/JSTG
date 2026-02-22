@@ -1,6 +1,6 @@
 import * as pixi from "pixi";
 import { Input, Key } from "../Input.js";
-import { Board, Game } from "../jstg.js";
+import { Board, Combat, Game } from "../jstg.js";
 import { alphaTo, deg, clamp, staticAssert } from "../utils.js";
 import { AbstractDanmaku } from "../danmaku/abstractDanmaku.js";
 
@@ -57,6 +57,7 @@ export class Player {
 
     readonly name: string;
     readonly game: Game;
+    readonly combat: Combat;
     readonly board: Board;
 
     hue1: number;
@@ -118,7 +119,8 @@ export class Player {
 
     constructor(options: {
         name: string,
-        game: Game
+        game: Game,
+        combat: Combat,
         board: Board,
         mainTexture: pixi.Texture,
         hitboxTexture: pixi.Texture,
@@ -143,6 +145,7 @@ export class Player {
     }) {
         this.name = options.name;
         this.game = options.game;
+        this.combat = options.combat;
         this.board = options.board;
         this.hue1 = options.hue1 ?? 0;
         this.hitboxRadius = options.hitboxRadius ?? 3;
@@ -208,7 +211,7 @@ export class Player {
         }
 
         if (options.autoUpdateDanmakuPool ?? true) {
-            this.game.forever(() => this.game.danmakuPool.update(this), { priority: -30000, refs: this });
+            this.game.forever(() => this.combat.danmakuPool.update(this), { priority: -30000, owns: this, refs: this.combat });
         }
     }
 

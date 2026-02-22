@@ -30,7 +30,7 @@ export interface LoopController {
 
 export interface Destroyable {
     destroy(): any;
-    get destroyed(): boolean;
+    readonly destroyed: boolean;
 }
 
 interface LoopOptions {
@@ -53,16 +53,18 @@ interface LoopOptions {
 
 export type CoDoGenerator = Generator<void, void, void>;
 
+// TODO: 这堆基于类型推导的东西，类型注释全都会自动展开。等以后架构稳定下来了，要把类型单独声明出来，写成接口或者类。
 type ExtractPromiseType<U> = U extends Promise<infer T> ? T : never
 export type Game = ExtractPromiseType<ReturnType<typeof LaunchGame>>;
+export type Combat = ExtractPromiseType<ReturnType<Game["StartCombat"]>>;
 
-export type Board = Game["board"];
-export type IngameUI = Game["ingameUI"];
+export type Board = Combat["board"];
+export type IngameUI = Combat["ingameUI"];
 
 // MAY TODO: 把启动游戏和开始游戏分开，启动游戏只启动一个空壳游戏，版面之类的东西必须开始一局游戏才会存在。
 // 但这个东西其实不太好命名，“一局游戏”应该用什么名字指代呢？叫 combat 吗？有点怪但似乎勉强可以。。。
 /** @async 启动 JSTG 游戏 */
-export async function LaunchGame(/** 不建议填参数，想干啥自己去改源码吧 */options: {
+export async function LaunchGame(/** 不建议填参数，想干啥自己去改源码吧 */gameOptions: {
     /** @default 640 */
     stageWidth?: number,
     /** @default 480 */
@@ -81,14 +83,14 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
 
     const app = new pixi.Application();
 
-    const stageWidth = options.stageWidth ?? 640;
-    const stageHeight = options.stageHeight ?? 480;
+    const stageWidth = gameOptions.stageWidth ?? 640;
+    const stageHeight = gameOptions.stageHeight ?? 480;
     /** 宽高比 */
     const stageProportion = stageWidth / stageHeight;
 
     let rendererResolution = Math.min(globalThis.innerWidth, globalThis.innerHeight * stageProportion) / stageWidth;
-    if (options.onResizeWindow) {
-        globalThis.addEventListener("resize", () => options.onResizeWindow!(app));
+    if (gameOptions.onResizeWindow) {
+        globalThis.addEventListener("resize", () => gameOptions.onResizeWindow!(app));
     } else {
         let isResizing = false;
         globalThis.addEventListener("resize", () => {
@@ -102,7 +104,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         });
     }
 
-    await app.init(options.pixiApplicationOptions ?? {
+    await app.init(gameOptions.pixiApplicationOptions ?? {
         backgroundColor: "#000000",
         preference: "webgpu",
         useBackBuffer: true,
@@ -121,6 +123,10 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
             format: ["avif", "webp", "png", "jpg", "jpeg"],
         },
     });
+
+    const prefabTextures = await LoadPrefabTextures(gameOptions.loadPrefabTexturesOptions);
+
+    const prefabSounds = await LoadPrefabSounds(gameOptions.loadPrefabSoundsOptions);
 
     app.ticker.maxFPS = 60;
 
@@ -192,34 +198,6 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         return loop;
     }
 
-    const input = makeInput();
-    if (options.autoUpdateInput ?? true) { forever(() => input._update(), { priority: 30000 }); }
-
-    const danmakuPool = (() => {
-        const { objects: danmakus, push, clean, _validCount } = makeObjPool<AbstractDanmaku>();
-
-        const update = (player: Player) => {
-            for (let i = 0; i < danmakus.length; i++) {
-                if (!danmakus[i].destroyed) { danmakus[i].update(player); }
-            }
-            player._lastX = player.x;
-            player._lastY = player.y;
-        };
-
-        return {
-            /** @readonly 所有接受判定的弹幕，⚠️可能含有已经摧毁的无效弹幕 */
-            danmakus,
-            /** 推入并开始更新一个弹幕，此函数会在合适的时机自动触发清理 */
-            push,
-            /** 更新所有弹幕的攻击逻辑 */
-            update,
-            /** 立即清理弹幕列表，一般不用管这个东西 */
-            clean,
-            /** @readonly @internal 当前场上的弹幕数量（⚠️包含无效弹幕） */
-            get _validCount() { return _validCount; },
-        };
-    })();
-
     function* Sleep(
         /** 要等待的时间（帧） */
         timeFrame: number
@@ -230,84 +208,283 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         }
     }
 
-    const prefabTextures = await LoadPrefabTextures(options.loadPrefabTexturesOptions);
+    const input = makeInput();
+    if (gameOptions.autoUpdateInput ?? true) { forever(() => input._update(), { priority: 30000 }); }
 
-    const prefabSounds = await LoadPrefabSounds(options.loadPrefabSoundsOptions);
+    /** ⚠️不要使用此函数的返回值 */
+    async function StartCombat() {
 
-    const mainBoard = await (async () => {
-        const root = new pixi.Sprite({
-            parent: app.stage,
-            x: (240 - 70) * stageWidth / 480, // (sc舞台半宽 - CameraX) * jstg相比sc的放大倍数
-            y: stageHeight / 2,
-        });
+        const board = await (async () => {
+            const root = new pixi.Sprite({
+                parent: app.stage,
+                x: (240 - 70) * stageWidth / 480, // (sc舞台半宽 - CameraX) * jstg相比sc的放大倍数
+                y: stageHeight / 2,
+            });
 
-        const commonDanmakuLayer = new pixi.Sprite({
-            parent: root,
-            zIndex: 0, // 在 -100 到 100 中间
-        });
+            const commonDanmakuLayer = new pixi.Sprite({
+                parent: root,
+                zIndex: 0, // 在 -100 到 100 中间
+            });
 
-        const danmakuEraseLayer = new pixi.Sprite({
-            parent: root,
-            zIndex: -10,
-        });
+            const danmakuEraseLayer = new pixi.Sprite({
+                parent: root,
+                zIndex: -10,
+            });
 
-        // 弹幕引擎的场地尺寸是 150 * 180，这里放大到了 4/3 倍
-        let width = 200;
-        let height = 240;
+            // 弹幕引擎的场地尺寸是 150 * 180，这里放大到了 4/3 倍
+            let width = 200;
+            let height = 240;
 
-        return {
-            /** 根节点 */
-            root,
-            /** 装有所有普通弹幕节点的根节点 */
-            commonDanmakuLayer,
-            /** 装有所有消弹特效的根节点 */
-            danmakuEraseLayer,
-            /** 场地宽度的一半 */
-            get width() { return width; },
-            // set width(n: number) { width = n; },
-            /** 场地高度的一半 */
-            get height() { return height; },
-            // set height(n: number) { height = n; },
-            // MAY TODO: 改变场地尺寸
-        };
-    })();
+            return {
+                /** 根节点 */
+                root,
+                /** 装有所有普通弹幕节点的根节点 */
+                commonDanmakuLayer,
+                /** 装有所有消弹特效的根节点 */
+                danmakuEraseLayer,
+                /** 场地宽度的一半 */
+                get width() { return width; },
+                // set width(n: number) { width = n; },
+                /** 场地高度的一半 */
+                get height() { return height; },
+                // set height(n: number) { height = n; },
+                // MAY TODO: 改变场地尺寸
+                destroy() {
+                    root.destroy();
+                    commonDanmakuLayer.destroy();
+                    danmakuEraseLayer.destroy();
+                },
+                get destroyed() { return root.destroyed },
+            };
+        })();
 
-    type Board = typeof mainBoard;
+        const ingameUI = (() => {
+            const root = new pixi.Sprite({
+                parent: app.stage,
+                zIndex: 0,
+            });
+            const windowFrame = new pixi.Sprite({
+                parent: root, texture: prefabTextures.ingameUI.window,
+            });
 
-    const ingameUI = (() => {
-        const root = new pixi.Sprite({parent: app.stage});
-        const windowFrame = new pixi.Sprite({
-            parent: root, texture: prefabTextures.ingameUI.window
-        });
+            return {
+                /** 根节点 */
+                root,
+                /** 游戏内 UI 的那个像窗口框架的大背景 */
+                windowFrame,
+                destroy() {
+                    root.destroy();
+                    windowFrame.destroy();
+                },
+                get destroyed() { return root.destroyed; },
+            }
+        })();
 
-        const fpsMonitor = new pixi.Text({
-            parent: root,
-            text: `FPS:-`,
-            x: 572, y: 458,
-            anchor: 0,
-            style: {
-                fontSize: 12,
-                fill: "#000000",
-                align: "left",
-                stroke: {
-                    color: "#4d4d4d",
-                    width: 3,
-                    join: "round",
+        const danmakuPool = (() => {
+            const pool = makeObjPool<AbstractDanmaku>();
+            const { objects: danmakus, push, clean, _validCount, destroy } = pool;
+
+            const update = (player: Player) => {
+                for (let i = 0; i < danmakus.length; i++) {
+                    if (!danmakus[i].destroyed) { danmakus[i].update(player); }
                 }
-            },
-        });
+                player._lastX = player.x;
+                player._lastY = player.y;
+            };
 
-        return {
-            /** 根节点 */
-            root,
-            /** 游戏内 UI 的那个像窗口框架的大背景 */
-            windowFrame,
-            /** fps 指示器 */
-            fpsMonitor,
+            return {
+                /** @readonly 所有接受判定的弹幕，⚠️可能含有已经摧毁的无效弹幕 */
+                danmakus,
+                /** 推入并开始更新一个弹幕，此函数会在合适的时机自动触发清理 */
+                push,
+                /** 更新所有弹幕的攻击逻辑 */
+                update,
+                /** 立即清理弹幕列表，一般不用管这个东西 */
+                clean,
+                /** @readonly @internal 当前场上的弹幕数量（⚠️包含无效弹幕） */
+                get _validCount() { return _validCount; },
+                destroy,
+                get destroyed() { return pool.destroyed; },
+            };
+        })();
+
+        const players: Player[] = [];
+
+        const combat = {
+            /**
+             * @readonly
+             * 游戏内 UI ，版面上盖着的那一层 UI ，包括血条啥的以及那个像窗口框架的东西
+             */
+            ingameUI,
+            /**
+             * @readonly
+             * 版面，就是自机和弹幕所处的那个主要场地
+             */
+            board,
+            /**
+             * @readonly
+             * 弹幕管理器，可以利用这个东西来每帧更新所有弹幕，这样弹幕才能攻击玩家。  
+             * 正常情况下不用管这个东西，因为自机会自动帮你调用它的 update 方法。  
+             * 也可以用这个来遍历所有弹幕。  
+             */
+            danmakuPool,
+            /**
+             * @readonly
+             * JSTG 预置的自机
+             * @example
+             * // 简单的例子
+             * const player = game.makePrefabPlayer.simple();
+             * 
+             * // 一个手动更新以设置键位的例子
+             * const player = game.prefabPlayers.makeSimple({ autoUpdateSelf: false });
+             * game.forever(loop => {
+             *     player.update({
+             *         highSpeed: 5, slowSpeed: 2,
+             *         keyMap: {
+             *             up: Key.KeyW,
+             *             down: Key.KeyS,
+             *             left: Key.KeyA,
+             *             right: Key.KeyD,
+             *         },
+             *     });
+             * });
+             */
+            makePrefabPlayer: null as unknown as typeof makePrefabPlayer, // 奇技淫巧
+            /** 
+             * 创建一个 JSTG 预置的弹幕  
+             * @example
+             * const myPlayer = game.makePrefabPlayer.simple();
+             * const myDanmaku = game.makeDanmaku("smallball");
+             * myDanmaku.x = 0;
+             * myDanmaku.y = 0;
+             * game.forever(loop => {
+             *     myPlayer.update();
+             *     myDanmaku.move(2);
+             *     myDanmaku.boundaryDelete();
+             *     game.danmakuPool.update(myPlayer);
+             * }, { with: myDanmaku, rely: myPlayer });
+             */
+            makeDanmaku: null as unknown as typeof makeDanmaku, // 又是奇技淫巧
+            makeLaserBeam: null as unknown as typeof makeLaserBeam, // 又是奇技淫巧
+            destroy() {
+                ingameUI.destroy();
+                board.destroy();
+                danmakuPool.destroy();
+                for (const pl of players) { pl.destroy(); }
+            },
+            get destroyed() { return board.destroyed; },
+        };
+
+        const makePrefabPlayer = (()=>{
+            const simple = async (options: MakePlayerOptions = {}) => {
+                const simple = await makeSimple(game, combat, board, prefabTextures, options);
+                players.push(simple);
+                return simple;
+            }
+            /* TODO: simple.homingOnly = (options: MakePlayerOptions = {}) => ...
+             * maple, icu
+             * reimu, marisa, sanae
+             */
+            return {
+                /** 创建预置自机：Simple */
+                simple,
+            }
+        })();
+        combat.makePrefabPlayer = makePrefabPlayer;
+
+        type MakeDanmakuOptions = {
+            type: PrefabDanmakuNames,
+            /** @default game.commonDanmakuLayer */
+            parent?: pixi.Container,
+            /** @default 0 */
+            x?: number,
+            /** @default 0 */
+            y?: number,
+            /** @default 0 */
+            rotation?: number,
+            /** 该弹幕的判定半径，默认值请参考 prefabDanmakuHitboxRadius */
+            radius?: number,
+        };
+
+        function makeDanmaku(options: PrefabDanmakuNames | MakeDanmakuOptions) {
+            if (typeof options === "string") {
+                options = { type: options };
+            };
+            const { type, parent, x, y, rotation, radius } = options;
+            return makePrefabDanmaku({
+                game, combat, board: board,
+                type, parent: parent ?? null,
+                x: x ?? null, y: y ?? null, rotation: rotation ?? null,
+                radius: radius ?? null,
+            });
         }
-    })();
+        combat.makeDanmaku = makeDanmaku;
+
+        type MakeLaserBeamOptions = {
+            type: PrefabDanmakuNames,
+            /** @default 0 */
+            x?: number, 
+            /** @default 0 */
+            y?: number, 
+            /** @default 0 */
+            rotation?: number
+            /** @default game.commonDanmakuLayer */
+            parent?: pixi.Container,
+            /** @default 2 */
+            width?: number,
+            /** @default 400 */
+            length?: number,
+            /**
+             * 如果不填写此参数，则激光没有起始端点。
+             * 若填写 startPoint: {} ，则默认为：
+             * @default{ type: "nova", pos: 0 }
+             */
+            startPoint?: { type?: PrefabDanmakuNames, pos?: number, },
+            /**
+             * 如果不填写此参数，则激光没有末尾端点。
+             * 若填写 endPoint: {} ，则默认为：
+             * @default{ type: "nova", pos: 1 }
+             */
+            endPoint?: { type?: PrefabDanmakuNames, pos?: number, },
+        };
+
+        function makeLaserBeam(options: PrefabDanmakuNames | MakeLaserBeamOptions) {
+            if (typeof options === "string") {
+                options = { type: options };
+            };
+            const { type, parent, x, y, rotation, width, length, startPoint, endPoint } = options;
+            return makePrefabLaserBeam({
+                game, combat, board: board,
+                type: type as PrefabDanmakuNames,
+                x: x ?? null, y: y ?? null, rotation: rotation ?? null,
+                parent: parent ?? null,
+                halfWidth: width ?? null, length: length ?? null,
+                startPoint: startPoint ?? null, endPoint: endPoint ?? null,
+            });
+        }
+        combat.makeLaserBeam = makeLaserBeam;
+
+        return combat;
+    }
 
     // 粗测帧率
+    const fpsMonitor = new pixi.Text({
+        parent: app.stage,
+        text: `FPS:-`,
+        x: 572, y: 458,
+        anchor: 0,
+        style: {
+            fontSize: 12,
+            fill: "#000000",
+            align: "left",
+            stroke: {
+                color: "#4d4d4d",
+                width: 3,
+                join: "round",
+            }
+        },
+        zIndex: 100,
+    });
     let fps = 60;
     let timeRecords: number[] = [];
     forever(() => {
@@ -316,7 +493,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         if (timeRecords.length > 10) {
             fps = Math.round(1000000 / (now - (timeRecords.shift() as number))) / 100;
         }
-        ingameUI.fpsMonitor.text = `FPS:${fps}`;
+        fpsMonitor.text = `FPS:${fps}`;
     }, { priority: 1e9 });
 
     let frameCompCount = 0;
@@ -357,16 +534,9 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          * pixi.Application 实例
          */
         app,
-        /**
-         * @readonly
-         * 游戏内 UI ，版面上盖着的那一层 UI ，包括血条啥的以及那个像窗口框架的东西
-         */
-        ingameUI,
-        /**
-         * @readonly
-         * 版面，就是自机和弹幕所处的那个主要场地
-         */
-        board: mainBoard,
+        StartCombat,
+        /** fps 指示器 */
+        fpsMonitor,
         /**
          * @readonly
          * 每帧执行一次给定的回调函数。  
@@ -424,44 +594,6 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         get fps() { return fps; },
         /** @readonly @generator 等待 timeFrame 帧 */
         Sleep,
-        /**
-         * @readonly
-         * JSTG 预置的自机
-         * @example
-         * // 简单的例子
-         * const player = game.makePrefabPlayer.simple();
-         * 
-         * // 一个手动更新以设置键位的例子
-         * const player = game.prefabPlayers.makeSimple({ autoUpdateSelf: false });
-         * game.forever(loop => {
-         *     player.update({
-         *         highSpeed: 5, slowSpeed: 2,
-         *         keyMap: {
-         *             up: Key.KeyW,
-         *             down: Key.KeyS,
-         *             left: Key.KeyA,
-         *             right: Key.KeyD,
-         *         },
-         *     });
-         * });
-         */
-        makePrefabPlayer: null as unknown as typeof makePrefabPlayer, // 奇技淫巧
-        /** 
-         * 创建一个 JSTG 预置的弹幕  
-         * @example
-         * const myPlayer = game.makePrefabPlayer.simple();
-         * const myDanmaku = game.makeDanmaku("smallball");
-         * myDanmaku.x = 0;
-         * myDanmaku.y = 0;
-         * game.forever(loop => {
-         *     myPlayer.update();
-         *     myDanmaku.move(2);
-         *     myDanmaku.boundaryDelete();
-         *     game.danmakuPool.update(myPlayer);
-         * }, { with: myDanmaku, rely: myPlayer });
-         */
-        makeDanmaku: null as unknown as typeof makeDanmaku, // 又是奇技淫巧
-        makeLaserBeam: null as unknown as typeof makeLaserBeam, // 又是奇技淫巧
         /** JSTG 预置的一些贴图 */
         prefabTextures,
         /** JSTG 预置的一些音效，部分音效解包自东方原作 */
@@ -479,12 +611,6 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          * ); // 根据权重，随机返回一个弹幕类型
          */
         rand,
-        /**
-         * @readonly
-         * 弹幕管理器，可以利用这个东西来每帧更新所有弹幕，这样弹幕才能攻击玩家  
-         * 正常情况下不用管这个东西，因为自机会自动帮你调用它的 update 方法
-         */
-        danmakuPool,
         /** 调试模式工具，如上帝模式 */
         debug,
         /**
@@ -496,91 +622,6 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
             return endingLoop.clock;
         },
     };
-
-    const makePrefabPlayer = (()=>{
-        const simple = (options: MakePlayerOptions = {}) => makeSimple(game, mainBoard, prefabTextures, options);
-        /* TODO: simple.homingOnly = (options: MakePlayerOptions = {}) => ...
-         * maple, icu
-         * reimu, marisa, sanae
-         */
-        return {
-            /** 创建预置自机：Simple */
-            simple,
-        }
-    })();
-    game.makePrefabPlayer = makePrefabPlayer;
-
-    type MakeDanmakuOptions = {
-        type: PrefabDanmakuNames,
-        /** @default game.commonDanmakuLayer */
-        parent?: pixi.Container,
-        /** @default 0 */
-        x?: number,
-        /** @default 0 */
-        y?: number,
-        /** @default 0 */
-        rotation?: number,
-        /** 该弹幕的判定半径，默认值请参考 prefabDanmakuHitboxRadius */
-        radius?: number,
-    };
-
-    function makeDanmaku(options: PrefabDanmakuNames | MakeDanmakuOptions) {
-        if (typeof options === "string") {
-            options = { type: options };
-        };
-        const { type, parent, x, y, rotation, radius } = options;
-        return makePrefabDanmaku({
-            game, board: mainBoard,
-            type, parent: parent ?? null,
-            x: x ?? null, y: y ?? null, rotation: rotation ?? null,
-            radius: radius ?? null,
-        });
-    }
-    game.makeDanmaku = makeDanmaku;
-
-    type MakeLaserBeamOptions = {
-        type: PrefabDanmakuNames,
-        /** @default 0 */
-        x?: number, 
-        /** @default 0 */
-        y?: number, 
-        /** @default 0 */
-        rotation?: number
-        /** @default game.commonDanmakuLayer */
-        parent?: pixi.Container,
-        /** @default 2 */
-        width?: number,
-        /** @default 400 */
-        length?: number,
-        /**
-         * 如果不填写此参数，则激光没有起始端点。
-         * 若填写 startPoint: {} ，则默认为：
-         * @default{ type: "nova", pos: 0 }
-         */
-        startPoint?: { type?: PrefabDanmakuNames, pos?: number, },
-        /**
-         * 如果不填写此参数，则激光没有末尾端点。
-         * 若填写 endPoint: {} ，则默认为：
-         * @default{ type: "nova", pos: 1 }
-         */
-        endPoint?: { type?: PrefabDanmakuNames, pos?: number, },
-    };
-
-    function makeLaserBeam(options: PrefabDanmakuNames | MakeLaserBeamOptions) {
-        if (typeof options === "string") {
-            options = { type: options };
-        };
-        const { type, parent, x, y, rotation, width, length, startPoint, endPoint } = options;
-        return makePrefabLaserBeam({
-            game, board: mainBoard,
-            type: type as PrefabDanmakuNames,
-            x: x ?? null, y: y ?? null, rotation: rotation ?? null,
-            parent: parent ?? null,
-            halfWidth: width ?? null, length: length ?? null,
-            startPoint: startPoint ?? null, endPoint: endPoint ?? null,
-        });
-    }
-    game.makeLaserBeam = makeLaserBeam;
 
     //#endregion
 
