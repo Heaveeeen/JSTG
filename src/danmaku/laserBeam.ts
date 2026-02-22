@@ -98,6 +98,12 @@ export class LaserBeam extends AbstractDanmaku {
         if (this.startPoint !== null) { this.startPoint.sprite.visible = v; }
         if (this.endPoint !== null) { this.endPoint.sprite.visible = v; }
     }
+    get zIndex() { return this.mainSprite.zIndex; }
+    set zIndex(v: number) {
+        this.mainSprite.zIndex = v;
+        if (this.startPoint) { this.startPoint.sprite.zIndex = v; }
+        if (this.endPoint) { this.endPoint.sprite.zIndex = v; }
+    }
 
     updateLaserPoints() {
         for (const point of [this.startPoint, this.endPoint]) {
@@ -239,25 +245,25 @@ export class LaserBeam extends AbstractDanmaku {
 
 export const makePrefabLaserBeam = (options: {
     game: Game, combat: Combat, board: Board, type: PrefabDanmakuNames,
-    x: number | null, y: number | null, rotation: number | null
+    x: number, y: number, rotation: number,
+    /** @default board.commonDanmakuLayer */
     parent: pixi.Container | null,
-    /** @default 2 */
-    halfWidth: number | null,
-    /** @default 400 */
-    length: number | null,
+    halfWidth: number,
+    length: number,
     startPoint: { type?: PrefabDanmakuNames, scale?: number, pos?: number, } | null,
     endPoint: { type?: PrefabDanmakuNames, scale?: number, pos?: number, } | null,
-    // TODO: zIndex
+    zIndex: number | null,
 }) => {
     const { type, game, combat, board, x, y, rotation } = options;
     const parent = options.parent ?? board.commonDanmakuLayer;
     const texture = game.prefabTextures.danmaku.danmaku[type];
     const baseHalfWidth = prefabDanmakuHitboxRadius[type]; // MAY TODO: 把这几个数据改成 PrefabDanmakuLaserWidth 啥的，手写一套高质量数据
     const baseHalfLength = prefabDanmakuHitboxRadius[type] + 2;
-    const hitboxHalfWidth = options.halfWidth ?? 2;
-    const hitboxLength = options.length ?? 400;
+    const hitboxHalfWidth = options.halfWidth;
+    const hitboxLength = options.length;
+    const zIndex = options.zIndex ?? -(hitboxHalfWidth + 0.5 * hitboxLength);
 
-    const getLaserPointByOpt = (point: { type?: PrefabDanmakuNames, scale?: number, pos?: number, } | null, defaultPos: number) => {
+    const makeLaserPoint = (point: { type?: PrefabDanmakuNames, scale?: number, pos?: number, } | null, defaultPos: number) => {
         if (point === null) {
             return null
         } else {
@@ -270,7 +276,7 @@ export const makePrefabLaserBeam = (options: {
                 sprite: new pixi.Sprite({
                     parent, texture,
                     anchor: 0.5,
-                    scale,
+                    scale, zIndex,
                     blendMode: "add",
                 }), pos
             };
@@ -279,13 +285,13 @@ export const makePrefabLaserBeam = (options: {
 
     // 这里明确三者的构造顺序，因为这玩意图层是有讲究的，后来居上
     let mainSprite = new pixi.Sprite({
-        parent, texture,
-        x: x ?? undefined, y: y ?? undefined, rotation: rotation ?? undefined,
+        parent, texture, x, y, rotation,
         anchor: { x: 0.5 - (baseHalfLength / texture.width), y: 0.5 },
         scale: { x: hitboxLength * 0.5 / baseHalfLength, y: hitboxHalfWidth / baseHalfWidth },
+        zIndex,
     });
-    let startPoint = getLaserPointByOpt(options.startPoint, 0);
-    let endPoint = getLaserPointByOpt(options.endPoint, 1);
+    let startPoint = makeLaserPoint(options.startPoint, 0);
+    let endPoint = makeLaserPoint(options.endPoint, 1);
 
     return new LaserBeam({
         type, game, combat, board,

@@ -61,8 +61,6 @@ export type Combat = ExtractPromiseType<ReturnType<Game["StartCombat"]>>;
 export type Board = Combat["board"];
 export type IngameUI = Combat["ingameUI"];
 
-// MAY TODO: 把启动游戏和开始游戏分开，启动游戏只启动一个空壳游戏，版面之类的东西必须开始一局游戏才会存在。
-// 但这个东西其实不太好命名，“一局游戏”应该用什么名字指代呢？叫 combat 吗？有点怪但似乎勉强可以。。。
 /** @async 启动 JSTG 游戏 */
 export async function LaunchGame(/** 不建议填参数，想干啥自己去改源码吧 */gameOptions: {
     /** @default 640 */
@@ -365,6 +363,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
              * }, { with: myDanmaku, rely: myPlayer });
              */
             makeDanmaku: null as unknown as typeof makeDanmaku, // 又是奇技淫巧
+            /** TODO: DOC makeLaserBeam */
             makeLaserBeam: null as unknown as typeof makeLaserBeam, // 又是奇技淫巧
             destroy() {
                 ingameUI.destroy();
@@ -402,20 +401,22 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
             y?: number,
             /** @default 0 */
             rotation?: number,
-            /** 该弹幕的判定半径，默认值请参考 prefabDanmakuHitboxRadius */
+            /** 该弹幕的判定半径，默认值请参考 prefabDanmakuHitboxRadius 。 */
             radius?: number,
+            /** 图层顺序。若不填此参数，则自动根据弹幕尺寸排序，大的在底层、小的在顶层。 */
+            zIndex?: number,
         };
 
         function makeDanmaku(options: PrefabDanmakuNames | MakeDanmakuOptions) {
             if (typeof options === "string") {
                 options = { type: options };
             };
-            const { type, parent, x, y, rotation, radius } = options;
             return makePrefabDanmaku({
                 game, combat, board: board,
-                type, parent: parent ?? null,
-                x: x ?? null, y: y ?? null, rotation: rotation ?? null,
-                radius: radius ?? null,
+                type: options.type, parent: options.parent ?? null,
+                x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
+                radius: options.radius ?? null,
+                zIndex: options.zIndex ?? null,
             });
         }
         combat.makeDanmaku = makeDanmaku;
@@ -446,20 +447,21 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
              * @default{ type: "nova", pos: 1 }
              */
             endPoint?: { type?: PrefabDanmakuNames, pos?: number, },
+            /** 图层顺序。若不填此参数，则自动根据弹幕尺寸排序，大的在底层、小的在顶层。 */
+            zIndex?: number,
         };
 
         function makeLaserBeam(options: PrefabDanmakuNames | MakeLaserBeamOptions) {
             if (typeof options === "string") {
                 options = { type: options };
             };
-            const { type, parent, x, y, rotation, width, length, startPoint, endPoint } = options;
             return makePrefabLaserBeam({
-                game, combat, board: board,
-                type: type as PrefabDanmakuNames,
-                x: x ?? null, y: y ?? null, rotation: rotation ?? null,
-                parent: parent ?? null,
-                halfWidth: width ?? null, length: length ?? null,
-                startPoint: startPoint ?? null, endPoint: endPoint ?? null,
+                game, combat, board, type: options.type,
+                x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
+                parent: options.parent ?? null,
+                halfWidth: options.width ?? 2, length: options.length ?? 400,
+                startPoint: options.startPoint ?? null, endPoint: options.endPoint ?? null,
+                zIndex: options.zIndex ?? null,
             });
         }
         combat.makeLaserBeam = makeLaserBeam;
@@ -534,6 +536,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          * pixi.Application 实例
          */
         app,
+        /** TODO: DOC StartCombat */
         StartCombat,
         /** fps 指示器 */
         fpsMonitor,

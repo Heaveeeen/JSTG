@@ -35,6 +35,7 @@ export abstract class AbstractDanmaku {
     abstract y: number;
     abstract rotation: number;
     abstract visible: boolean;
+    abstract zIndex: number;
     speed = 0;
 
     /** 向着 this.rotation 的方向前进 d 步，若 d 留空则为 this.speed * game.timeScale */

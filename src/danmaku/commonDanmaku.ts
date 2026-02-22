@@ -115,6 +115,8 @@ export class CommonDanmaku extends AbstractDanmaku {
     set rotation(n: number) { this.sprite.rotation = n; }
     get visible() { return this.sprite.visible; }
     set visible(v: boolean) { this.sprite.visible = v; }
+    get zIndex() { return this.sprite.zIndex; }
+    set zIndex(v: number) { this.sprite.zIndex = v; }
 
     erase(options: {
         /** 根据 this.type 自动决定。对于一般的弹幕，消弹特效为雾化消失；对于大玉和核弹，缩小虚化至消失。 */
@@ -238,22 +240,25 @@ export const prefabDanmakuHitboxRadius = {
 
 export const makePrefabDanmaku = (options: {
     game: Game, combat: Combat, board: Board, type: PrefabDanmakuNames,
-    x: number | null, y: number | null, rotation: number | null,
+    x: number, y: number, rotation: number,
+    /** @default board.commonDanmakuLayer */
     parent: pixi.Container | null,
+    /** @default prefabDanmakuHitboxRadius[type] */
     radius: number | null,
-    // TODO: zIndex
+    zIndex: number | null,
 }) => {
-    const { type, game, combat, board, x, y, rotation } = options;
+    const { type, game, combat, board, x, y, rotation, zIndex } = options;
     const parent = options.parent ?? board.commonDanmakuLayer;
     const hitboxRadius = options.radius ?? prefabDanmakuHitboxRadius[type];
     const danmaku = new CommonDanmaku({
         type, game, combat, board,
         hitboxRadius,
         mainSprite: new pixi.Sprite({
-            parent, x: x ?? undefined, y: y ?? undefined, rotation: rotation ?? undefined,
+            parent, x, y, rotation,
             texture: game.prefabTextures.danmaku.danmaku[type],
             anchor: 0.5,
             scale: hitboxRadius / prefabDanmakuHitboxRadius[type],
+            zIndex: zIndex ?? -hitboxRadius,
         }),
     });
     return danmaku;
