@@ -101,20 +101,20 @@ export class Player {
 
     get x() { return this.frontParts.x; }
     set x(n: number) {
-        this.backParts.x = n;
         this.frontParts.x = n;
+        this.backParts.x = n;
     }
 
     get y() { return this.frontParts.y; }
     set y(n: number) {
-        this.backParts.y = n;
         this.frontParts.y = n;
+        this.backParts.y = n;
     }
 
     get alpha() { return this.frontParts.alpha; }
     set alpha(n: number) {
-        this.backParts.alpha = n;
         this.frontParts.alpha = n;
+        this.backParts.alpha = n;
     }
 
     constructor(options: {
@@ -174,7 +174,7 @@ export class Player {
             scale: 1.1,
         });
 
-        const plColorFilter = new pixi.ColorMatrixFilter({resolution: "inherit"});
+        const plColorFilter = new pixi.ColorMatrixFilter({ resolution: "inherit" });
         plColorFilter.hue(this.hue1, false);
 
         this.hitboxPoint = new pixi.Sprite({

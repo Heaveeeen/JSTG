@@ -1,4 +1,5 @@
 // @ts-check
+// 如果希望关闭 ts 的类型检查，请修改或删除上方注释。可以在“@ts-check”中间加个空格啥的，方便开关。
 
 /// <reference path="./lib/pixi/pixi.d.ts" />
 // ↑ 上面这行用来联动 pixi 的类型注释
@@ -136,28 +137,49 @@ import { Danmaku, prefabDanmakuHitboxRadius } from "./dist/danmaku.js";
 
 
     // 弹幕一览（彩色）
-    let y = -225;
-    let rotation = 0;
-    // 左上主要区域
-    for (const type of [
-        "smallball", "ringball", "glowball", "fireball",
-        "dot", "scale", "grain", "chain", "seed", "scale", "bullet", "drip", "card",
-        "crystal", "particle", "nova", "coin", "knife",
-    ]) {
-        let x = -185;
-        for (const color of ["h0", "h30", "h60", "h90", "h120", "h150", "h180", "h210", "h240", "h270", "h300", "h330", "black", "white"]) {
-        // @ts-expect-error
-            const dan = makeDanmaku({ type, color, x, y, rotation });
-            forever(loop => {
-                dan.rotation += 0.006;
-            }, { refs: dan }),
-            // @ts-expect-error
-            x += prefabDanmakuHitboxRadius[type] * 4 + 5;
-            rotation += 0.4;
+    function makeFooMuseum() {
+        let y = -225;
+        let rotation = 0;
+
+        /**
+         * @param {number} x0
+         * @param {function} dx
+         * @param {function} dy
+         * @param {string[]} types
+         */
+        function makeFooExsibits(x0, dx, dy, types, colors=["h0", "h30", "h60", "h90", "h120", "h150", "h180", "h210", "h240", "h270", "h300", "h330", "black", "white"]) {
+            for (const type of types) {
+                let x = x0;
+                for (const color of colors) {
+                // @ts-expect-error
+                    const dan = makeDanmaku({ type, color, x, y, rotation });
+                    forever(loop => {
+                        dan.rotation += 0.006;
+                    }, { refs: dan }),
+                    // @ts-expect-error
+                    x += dx(prefabDanmakuHitboxRadius[type]);
+                    rotation += 0.4;
+                }
+                // @ts-expect-error
+                y += dy(prefabDanmakuHitboxRadius[type]);
+            }
         }
-        // @ts-expect-error
-        y += prefabDanmakuHitboxRadius[type] * 4 + 10;
+        makeFooExsibits(-187, (/** @type {number} */ r) => r * 4 + 5, (/** @type {number} */ r) => r * 4 + 5, [
+            "smallball", "ringball", "glowball", "fireball",
+            "dot", "scale", "grain", "chain", "seed", "scale", "bullet", "drip", "card", "smallstar",
+            "crystal", "particle", "nova", "coin",
+        ]);
+        y += 4;
+        makeFooExsibits(-182, (/** @type {number} */ r) => r * 4 + 16, (/** @type {number} */ r) => r * 4 + 16,
+            ["knife", "note", "arrow", "butterfly"], ["white", "h300", "h240", "h180", "h150", "h120", "h60", "h30", "h0"]);
+        y = -145;
+        makeFooExsibits(182, (/** @type {number} */ r) => -29, (/** @type {number} */ r) => r * 4 + 5, [
+            "bigstar", "ellipse", "heart", "middleball", "lightball"//, "sword", "bubble", "nuclear"
+        ], ["white", "h300", "h240", "h180", "h150", "h30", "h0"]);
+        y = -215;
+        makeFooExsibits(170, (/** @type {number} */ r) => -45, () => 0, ["sword"], ["h180", "h60", "h0"]);
     }
+    makeFooMuseum();
 
     /*for (let i = 0; i < 5; i++) {
         combat.makeLaserBeam({

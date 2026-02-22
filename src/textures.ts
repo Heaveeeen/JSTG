@@ -52,7 +52,7 @@ export function makeDyedTextures(options: {
     return {
         // TODO: DOC 给颜色加注释
         red: h0, pink: h300, purple: h270, blue: h240, cyan: h180, green: h150, yellowGreen: h90, yellow: h60, orange: h30,
-        black: dyeGray(0.3), white: dyeGray(0.7),
+        black: dyeGray(0.25), white: dyeGray(0.5),
         h0, h30, h60, h90, h120, h150, h180, h210, h240, h270, h300, h330,
     };
 };
