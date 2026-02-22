@@ -10,7 +10,7 @@ import * as pixi from "pixi";
 export const clamp = (n: number, a: number, b: number) => Math.min(Math.max(a, n), b);
 
 /**
- * 弹幕引擎 ghost to 同款
+ * 弹幕引擎 ghost to 同款  
  * ⚠️这玩意必须自己填 game.ts
  */
 export const alphaTo = (spr: { alpha: number }, dst: number, speed: number) => {
@@ -32,9 +32,9 @@ export const alphaTo = (spr: { alpha: number }, dst: number, speed: number) => {
 export const deg = (n: number) => n * Math.PI / 180;
 
 /**
- * 如果输入是单个元素则返回单元素数组，如果输入已经是数组则原样返回，如果输入是 undefined 则返回空数组  
- * 对于需要接受单个元素或数组作为参数的函数很有用  
- * ⚠️T 不能是数组
+ * 如果输入是单个元素则返回单元素数组，如果输入已经是数组则原样返回，如果输入是 undefined 则返回空数组。  
+ * 对于需要接受单个元素或数组作为参数的函数很有用。  
+ * ⚠️T 不能是数组  
  */
 export const makeElements = <T>(input?: T | T[]): T[] =>
     input === undefined ? [] : (Array.isArray(input) ? input : [input]);

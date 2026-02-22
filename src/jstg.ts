@@ -59,6 +59,8 @@ export type Game = ExtractPromiseType<ReturnType<typeof LaunchGame>>;
 export type Board = Game["board"];
 export type IngameUI = Game["ingameUI"];
 
+// MAY TODO: 把启动游戏和开始游戏分开，启动游戏只启动一个空壳游戏，版面之类的东西必须开始一局游戏才会存在。
+// 但这个东西其实不太好命名，“一局游戏”应该用什么名字指代呢？叫 combat 吗？有点怪但似乎勉强可以。。。
 /** @async 启动 JSTG 游戏 */
 export async function LaunchGame(/** 不建议填参数，想干啥自己去改源码吧 */options: {
     /** @default 640 */

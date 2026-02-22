@@ -155,11 +155,12 @@ export class LaserBeam extends AbstractDanmaku {
     erase(options: {
         /**
          * 每隔多长的距离算作一个“体节”并调用一次消弹回调函数。  
-         * 例如：长度为70的激光，每隔20的距离就算作一个体节并产生一个得分道具，最终会产生3个得分道具；  
-         * 再例如，长度为160的激光，每隔10的距离就算作一个体节并产生一个得分道具，最终会产生16个得分道具。  
+         * 例如：长度为70的激光，每隔20的距离就算作一个体节并调用一次回调函数，最终会产生3个“尸体”；  
+         * 再例如，长度为160的激光，每隔10的距离就算作一个体节并调用一次回调函数，最终会产生16个“尸体”。  
+         * 第一个“尸体”总是位于激光的起点，至少有一个“尸体”。  
          * @default 10
          */
-        lengthPerCorpse?: number,
+        stepPerCorpse?: number,
         /**
          * 消弹时的回调函数。可以利用这个回调函数，把消掉的弹幕转换成别的东西。例如，转化为得分道具，或者死尸弹。  
          * 该回调函数会对激光的每一个“体节”都调用一次。  
@@ -167,9 +168,45 @@ export class LaserBeam extends AbstractDanmaku {
          */
         forEachCorpse?: (corpseInfo: { x: number, y: number }) => unknown,
     } = {}) {
-        // TODO: 激光消弹
+        // TODO: TEST
         if (!this.canBeErase || this.destroyed) { return; }
+        if (options.forEachCorpse !== undefined) {
+            const stepPerCorpse = options.stepPerCorpse ?? 10;
+            for (let pos = 0; pos <= this.hitboxLength; pos += stepPerCorpse) {
+                options.forEachCorpse({
+                    x: this.x + pos * Math.cos(this.rotation),
+                    y: this.y + pos * Math.sin(this.rotation),
+                });
+            }
+        }
+        if (this.isInBoundary() && this.visible && this.mainSprite.alpha > 0) {
+            // 如果能看见，则生成消弹特效，之后再删除
+            this.game.coDo(this._EraseEffectBehaviorGhost.bind(this));
+        } else {
+            // 如果看不见，直接删除
+            this.destroy();
+        }
+    }
+    
+    /** @internal @generator 虚化至消失 */
+    *_EraseEffectBehaviorGhost() {
+        const eraseEffectSprite = new pixi.Sprite({
+            parent: this.board.danmakuEraseLayer,
+            texture: this.mainSprite.texture,
+            anchor: 0.5,
+            x: this.x, y: this.y, 
+            scale: this.mainSprite.scale,
+            rotation: this.mainSprite.rotation,
+            filters: this.mainSprite.filters,
+        });
         this.destroy();
+        while (eraseEffectSprite.alpha > 0) {
+            eraseEffectSprite.scale.x -= 0.05 * this.game.timeScale;
+            eraseEffectSprite.scale.y -= 0.05 * this.game.timeScale;
+            utils.alphaTo(eraseEffectSprite, 0, 0.05 * this.game.timeScale);
+            yield;
+        }
+        eraseEffectSprite.destroy();
     }
 
     isInBoundary() {

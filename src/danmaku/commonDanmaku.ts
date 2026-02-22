@@ -115,10 +115,6 @@ export class CommonDanmaku extends AbstractDanmaku {
     get visible() { return this.sprite.visible; }
     set visible(v: boolean) { this.sprite.visible = v; }
 
-    /**
-     * 预置的消弹效果，立即摧毁该弹幕，并生成一个消弹特效  
-     * 如果 canBeErase 为 false ，则该函数什么也不做
-     */
     erase(options: {
         /** 根据 this.type 自动决定。对于一般的弹幕，消弹特效为雾化消失；对于大玉和核弹，缩小虚化至消失。 */
         eraseEffectType?: "fog" | "reduce",
@@ -130,7 +126,7 @@ export class CommonDanmaku extends AbstractDanmaku {
     } = {}) {
         if (!this.canBeErase || this.destroyed) { return };
         options.forEachCorpse?.({ x: this.x, y: this.y });
-        if (this.isInBoundary() && this.sprite.visible && this.sprite.alpha > 0) {
+        if (this.isInBoundary() && this.visible && this.sprite.alpha > 0) {
             // 如果能看见，则生成消弹特效，之后再删除
             const eraseEffectType: "fog" | "reduce" = options.eraseEffectType ?? (this.type === "bubble" || this.type === "nuclear" ? "reduce" : "fog");
             if (eraseEffectType === "fog") {
