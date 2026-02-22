@@ -2,25 +2,16 @@ import * as pixi from "pixi";
 import { Board, Combat, Game, LoopController } from "../jstg.js";
 import { Player } from "../player/player.js";
 import { alphaTo, getPointToSegmentDist2, staticAssert, Vec2 } from "../utils.js";
-import { PrefabDanmakuNames } from "../textures.js";
-import { AbstractDanmaku } from "./abstractDanmaku.js";
+import { DyedTextures, PrefabDanmakuNames } from "../textures.js";
+import { AbstractDanmaku, NewAbstractDanmakuOptions } from "./abstractDanmaku.js";
 
 
 
-export interface NewCommonDanmakuOptions {
-    /**
-     * 弹幕的种类名称
-     * @example
-     * "smallball"
-     */
-    type: string;
-    game: Game;
-    combat: Combat;
-    board: Board;
+export interface NewCommonDanmakuOptions extends NewAbstractDanmakuOptions {
     /** 弹幕判定圆的半径 */
     hitboxRadius: number;
     /** 弹幕所对应的 Sprite */
-    mainSprite: pixi.Sprite;
+    sprite: pixi.Sprite;
 }
 
 export class CommonDanmaku extends AbstractDanmaku {
@@ -42,8 +33,7 @@ export class CommonDanmaku extends AbstractDanmaku {
     constructor(options: NewCommonDanmakuOptions) {
         super(options);
         this._hitboxRadius = options.hitboxRadius;
-        this.sprite = options.mainSprite;
-        
+        this.sprite = options.sprite;
         this._lastX = this.sprite.x;
         this._lastY = this.sprite.y;
     }
@@ -149,7 +139,7 @@ export class CommonDanmaku extends AbstractDanmaku {
     *_EraseEffectBehaviorFog() {
         const eraseEffectSprite = new pixi.Sprite({
             parent: this.board.danmakuEraseLayer,
-            texture: this.game.prefabTextures.danmaku.particle.fog,
+            texture: this.game.prefabTextures.danmaku.particle.fog[this.color],
             anchor: 0.5,
             x: this.x, y: this.y, 
             scale: this.sprite.scale,
@@ -239,7 +229,8 @@ export const prefabDanmakuHitboxRadius = {
 } as const;
 
 export const makePrefabDanmaku = (options: {
-    game: Game, combat: Combat, board: Board, type: PrefabDanmakuNames,
+    game: Game, combat: Combat, board: Board,
+    type: PrefabDanmakuNames, color: keyof DyedTextures,
     x: number, y: number, rotation: number,
     /** @default board.commonDanmakuLayer */
     parent: pixi.Container | null,
@@ -247,19 +238,20 @@ export const makePrefabDanmaku = (options: {
     radius: number | null,
     zIndex: number | null,
 }) => {
-    const { type, game, combat, board, x, y, rotation, zIndex } = options;
+    const { type, color, game, combat, board, x, y, rotation, zIndex } = options;
     const parent = options.parent ?? board.commonDanmakuLayer;
     const hitboxRadius = options.radius ?? prefabDanmakuHitboxRadius[type];
     const danmaku = new CommonDanmaku({
-        type, game, combat, board,
+        type, color, game, combat, board,
         hitboxRadius,
-        mainSprite: new pixi.Sprite({
+        sprite: new pixi.Sprite({
             parent, x, y, rotation,
-            texture: game.prefabTextures.danmaku.danmaku[type],
+            texture: game.prefabTextures.danmaku.danmaku[type][color],
             anchor: 0.5,
             scale: hitboxRadius / prefabDanmakuHitboxRadius[type],
             zIndex: zIndex ?? -hitboxRadius,
         }),
     });
+    combat.danmakuPool.push(danmaku);
     return danmaku;
 }

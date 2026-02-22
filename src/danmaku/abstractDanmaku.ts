@@ -1,6 +1,20 @@
 import * as pixi from "pixi";
 import { Game, Board, Player, Combat } from "../jstg.js";
+import { DyedTextures } from "../textures.js";
 
+
+export interface NewAbstractDanmakuOptions {
+    /**
+     * 弹幕的种类名称
+     * @example
+     * "smallball"
+     */
+    type: string;
+    color: keyof DyedTextures;
+    game: Game;
+    combat: Combat;
+    board: Board;
+}
 
 export abstract class AbstractDanmaku {
     /**
@@ -9,26 +23,17 @@ export abstract class AbstractDanmaku {
      * "smallball"
      */
     readonly type: string;
+    readonly color: keyof DyedTextures;
     readonly game: Game;
     readonly combat: Combat;
     readonly board: Board;
 
-    constructor(options: {
-        /**
-         * 弹幕的种类名称
-         * @example
-         * "smallball"
-         */
-        type: string;
-        game: Game;
-        combat: Combat;
-        board: Board;
-    }) {
+    constructor(options: NewAbstractDanmakuOptions) {
         this.type = options.type;
+        this.color = options.color;
         this.game = options.game;
         this.combat = options.combat;
         this.board = options.board;
-        this.combat.danmakuPool.push(this);
     }
 
     abstract x: number;

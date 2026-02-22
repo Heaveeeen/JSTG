@@ -21,6 +21,8 @@ import { Danmaku, prefabDanmakuHitboxRadius } from "./dist/danmaku.js";
     const { board, ingameUI, makeDanmaku } = combat;
 
     console.log("game:", game);
+    console.log("combat:", combat);
+    console.log("danmaku pool:", combat.danmakuPool);
     const txt = new pixi.Text({
         parent: board.root,
         text: 
@@ -115,7 +117,7 @@ import { Danmaku, prefabDanmakuHitboxRadius } from "./dist/danmaku.js";
 
 
 
-    // 弹幕一览 
+    // 弹幕一览（红色）
     /*let x = -180, y = -200;
     let maxR = 0;
     for (const danType in prefabDanmakuHitboxRadius) {
@@ -133,25 +135,57 @@ import { Danmaku, prefabDanmakuHitboxRadius } from "./dist/danmaku.js";
     }/**/
 
 
+    // 弹幕一览（彩色）
+    let y = -225;
+    let rotation = 0;
+    // 左上主要区域
+    for (const type of [
+        "smallball", "ringball", "glowball", "fireball",
+        "dot", "scale", "grain", "chain", "seed", "scale", "bullet", "drip", "card",
+        "crystal", "particle", "nova", "coin", "knife",
+    ]) {
+        let x = -185;
+        for (const color of ["h0", "h30", "h60", "h90", "h120", "h150", "h180", "h210", "h240", "h270", "h300", "h330", "black", "white"]) {
+        // @ts-expect-error
+            const dan = makeDanmaku({ type, color, x, y, rotation });
+            forever(loop => {
+                dan.rotation += 0.006;
+            }, { refs: dan }),
+            // @ts-expect-error
+            x += prefabDanmakuHitboxRadius[type] * 4 + 5;
+            rotation += 0.4;
+        }
+        // @ts-expect-error
+        y += prefabDanmakuHitboxRadius[type] * 4 + 10;
+    }
 
-    for (let i = 0; i < 5; i++) {
+    /*for (let i = 0; i < 5; i++) {
         combat.makeLaserBeam({
             type: "smallball",
             startPoint: {}, endPoint: {},
             x: 0, y: [-200,-180,-150,-50,80][i], rotation: deg(30),
             width: [1,3,5,10,20][i], length: 150,
-        });/**/
-        /*combat.makeDanmaku({
+        });
+        combat.makeDanmaku({
             type: "smallball",
             x: 0, y: 70 * i - 180,
             radius: [1,3,5,10,20][i],
-        });/**/
+        });
     }
 
     combat.makeDanmaku({
         type: "smallball",
         x: -100, y: -100,
-    });
+    });*/
+
+    /*forever(loop => {
+        const dan = combat.makeDanmaku("scale");
+        dan.rotation = Math.random() * Math.PI * 2;
+        forever(loop => {
+            dan.move(0.5);
+            dan.boundaryDelete();
+        }, { refs: dan });
+    });*/
 
     forever(loop => {
         pl.update({input, keyMap: {

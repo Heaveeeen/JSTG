@@ -5,10 +5,7 @@ import { PrefabTextures } from '../textures.js';
 export const makeSimple = async (
     game: Game, combat: Combat, board: Board, prefabTextures: PrefabTextures, options: MakePlayerOptions = {}
 ) => new Player({
-    name: "Simple",
-    game,
-    combat,
-    board,
+    name: "Simple", game, combat, board,
     mainTexture: prefabTextures.player.Simple,
     hitboxTexture: prefabTextures.player.hitbox,
     slowModeRingTexture: prefabTextures.player.slow_mode,

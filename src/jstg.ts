@@ -1,5 +1,5 @@
 import * as pixi from "pixi";
-import { LoadPixiAsset, LoadPrefabTextures, LoadPrefabTexturesOptions, LoadSvg, PrefabDanmakuNames } from "./textures.js";
+import { DyedTextures, LoadPixiAsset, LoadPrefabTextures, LoadPrefabTexturesOptions, LoadSvg, PrefabDanmakuNames } from "./textures.js";
 import { Key, makeInput } from "./Input.js";
 import { MakePlayerOptions, Player } from "./player/player.js";
 import { makeSimple } from "./player/simple.js";
@@ -104,7 +104,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
 
     await app.init(gameOptions.pixiApplicationOptions ?? {
         backgroundColor: "#000000",
-        preference: "webgpu",
+        preference: "webgl",
         useBackBuffer: true,
         hello: true,
     });
@@ -122,7 +122,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         },
     });
 
-    const prefabTextures = await LoadPrefabTextures(gameOptions.loadPrefabTexturesOptions);
+    const prefabTextures = await LoadPrefabTextures(gameOptions.loadPrefabTexturesOptions ?? { app });
 
     const prefabSounds = await LoadPrefabSounds(gameOptions.loadPrefabSoundsOptions);
 
@@ -393,6 +393,8 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
 
         type MakeDanmakuOptions = {
             type: PrefabDanmakuNames,
+            /** @default red */
+            color?: keyof DyedTextures,
             /** @default game.commonDanmakuLayer */
             parent?: pixi.Container,
             /** @default 0 */
@@ -407,13 +409,15 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
             zIndex?: number,
         };
 
-        function makeDanmaku(options: PrefabDanmakuNames | MakeDanmakuOptions) {
+        function makeDanmaku(type: PrefabDanmakuNames, /** @default "red" */color?: keyof DyedTextures): CommonDanmaku;
+        function makeDanmaku(options: MakeDanmakuOptions): CommonDanmaku;
+        function makeDanmaku(options: PrefabDanmakuNames | MakeDanmakuOptions, color?: keyof DyedTextures) {
             if (typeof options === "string") {
-                options = { type: options };
+                options = { type: options, color };
             };
             return makePrefabDanmaku({
                 game, combat, board: board,
-                type: options.type, parent: options.parent ?? null,
+                type: options.type, color: options.color ?? "red", parent: options.parent ?? null,
                 x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
                 radius: options.radius ?? null,
                 zIndex: options.zIndex ?? null,
@@ -423,6 +427,8 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
 
         type MakeLaserBeamOptions = {
             type: PrefabDanmakuNames,
+            /** @default red */
+            color?: keyof DyedTextures,
             /** @default 0 */
             x?: number, 
             /** @default 0 */
@@ -451,12 +457,14 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
             zIndex?: number,
         };
 
-        function makeLaserBeam(options: PrefabDanmakuNames | MakeLaserBeamOptions) {
+        function makeLaserBeam(type: PrefabDanmakuNames, /** @default "red" */color?: keyof DyedTextures): LaserBeam;
+        function makeLaserBeam(options: MakeLaserBeamOptions): LaserBeam;
+        function makeLaserBeam(options: PrefabDanmakuNames | MakeLaserBeamOptions, color?: keyof DyedTextures) {
             if (typeof options === "string") {
-                options = { type: options };
+                options = { type: options, color };
             };
             return makePrefabLaserBeam({
-                game, combat, board, type: options.type,
+                game, combat, board, type: options.type, color: options.color ?? "red",
                 x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
                 parent: options.parent ?? null,
                 halfWidth: options.width ?? 2, length: options.length ?? 400,

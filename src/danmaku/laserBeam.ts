@@ -1,9 +1,9 @@
 import * as pixi from "pixi";
 import { NewCommonDanmakuOptions, prefabDanmakuHitboxRadius } from "./commonDanmaku.js";
-import { AbstractDanmaku } from "./abstractDanmaku.js";
+import { AbstractDanmaku, NewAbstractDanmakuOptions } from "./abstractDanmaku.js";
 import { Game, Board, Player, Combat } from "../jstg.js";
 import { cast, getPointToSegmentDist2, rotateVec, staticAssert } from "../utils.js";
-import { PrefabDanmakuNames } from "../textures.js";
+import { DyedTextures, PrefabDanmakuNames } from "../textures.js";
 import * as utils from '../utils.js';
 
 
@@ -14,16 +14,7 @@ interface LaserPoint {
     pos: number;
 }
 
-export interface NewLaserBeamOptions {
-    /**
-     * 弹幕的种类名称
-     * @example
-     * "smallball"
-     */
-    type: string;
-    game: Game;
-    combat: Combat;
-    board: Board;
+export interface NewLaserBeamOptions extends NewAbstractDanmakuOptions {
     /** 激光的判定宽度的一半 */
     hitboxHalfWidth: number;
     /** 激光的判定长度 */
@@ -244,7 +235,8 @@ export class LaserBeam extends AbstractDanmaku {
 }
 
 export const makePrefabLaserBeam = (options: {
-    game: Game, combat: Combat, board: Board, type: PrefabDanmakuNames,
+    game: Game, combat: Combat, board: Board,
+    type: PrefabDanmakuNames, color: keyof DyedTextures,
     x: number, y: number, rotation: number,
     /** @default board.commonDanmakuLayer */
     parent: pixi.Container | null,
@@ -254,9 +246,9 @@ export const makePrefabLaserBeam = (options: {
     endPoint: { type?: PrefabDanmakuNames, scale?: number, pos?: number, } | null,
     zIndex: number | null,
 }) => {
-    const { type, game, combat, board, x, y, rotation } = options;
+    const { type, color, game, combat, board, x, y, rotation } = options;
     const parent = options.parent ?? board.commonDanmakuLayer;
-    const texture = game.prefabTextures.danmaku.danmaku[type];
+    const texture = game.prefabTextures.danmaku.danmaku[type][color];
     const baseHalfWidth = prefabDanmakuHitboxRadius[type]; // MAY TODO: 把这几个数据改成 PrefabDanmakuLaserWidth 啥的，手写一套高质量数据
     const baseHalfLength = prefabDanmakuHitboxRadius[type] + 2;
     const hitboxHalfWidth = options.halfWidth;
@@ -265,10 +257,10 @@ export const makePrefabLaserBeam = (options: {
 
     const makeLaserPoint = (point: { type?: PrefabDanmakuNames, scale?: number, pos?: number, } | null, defaultPos: number) => {
         if (point === null) {
-            return null
+            return null;
         } else {
             const type = point.type ?? "nova";
-            const texture = game.prefabTextures.danmaku.danmaku[type];
+            const texture = game.prefabTextures.danmaku.danmaku[type][color];
             const pointBaseRadius = prefabDanmakuHitboxRadius[type];
             const pos = point.pos ?? defaultPos;
             const scale = point.scale ?? (1 * hitboxHalfWidth / pointBaseRadius) + 0.3;// 这里可以考虑加个sqrt，防止端点大的太大、小的太小；另外，这个尺寸应当能够随激光尺寸的变化而变化0
@@ -293,9 +285,11 @@ export const makePrefabLaserBeam = (options: {
     let startPoint = makeLaserPoint(options.startPoint, 0);
     let endPoint = makeLaserPoint(options.endPoint, 1);
 
-    return new LaserBeam({
-        type, game, combat, board,
+    const beam = new LaserBeam({
+        type, color, game, combat, board,
         hitboxHalfWidth: hitboxHalfWidth, hitboxLength,
         mainSprite, startPoint, endPoint,
     });
+    combat.danmakuPool.push(beam);
+    return beam;
 }

@@ -21,57 +21,98 @@ export function LoadSvg(
     }) as Promise<pixi.Texture>;
 }
 
+/** 给定一个红色的贴图（通常是弹幕），为它染成几种不同的颜色，并输出这些染色过的纹理。 */
+export function makeDyedTextures(options: {
+    app: pixi.Application, redTexture: pixi.Texture,
+}) {
+    const h0 = options.redTexture;
+    const dye = (hue: number) => {
+        const hueFilter = new pixi.ColorMatrixFilter({ resolution: "inherit", });
+        hueFilter.hue(hue, false);
+        const spr = new pixi.Sprite({ texture: h0, filters: hueFilter, });
+        const dyedTexture = options.app.renderer.generateTexture(spr);
+        spr.destroy();
+        hueFilter.destroy();
+        return dyedTexture;
+    }
+    const h30 = dye(30),   h60 = dye(60),   h90 = dye(90),   h120 = dye(120),
+          h150 = dye(150), h180 = dye(180), h210 = dye(210), h240 = dye(240),
+          h270 = dye(270), h300 = dye(300), h330 = dye(330);
+
+    const dyeGray = (scale: number) => {
+        const grayScaleFilter = new pixi.ColorMatrixFilter({ resolution: "inherit", });
+        grayScaleFilter.grayscale(scale, false);
+        const spr = new pixi.Sprite({ texture: h0, filters: grayScaleFilter, });
+        const dyedTexture = options.app.renderer.generateTexture(spr);
+        spr.destroy();
+        grayScaleFilter.destroy();
+        return dyedTexture;
+    }
+
+    return {
+        // TODO: DOC 给颜色加注释
+        red: h0, pink: h300, purple: h270, blue: h240, cyan: h180, green: h150, yellowGreen: h90, yellow: h60, orange: h30,
+        black: dyeGray(0.3), white: dyeGray(0.7),
+        h0, h30, h60, h90, h120, h150, h180, h210, h240, h270, h300, h330,
+    };
+};
+
+export type DyedTextures = ReturnType<typeof makeDyedTextures>;
+
 export interface LoadPrefabTexturesOptions {
+    app: pixi.Application;
     /**
      * 如果路径错误，请填写此参数，改变预置贴图的根目录
      * @default "./assets/images/"
      */
-    baseUrl?: string,
+    baseUrl?: string;
     /** @default 2 */
-    resolution?: number,
+    resolution?: number;
 }
 
 /**
  * @async 加载 JSTG 预置的各种贴图（主要来源于 Simple 的弹幕引擎250724）
  */
-export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions = {}) {
+export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
+    const { app } = options;
     const base = options.baseUrl ?? "./assets/images/";
     const res = options.resolution ?? 2;
+    const danBase = base + "danmaku/danmaku/";
     return {
         danmaku: {
             danmaku: {
-                smallball: await LoadSvg(`${base}danmaku/danmaku/smallball.svg`, res),
-                ringball: await LoadSvg(`${base}danmaku/danmaku/ringball.svg`, res),
-                glowball: await LoadSvg(`${base}danmaku/danmaku/glowball.svg`, res),
-                fireball: await LoadSvg(`${base}danmaku/danmaku/fireball.svg`, res),
-                dot: await LoadSvg(`${base}danmaku/danmaku/dot.svg`, res),
-                grain: await LoadSvg(`${base}danmaku/danmaku/grain.svg`, res),
-                chain: await LoadSvg(`${base}danmaku/danmaku/chain.svg`, res),
-                seed: await LoadSvg(`${base}danmaku/danmaku/seed.svg`, res),
-                scale: await LoadSvg(`${base}danmaku/danmaku/scale.svg`, res),
-                bullet: await LoadSvg(`${base}danmaku/danmaku/bullet.svg`, res),
-                drip: await LoadSvg(`${base}danmaku/danmaku/drip.svg`, res),
-                card: await LoadSvg(`${base}danmaku/danmaku/card.svg`, res),
-                note: await LoadSvg(`${base}danmaku/danmaku/note.svg`, res),
-                arrow: await LoadSvg(`${base}danmaku/danmaku/arrow.svg`, res),
-                butterfly: await LoadSvg(`${base}danmaku/danmaku/butterfly.svg`, res),
-                smallstar: await LoadSvg(`${base}danmaku/danmaku/smallstar.svg`, res),
-                bigstar: await LoadSvg(`${base}danmaku/danmaku/bigstar.svg`, res),
-                ellipse: await LoadSvg(`${base}danmaku/danmaku/ellipse.svg`, res),
-                heart: await LoadSvg(`${base}danmaku/danmaku/heart.svg`, res),
-                middleball: await LoadSvg(`${base}danmaku/danmaku/middleball.svg`, res),
-                lightball: await LoadSvg(`${base}danmaku/danmaku/lightball.svg`, res),
-                bubble: await LoadSvg(`${base}danmaku/danmaku/bubble.svg`, res),
-                nuclear: await LoadSvg(`${base}danmaku/danmaku/nuclear.svg`, res),
-                crystal: await LoadSvg(`${base}danmaku/danmaku/crystal.svg`, res),
-                particle: await LoadSvg(`${base}danmaku/danmaku/particle.svg`, res),
-                nova: await LoadSvg(`${base}danmaku/danmaku/nova.svg`, res),
-                coin: await LoadSvg(`${base}danmaku/danmaku/coin.svg`, res),
-                knife: await LoadSvg(`${base}danmaku/danmaku/knife.svg`, res),
-                sword: await LoadSvg(`${base}danmaku/danmaku/sword.svg`, res),
+                smallball: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}smallball.svg`, res), app }) as DyedTextures, // 这里断言一下是为了折叠悬停提示
+                ringball: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}ringball.svg`, res), app }) as DyedTextures,
+                glowball: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}glowball.svg`, res), app }) as DyedTextures,
+                fireball: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}fireball.svg`, res), app }) as DyedTextures,
+                dot: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}dot.svg`, res), app }) as DyedTextures,
+                grain: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}grain.svg`, res), app }) as DyedTextures,
+                chain: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}chain.svg`, res), app }) as DyedTextures,
+                seed: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}seed.svg`, res), app }) as DyedTextures,
+                scale: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}scale.svg`, res), app }) as DyedTextures,
+                bullet: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}bullet.svg`, res), app }) as DyedTextures,
+                drip: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}drip.svg`, res), app }) as DyedTextures,
+                card: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}card.svg`, res), app }) as DyedTextures,
+                note: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}note.svg`, res), app }) as DyedTextures,// TODO: 音符动画
+                arrow: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}arrow.svg`, res), app }) as DyedTextures,
+                butterfly: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}butterfly.svg`, res), app }) as DyedTextures,
+                smallstar: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}smallstar.svg`, res), app }) as DyedTextures,
+                bigstar: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}bigstar.svg`, res), app }) as DyedTextures,
+                ellipse: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}ellipse.svg`, res), app }) as DyedTextures,
+                heart: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}heart.svg`, res), app }) as DyedTextures,
+                middleball: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}middleball.svg`, res), app }) as DyedTextures,
+                lightball: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}lightball.svg`, res), app }) as DyedTextures,
+                bubble: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}bubble.svg`, res), app }) as DyedTextures,
+                nuclear: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}nuclear.svg`, res), app }) as DyedTextures,
+                crystal: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}crystal.svg`, res), app }) as DyedTextures,
+                particle: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}particle.svg`, res), app }) as DyedTextures,
+                nova: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}nova.svg`, res), app }) as DyedTextures,
+                coin: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}coin.svg`, res), app }) as DyedTextures,
+                knife: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}knife.svg`, res), app }) as DyedTextures,
+                sword: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}sword.svg`, res), app }) as DyedTextures,
             },
             particle: {
-                fog: await LoadSvg(`${base}danmaku/particle/fog.svg`, res),
+                fog: makeDyedTextures({ redTexture: await LoadSvg(`${base}danmaku/particle/fog.svg`, res), app }) as DyedTextures,
             },
         },
         ingameUI: {
