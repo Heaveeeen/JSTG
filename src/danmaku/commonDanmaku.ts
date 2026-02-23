@@ -91,16 +91,18 @@ export class CommonDanmaku extends AbstractDanmaku {
         }
         
         if (isHit) {
-            player.hitByDanmaku(this);
+            player.hitByEnemy({ enemy: this });
         } else if (this.isGrazing) {
             // 擦弹
             this.game.prefabSounds.thse.graze.play({ volume: decibel(-5), });
             this.grazeCd = 200;
         }
 
-        this._lastX = this.x;
-        this._lastY = this.y;
-        this.grazeCd -= this.game.timeScale;
+        if (!this.destroyed) {
+            this._lastX = this.x;
+            this._lastY = this.y;
+            this.grazeCd -= this.game.timeScale;
+        }
     }
 
     get x() { return this.sprite.x; }

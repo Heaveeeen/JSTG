@@ -38,20 +38,15 @@ interface PlayerUpdateOptions {
 }
 
 interface PlayerHitByEnemyOptions {
-    danmaku?: AbstractDanmaku,
+    enemy?: AbstractDanmaku,
 }
 
-export interface MakePlayerOptions {
-    /** @default true */
-    autoUpdateSelf?: boolean,
-    /** @default true */
-    autoUpdateDanmakuPool?: boolean,
-}
+export type MissGainBombType = "reset-to-init-amount" | "increase-to-init-amount" | "none";
 
 const MissInvincibleTime = 180;
 
 /** 玩家处于 Miss 状态或其他非法状态时，尝试给予玩家无敌帧，该如何处理 */
-export let _HandleApplyInvincibleButBadPlayerStateError: "throw" | "warn" | "ignore" = "throw";
+let _HandleApplyInvincibleButBadPlayerStateError: "throw" | "warn" | "ignore" = "throw";
 
 export class Player {
 
@@ -90,14 +85,45 @@ export class Player {
     avatar: pixi.Sprite;
     /** 判定点 */
     hitboxPoint: pixi.Sprite;
+    /** 无敌期间出现的一个大圆圈特效 */
     invincibleRing: pixi.Sprite;
     /** 减速时那个半透明转转转的魔法阵 */
     slowModeRing: pixi.Sprite;
+
+    /** @private */
+    private _hpAmount: number;
+    /** 当前残机数量 */
+    get hpAmount() { return this._hpAmount; }
+    set hpAmount(n: number) {
+        this._hpAmount = Math.min(n, this.maxHpAmount);
+    }
+    /** 起始残机数量 */
+    initHpAmount: number;
+    /** 残机数量上限 */
+    maxHpAmount: number;
+
+    /** @private */
+    private _bombAmount: number;
+    /** 当前 Bomb 数量 */
+    get bombAmount() { return this._bombAmount; }
+    set bombAmount(n: number) {
+        this._bombAmount = Math.min(n, this.maxBombAmount);
+    }
+    /** 起始 Bomb 数量 */
+    initBombAmount: number;
+    /** Bomb 数量上限 */
+    maxBombAmount: number;
+
+    /** @private @readonly */
+    private readonly missGainBombType: MissGainBombType;
 
     /** @internal 玩家在上一次判定时的 x */
     _lastX: number;
     /** @internal 玩家在上一次判定时的 y */
     _lastY: number;
+
+    /** @internal 是否消除撞到的弹幕 */
+    _isNeedEraseHitDanmaku: boolean = true;
 
     get x() { return this.frontParts.x; }
     set x(n: number) {
@@ -127,19 +153,29 @@ export class Player {
         slowModeRingTexture: pixi.Texture,
         invincibleRingTexture: pixi.Texture,
         /** @default 0 */
-        hue1?: number,
+        hue1: number | null,
         /** @default 3 */
-        hitboxRadius?: number,
+        hitboxRadius: number | null,
         /** @default 4 */
-        highSpeed?: number,
+        highSpeed: number | null,
         /** @default 1.6 */
-        slowSpeed?: number,
+        slowSpeed: number | null,
         /** @default 12 */
-        dyingBombTime?: number,
+        dyingBombTime: number | null,
+        /** @default 2 */
+        initHpAmount: number | null,
+        /** @default 3 */
+        initBombAmount: number | null,
+        /** @default 8 */
+        maxHpAmount: number | null,
+        /** @default 8 */
+        maxBombAmount: number | null,
+        /** @default "reset-to-init-amount" */
+        missGainBombType: MissGainBombType | null,
         /** @default true */
-        autoUpdateDanmakuPool?: boolean,
+        autoUpdateDanmakuPool: boolean | null,
         /** @default true */
-        autoUpdateSelf?: boolean,
+        autoUpdateSelf: boolean | null,
         updateFn: (this: Player, options?: PlayerUpdateOptions) => any,
         hitByEnemyFn: (this: Player, options?: PlayerHitByEnemyOptions) => any,
     }) {
@@ -152,6 +188,12 @@ export class Player {
         this.highSpeed = options.highSpeed ?? 4;
         this.slowSpeed = options.slowSpeed ?? 1.6;
         this.dyingBombTime = options.dyingBombTime ?? 12;
+        this.initHpAmount = this._hpAmount = options.initHpAmount ?? 2;
+        this.initBombAmount = this._bombAmount = options.initBombAmount ?? 3;
+        this.maxHpAmount = options.maxHpAmount ?? 8;
+        this.maxBombAmount = options.maxBombAmount ?? 8;
+        this.missGainBombType = options.missGainBombType ?? "reset-to-init-amount";
+
         this.update = options.updateFn;
         this.hitByEnemy = options.hitByEnemyFn;
 
@@ -216,7 +258,7 @@ export class Player {
     }
 
     /**
-     * 更新自机，请务必每帧都调用一次该函数
+     * 更新自机。
      * @example
      * game.forever(loop => {
      *     // 基本的写法
@@ -345,7 +387,13 @@ export class Player {
                 this.slowModeRing.alpha = 0;
                 this.x = 0;
                 this.y = 224;
-                // TODO: 重置 Bomb 的数量
+                if (this.missGainBombType === "reset-to-init-amount") {
+                    this.bombAmount = this.initBombAmount;
+                } else if (this.missGainBombType === "increase-to-init-amount") {
+                    this.bombAmount = Math.max(this.bombAmount, this.initBombAmount);
+                } else {
+                    staticAssert<"none">(this.missGainBombType)
+                }
                 while (this.y > 185) {
                     this.y -= 2 * this.game.timeScale;
                     yield;
@@ -357,7 +405,7 @@ export class Player {
         }
     }}.call(this);
 
-    hitByDanmaku(danmaku: AbstractDanmaku) {
+    _defaultHitByEnemy(enemy: AbstractDanmaku) {
         if (this.state.type === "common") {
             if (this.state.invincibleTime === 0) {
                 const { pldead00 } = this.game.prefabSounds.thse;
@@ -369,7 +417,7 @@ export class Player {
                     this.state = { type: "dying", timeSinceDying: 0 };
                 }
             }
-            //danmaku.erase();
+            if (this._isNeedEraseHitDanmaku) { enemy.erase(); }
         }
     }
 

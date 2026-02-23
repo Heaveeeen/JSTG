@@ -145,14 +145,16 @@ export class LaserBeam extends AbstractDanmaku {
         this.isGrazing = (dx >= -24) && (dx <= this.hitboxLength + 24) && (Math.abs(dy) <= radius + 24);
 
         if (isHit) {
-            player.hitByDanmaku(this);
+            player.hitByEnemy({ enemy: this });
         } else if (this.isGrazing) {
             // 擦弹
             this.game.prefabSounds.thse.graze.play({ volume: decibel(-5), });
             this.grazeCd = 5;
         }
 
-        this.grazeCd -= this.game.timeScale;
+        if (!this.destroyed) {
+            this.grazeCd -= this.game.timeScale;
+        }
     }
 
     erase(options: {

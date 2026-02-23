@@ -1,7 +1,6 @@
 import * as pixi from "pixi";
 import { DyedTextures, LoadPixiAsset, LoadPrefabTextures, LoadPrefabTexturesOptions, LoadSvg, PrefabDanmakuNames } from "./textures.js";
 import { Key, makeInput } from "./Input.js";
-import { MakePlayerOptions, Player } from "./player/player.js";
 import { makeSimple } from "./player/simple.js";
 import { makeRng } from "./random.js";
 import * as utils from './utils.js';
@@ -10,6 +9,7 @@ import { AbstractDanmaku } from "./danmaku/abstractDanmaku.js";
 import { makeObjPool } from "./objPool.js";
 import { LoadPrefabSounds, LoadPrefabSoundsOptions, LoadSound } from "./sounds.js";
 import { LaserBeam, makePrefabLaserBeam } from "./danmaku/laserBeam.js";
+import { Player } from "./player/player.js";
 
 /**
  * 循环的控制器对象，用于控制该循环
@@ -209,9 +209,12 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
     const input = makeInput();
     if (gameOptions.autoUpdateInput ?? true) { forever(() => input._update(), { priority: 30000 }); }
 
+    //#region combat
+
     /** ⚠️不要使用此函数的返回值 */
     async function StartCombat() {
 
+        //#region board
         const board = await (async () => {
             const root = new pixi.Sprite({
                 parent: app.stage,
@@ -255,29 +258,74 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
                 get destroyed() { return root.destroyed },
             };
         })();
+        //#endregion board
 
+        //#region ingameUI
         const ingameUI = (() => {
-            const root = new pixi.Sprite({
+            const ingameUIRoot = new pixi.Sprite({
                 parent: app.stage,
                 zIndex: 0,
             });
             const windowFrame = new pixi.Sprite({
-                parent: root, texture: prefabTextures.ingameUI.window,
+                parent: ingameUIRoot, texture: prefabTextures.ingameUI.window,
             });
+
+            const playerStateBar = (()=>{
+                const { hpFull, hpEmpty, bombFull, bombEmpty } = prefabTextures.ingameUI.plStateBarIcon;
+                const stateBarRoot = new pixi.Sprite({
+                    parent: ingameUIRoot, texture: prefabTextures.ingameUI.plStateBarFrame.spdeCommon,
+                    anchor: 0.5,
+                    scale: 4/3,
+                    x: stageWidth / 2 + 160 * 4/3, y: stageHeight / 2 - 70 * 4/3,
+                });
+                const hearts: pixi.Sprite[] = [];
+                const stars: pixi.Sprite[] = [];
+                // 若希望资源上限超过 8 个，请修改此处
+                const iconAmount = 8;
+                for (let i = 0; i < iconAmount; i++) {
+                    const x = i * 15 - 47;
+                    hearts.push(new pixi.Sprite({ parent: stateBarRoot, anchor: 0.5, x, y: -30, texture: hpFull }));
+                    stars.push(new pixi.Sprite({ parent: stateBarRoot, anchor: 0.5, x, y: 10, texture: bombFull }));
+                }
+                let loop: LoopController | null = null;
+                function updateWithPlayer(player: Player) {
+                    loop?.stop();
+                    loop = game.forever(()=>{
+                        for (let i = 0; i < iconAmount; i++) {
+                            if (i < player.maxHpAmount) {
+                                hearts[i].visible = true;
+                                hearts[i].texture = i < player.hpAmount ? hpFull : hpEmpty;
+                                //hearts[i].alpha = i < player.hpAmount ? 1 : 0.25;
+                            } else { hearts[i].visible = false; }
+                            if (i < player.maxBombAmount) {
+                                stars[i].visible = true;
+                                stars[i].texture = i < player.bombAmount ? bombFull : bombEmpty;
+                                //stars[i].alpha = i < player.hpAmount ? 1 : 0.25;
+                            } else { stars[i].visible = false; }
+                        }
+                    }, { refs: [combat, player] });
+                }
+                return {
+                    root: stateBarRoot,
+                    hearts, stars,
+                    updateWithPlayer,
+                }
+            })();
 
             return {
                 /** 根节点 */
-                root,
+                root: ingameUIRoot,
                 /** 游戏内 UI 的那个像窗口框架的大背景 */
                 windowFrame,
-                destroy() {
-                    root.destroy();
-                    windowFrame.destroy();
-                },
-                get destroyed() { return root.destroyed; },
+                /** 显示残机和 Bomb 数量的那个状态栏 */
+                playerStateBar,
+                destroy() { ingameUIRoot.destroy(); },
+                get destroyed() { return ingameUIRoot.destroyed; },
             }
         })();
+        //#endregion
 
+        //#region danmakuPool
         const danmakuPool = (() => {
             const pool = makeObjPool<AbstractDanmaku>();
             const { objects: danmakus, push, clean, _validCount, destroy } = pool;
@@ -305,63 +353,25 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
                 get destroyed() { return pool.destroyed; },
             };
         })();
+        //#endregion danmakuPool
 
         const players: Player[] = [];
 
         const combat = {
-            /**
-             * @readonly
-             * 游戏内 UI ，版面上盖着的那一层 UI ，包括血条啥的以及那个像窗口框架的东西
-             */
+            /** @readonly  游戏内 UI ，版面上盖着的那一层 UI ，包括血条啥的以及那个像窗口框架的东西 */
             ingameUI,
-            /**
-             * @readonly
-             * 版面，就是自机和弹幕所处的那个主要场地
-             */
+            /** @readonly 版面，就是自机和弹幕所处的那个主要场地 */
             board,
             /**
              * @readonly
-             * 弹幕管理器，可以利用这个东西来每帧更新所有弹幕，这样弹幕才能攻击玩家。  
+             * 弹幕池，可以利用这个东西来每帧更新所有弹幕，这样弹幕才能攻击玩家。  
              * 正常情况下不用管这个东西，因为自机会自动帮你调用它的 update 方法。  
              * 也可以用这个来遍历所有弹幕。  
              */
             danmakuPool,
-            /**
-             * @readonly
-             * JSTG 预置的自机
-             * @example
-             * // 简单的例子
-             * const player = game.makePrefabPlayer.simple();
-             * 
-             * // 一个手动更新以设置键位的例子
-             * const player = game.prefabPlayers.makeSimple({ autoUpdateSelf: false });
-             * game.forever(loop => {
-             *     player.update({
-             *         highSpeed: 5, slowSpeed: 2,
-             *         keyMap: {
-             *             up: Key.KeyW,
-             *             down: Key.KeyS,
-             *             left: Key.KeyA,
-             *             right: Key.KeyD,
-             *         },
-             *     });
-             * });
-             */
+            /** @readonly JSTG 预置的自机 */
             makePrefabPlayer: null as unknown as typeof makePrefabPlayer, // 奇技淫巧
-            /** 
-             * 创建一个 JSTG 预置的弹幕  
-             * @example
-             * const myPlayer = game.makePrefabPlayer.simple();
-             * const myDanmaku = game.makeDanmaku("smallball");
-             * myDanmaku.x = 0;
-             * myDanmaku.y = 0;
-             * game.forever(loop => {
-             *     myPlayer.update();
-             *     myDanmaku.move(2);
-             *     myDanmaku.boundaryDelete();
-             *     game.danmakuPool.update(myPlayer);
-             * }, { with: myDanmaku, rely: myPlayer });
-             */
+            /** 创建一个 JSTG 预置的弹幕 */
             makeDanmaku: null as unknown as typeof makeDanmaku, // 又是奇技淫巧
             /** TODO: DOC makeLaserBeam */
             makeLaserBeam: null as unknown as typeof makeLaserBeam, // 又是奇技淫巧
@@ -375,12 +385,24 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         };
 
         const makePrefabPlayer = (()=>{
-            const simple = async (options: MakePlayerOptions = {}) => {
-                const simple = await makeSimple(game, combat, board, prefabTextures, options);
-                players.push(simple);
-                return simple;
+            const makePlayer = (player: Player) => {
+                players.push(player);
+                ingameUI.playerStateBar.updateWithPlayer(player);
+                return player;
             }
-            /* TODO: simple.homingOnly = (options: MakePlayerOptions = {}) => ...
+
+            const simple = async (options: {
+                /** @default true */
+                autoUpdateDanmakuPool?: boolean,
+                /** @default true */
+                autoUpdateSelf?: boolean,
+            } = {}) => makePlayer(await makeSimple({
+                game, combat, board,
+                autoUpdateDanmakuPool: options.autoUpdateDanmakuPool ?? null,
+                autoUpdateSelf: options.autoUpdateSelf ?? null,
+            }));
+
+            /* TODO: simple.homingOnly ...
              * maple, icu
              * reimu, marisa, sanae
              */
@@ -476,6 +498,8 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
 
         return combat;
     }
+
+    //#endregion combat
 
     // 粗测帧率
     const fpsMonitor = new pixi.Text({
@@ -634,7 +658,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         },
     };
 
-    //#endregion
+    //#endregion game
 
     return game;
 

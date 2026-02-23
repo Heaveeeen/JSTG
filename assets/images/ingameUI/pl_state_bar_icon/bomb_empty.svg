@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 26.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd" [
+	<!ENTITY st0 "fill:url(#SVGID_1_);stroke:#303822;stroke-width:0.75;stroke-miterlimit:10;">
+]>
+<svg version="1.0" id="图层_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 width="15.96834px" height="15.96834px" viewBox="0 0 15.96834 15.96834" style="enable-background:new 0 0 15.96834 15.96834;"
+	 xml:space="preserve">
+<radialGradient id="SVGID_1_" cx="239.98688" cy="-162.00829" r="6.19761" gradientTransform="matrix(1 0 0 -1 -232.01582 -154.01582)" gradientUnits="userSpaceOnUse">
+	<stop  offset="0" style="stop-color:#5C6649"/>
+	<stop  offset="1" style="stop-color:#45522E"/>
+</radialGradient>
+<path style="&st0;" d="M7.97241,1.48756l1.83669,4.0208l4.3727,0.49356l-3.25725,2.95847l0.88554,4.27586l-3.82866-2.1414
+	l-3.84665,2.1414L5.043,8.96091L1.78658,6.00952l4.38374-0.50015L7.97241,1.48756z"/>
+</svg>
