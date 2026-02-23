@@ -1,7 +1,7 @@
 import * as pixi from "pixi";
 import { Board, Combat, Game, LoopController } from "../jstg.js";
 import { Player } from "../player/player.js";
-import { alphaTo, getPointToSegmentDist2, staticAssert, Vec2 } from "../utils.js";
+import { alphaTo, decibel, getPointToSegmentDist2, staticAssert, Vec2 } from "../utils.js";
 import { DyedTextures, PrefabDanmakuNames } from "../textures.js";
 import { AbstractDanmaku, NewAbstractDanmakuOptions } from "./abstractDanmaku.js";
 
@@ -69,26 +69,38 @@ export class CommonDanmaku extends AbstractDanmaku {
         this.updateDebugHitbox(player);
 
         // 这里的判定和弹幕引擎一样是动对动判定
-        const isHit = ( // 先粗判
-            Math.abs(player.x - this.x) <= this.hitboxRadius + 30 &&
-            Math.abs(player.y - this.y) <= this.hitboxRadius + 30
-        ) && getPointToSegmentDist2(
-            { // D'D - P'P
-                x: (this.x - this._lastX) - (player.x - player._lastX),
-                y: (this.y - this._lastY) - (player.y - player._lastY)
-            },
-            { // D'->P'
-                x: (player._lastX - this._lastX), y: (player._lastY - this._lastY)
+        let isHit = false;
+        this.isGrazing = false;
+        if ( // 先粗判
+            Math.abs(player.x - this.x) <= this.hitboxRadius + 40 &&
+            Math.abs(player.y - this.y) <= this.hitboxRadius + 40
+        ) {
+            let dist = getPointToSegmentDist2(
+                { // D'D - P'P
+                    x: (this.x - this._lastX) - (player.x - player._lastX),
+                    y: (this.y - this._lastY) - (player.y - player._lastY)
+                },
+                { // D'->P'
+                    x: (player._lastX - this._lastX), y: (player._lastY - this._lastY)
+                }
+            );
+            isHit = dist < (this.hitboxRadius + player.hitboxRadius) ** 2;
+            if (this.grazeCd <= 0) {
+                this.isGrazing = dist < (this.hitboxRadius + 24 + player.hitboxRadius) ** 2;
             }
-        ) < (this.hitboxRadius + player.hitboxRadius) ** 2;
+        }
+        
+        if (isHit) {
+            player.hitByDanmaku(this);
+        } else if (this.isGrazing) {
+            // 擦弹
+            this.game.prefabSounds.thse.graze.play({ volume: decibel(-5), });
+            this.grazeCd = 200;
+        }
 
         this._lastX = this.x;
         this._lastY = this.y;
-
-        if (isHit) {
-            player.hitByDanmaku(this);
-        }
-        // TODO: 擦弹
+        this.grazeCd -= this.game.timeScale;
     }
 
     get x() { return this.sprite.x; }
@@ -226,7 +238,7 @@ export const prefabDanmakuHitboxRadius = {
     knife: 4,
     sword: 5.7,
     nuclear: 46.5,
-    // TODO: 菌弹，杆菌弹，激光段
+    // TODO: 激光段
     // MAY TODO: 阴阳玉，休止符
 } as const;
 

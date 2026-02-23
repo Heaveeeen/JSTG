@@ -73,6 +73,9 @@ export abstract class AbstractDanmaku {
         }
     }
 
+    grazeCd: number = 0;
+    isGrazing: boolean = false;
+
     /**
      * 该弹幕是否会与玩家交互并造成伤害
      * @example

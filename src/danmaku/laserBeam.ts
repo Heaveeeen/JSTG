@@ -2,9 +2,8 @@ import * as pixi from "pixi";
 import { NewCommonDanmakuOptions, prefabDanmakuHitboxRadius } from "./commonDanmaku.js";
 import { AbstractDanmaku, NewAbstractDanmakuOptions } from "./abstractDanmaku.js";
 import { Game, Board, Player, Combat } from "../jstg.js";
-import { cast, getPointToSegmentDist2, rotateVec, staticAssert } from "../utils.js";
+import { alphaTo, cast, decibel, getPointToSegmentDist2, rotateVec, staticAssert } from "../utils.js";
 import { DyedTextures, PrefabDanmakuNames } from "../textures.js";
-import * as utils from '../utils.js';
 
 
 /** 激光上附带的一个端点 */
@@ -140,14 +139,20 @@ export class LaserBeam extends AbstractDanmaku {
         this.updateDebugHitbox(player);
 
         const { x: dx, y: dy } = rotateVec({ x: player.x - this.x, y: player.y - this.y }, this.rotation);
+        
         const radius = this.hitboxHalfWidth + player.hitboxRadius;
-
         const isHit = (dx >= 0) && (dx <= this.hitboxLength) && (Math.abs(dy) <= radius);
+        this.isGrazing = (dx >= -24) && (dx <= this.hitboxLength + 24) && (Math.abs(dy) <= radius + 24);
 
         if (isHit) {
             player.hitByDanmaku(this);
+        } else if (this.isGrazing) {
+            // 擦弹
+            this.game.prefabSounds.thse.graze.play({ volume: decibel(-5), });
+            this.grazeCd = 5;
         }
-        // TODO: 擦弹
+
+        this.grazeCd -= this.game.timeScale;
     }
 
     erase(options: {
@@ -201,7 +206,7 @@ export class LaserBeam extends AbstractDanmaku {
         while (eraseEffectSprite.alpha > 0) {
             eraseEffectSprite.scale.x -= 0.05 * this.game.timeScale;
             eraseEffectSprite.scale.y -= 0.05 * this.game.timeScale;
-            utils.alphaTo(eraseEffectSprite, 0, 0.05 * this.game.timeScale);
+            alphaTo(eraseEffectSprite, 0, 0.05 * this.game.timeScale);
             yield;
         }
         eraseEffectSprite.destroy();
@@ -249,7 +254,8 @@ export const makePrefabLaserBeam = (options: {
     const { type, color, game, combat, board, x, y, rotation } = options;
     const parent = options.parent ?? board.commonDanmakuLayer;
     const texture = game.prefabTextures.danmaku.danmaku[type][color];
-    const baseHalfWidth = prefabDanmakuHitboxRadius[type]; // MAY TODO: 把这几个数据改成 PrefabDanmakuLaserWidth 啥的，手写一套高质量数据
+    const baseHalfWidth = prefabDanmakuHitboxRadius[type];
+    // MAY TODO: PrefabDanmakuLaserWidth 啥的，手写一套高质量数据
     const baseHalfLength = prefabDanmakuHitboxRadius[type] + 2;
     const hitboxHalfWidth = options.halfWidth;
     const hitboxLength = options.length;
