@@ -165,7 +165,7 @@ import { prefabDanmakuHitboxRadius } from "./dist/danmaku/commonDanmaku.js";
             }
         }
         makeFooExsibits(-188, (/** @type {number} */ r) => r * 3 + 4.3, (/** @type {number} */ r) => r * 3 + 5.6, [
-            "dot", "dot", "drip", "scale", "grain", "chain", "seed", "bullet", "grain", "crystal", "particle", "card",
+            "dot", "bacteria", "drip", "scale", "grain", "chain", "seed", "bullet", "bacillus", "crystal", "particle", "card",
             "smallball", "ringball", "glowball", "fireball", "smallstar", "nova", "coin",
         ]);
         y += 4;

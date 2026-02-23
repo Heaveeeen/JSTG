@@ -86,6 +86,8 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
                 glowball: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}glowball.svg`, res), app }) as DyedTextures,
                 fireball: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}fireball.svg`, res), app }) as DyedTextures,
                 dot: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}dot.svg`, res), app }) as DyedTextures,
+                bacteria: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}bacteria.svg`, res), app }) as DyedTextures,
+                bacillus: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}bacillus.svg`, res), app }) as DyedTextures,
                 grain: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}grain.svg`, res), app }) as DyedTextures,
                 chain: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}chain.svg`, res), app }) as DyedTextures,
                 seed: makeDyedTextures({ redTexture: await LoadSvg(`${danBase}seed.svg`, res), app }) as DyedTextures,

@@ -200,6 +200,8 @@ export const prefabDanmakuHitboxRadius = {
     glowball: 4,
     fireball: 4,
     dot: 2.8,
+    bacteria: 2.8,
+    bacillus: 3,
     grain: 3,
     chain: 3,
     seed: 3,
