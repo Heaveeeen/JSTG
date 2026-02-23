@@ -154,7 +154,7 @@ export class CommonDanmaku extends AbstractDanmaku {
             texture: this.game.prefabTextures.danmaku.particle.fog[this.color],
             anchor: 0.5,
             x: this.x, y: this.y, 
-            scale: this.sprite.scale,
+            scale: { x: this.sprite.scale.x * 0.5, y: this.sprite.scale.y * 0.5 },
             rotation: Math.random() * 2 * Math.PI,
             filters: this.sprite.filters,
         });
@@ -175,7 +175,7 @@ export class CommonDanmaku extends AbstractDanmaku {
             texture: this.sprite.texture,
             anchor: 0.5,
             x: this.x, y: this.y, 
-            scale: { x: this.sprite.scale.x * 0.5, y: this.sprite.scale.y * 0.5 },
+            scale: this.sprite.scale,
             rotation: this.sprite.rotation,
             filters: this.sprite.filters,
         });
