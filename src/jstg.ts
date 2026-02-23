@@ -104,7 +104,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
 
     await app.init(gameOptions.pixiApplicationOptions ?? {
         backgroundColor: "#000000",
-        preference: "webgl",
+        //preference: "webgl",
         useBackBuffer: true,
         hello: true,
     });

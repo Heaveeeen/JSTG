@@ -7,7 +7,7 @@
 import * as jstg from "./dist/jstg.js";
 import * as pixi from "pixi";
 import { deg } from "./dist/utils.js";
-import { Danmaku, prefabDanmakuHitboxRadius } from "./dist/danmaku.js";
+import { prefabDanmakuHitboxRadius } from "./dist/danmaku/commonDanmaku.js";
 
 
 // 启动游戏
@@ -151,7 +151,7 @@ import { Danmaku, prefabDanmakuHitboxRadius } from "./dist/danmaku.js";
             for (const type of types) {
                 let x = x0;
                 for (const color of colors) {
-                // @ts-expect-error
+                    // @ts-expect-error
                     const dan = makeDanmaku({ type, color, x, y, rotation });
                     forever(loop => {
                         dan.rotation += 0.006;
@@ -164,20 +164,25 @@ import { Danmaku, prefabDanmakuHitboxRadius } from "./dist/danmaku.js";
                 y += dy(prefabDanmakuHitboxRadius[type]);
             }
         }
-        makeFooExsibits(-187, (/** @type {number} */ r) => r * 4 + 5, (/** @type {number} */ r) => r * 4 + 5, [
-            "smallball", "ringball", "glowball", "fireball",
-            "dot", "scale", "grain", "chain", "seed", "scale", "bullet", "drip", "card", "smallstar",
-            "crystal", "particle", "nova", "coin",
+        makeFooExsibits(-188, (/** @type {number} */ r) => r * 3 + 4.3, (/** @type {number} */ r) => r * 3 + 5.6, [
+            "dot", "dot", "drip", "scale", "grain", "chain", "seed", "bullet", "grain", "crystal", "particle", "card",
+            "smallball", "ringball", "glowball", "fireball", "smallstar", "nova", "coin",
         ]);
         y += 4;
-        makeFooExsibits(-182, (/** @type {number} */ r) => r * 4 + 16, (/** @type {number} */ r) => r * 4 + 16,
+        makeFooExsibits(-182, (/** @type {number} */ r) => r * 3 + 15, (/** @type {number} */ r) => r * 3 + 15,
             ["knife", "note", "arrow", "butterfly"], ["white", "h300", "h240", "h180", "h150", "h120", "h60", "h30", "h0"]);
-        y = -145;
-        makeFooExsibits(182, (/** @type {number} */ r) => -29, (/** @type {number} */ r) => r * 4 + 5, [
-            "bigstar", "ellipse", "heart", "middleball", "lightball"//, "sword", "bubble", "nuclear"
+        y = -220;
+        makeFooExsibits(182, (/** @type {number} */ r) => -32, (/** @type {number} */ r) => 36,
+            ["lightball"], ["white", "h300", "h240", "h180", "h150", "h30", "h0"]);
+        makeFooExsibits(182, (/** @type {number} */ r) => -29, (/** @type {number} */ r) => 30, [
+            "bigstar", "ellipse", "heart", "middleball"//, "sword", "bubble", "nuclear"
         ], ["white", "h300", "h240", "h180", "h150", "h30", "h0"]);
-        y = -215;
-        makeFooExsibits(170, (/** @type {number} */ r) => -45, () => 0, ["sword"], ["h180", "h60", "h0"]);
+        //y = -215;
+        //makeFooExsibits(170, (/** @type {number} */ r) => -45, () => 0, ["sword"], ["h180", "h60", "h0"]);
+        y = 207;
+        makeFooExsibits(-166, (/** @type {number} */ r) => 66, () => 0, ["bubble"], ["h0", "h60", "h120", "h240", "h300", "white"]);
+        makeDanmaku({ type: "nuclear", x: 115, y: 0 });
+        makeDanmaku({ type: "sword", x: 155, y: 100 });
     }
     makeFooMuseum();
 
