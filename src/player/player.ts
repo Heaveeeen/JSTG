@@ -420,7 +420,6 @@ export class Player {
                     const self = this;
                     const { x, y } = this;
                     this.game.coDo(function*() {
-                        // 弹幕引擎的消弹只有一瞬间，但这里消弹持续很长一段时间
                         for (let radius = 0; radius <= 600; radius += 10 * self.game.timeScale) {
                             self.combat.danmakuPool.eraseByRadius({ x, y, radius });
                             // TODO: damage (circle) r=radius, dmg=10*timescale, dmg to boss = 0.2
