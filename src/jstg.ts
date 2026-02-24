@@ -11,10 +11,6 @@ import { LoadPrefabSounds, LoadPrefabSoundsOptions, LoadSound } from "./sounds.j
 import { LaserBeam, makePrefabLaserBeam } from "./danmaku/laserBeam.js";
 import { Player } from "./player/player.js";
 
-// @ts-expect-error
-globalThis.PIXI = pixi;
-// @ts-expect-error
-import("../lib/pixi/advanced-blend-modes.js").then(() => delete globalThis.PIXI);
 
 /**
  * 循环的控制器对象，用于控制该循环
@@ -343,6 +339,17 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
                 player._lastY = player.y;
             };
 
+            const eraseByRadius = (options: { x: number, y: number, radius: number }) => {
+                const { x, y, radius } = options;
+                forEachAlive(dan => {
+                    if (dan instanceof CommonDanmaku) {
+                        if ((dan.x - x) ** 2 + (dan.y - y) ** 2 <= (dan.hitboxRadius + radius) ** 2) { dan.erase(); }
+                    } else {// TODO: if (dan instanceof LaserBeam) {
+                        if ((dan.x - x) ** 2 + (dan.y - y) ** 2 <= (4 + radius) ** 2) { dan.erase(); }
+                    }
+                });
+            };
+
             return {
                 /** @readonly 所有接受判定的弹幕，⚠️可能含有已经摧毁的无效弹幕 */
                 danmakus,
@@ -354,6 +361,8 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
                 clean,
                 /** 遍历所有未被摧毁的弹幕，可以用来消弹 */
                 forEachAlive,
+                /** 消除一个圆形范围内的所有弹幕 */
+                eraseByRadius,
                 /** @readonly @internal 当前场上的弹幕数量（⚠️包含无效弹幕） */
                 get _validCount() { return _validCount; },
                 destroy,

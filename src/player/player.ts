@@ -3,6 +3,7 @@ import { Input, Key } from "../Input.js";
 import { Board, Combat, Game, LoopController } from "../jstg.js";
 import { alphaTo, deg, clamp, staticAssert } from "../utils.js";
 import { AbstractDanmaku } from "../danmaku/abstractDanmaku.js";
+import { DifferenceBlendFilter } from "../graphics/differenceBlendFilter.js";
 
 interface PlayerKeyMapOptions {
     /** @default Key.ArrowUp */
@@ -382,43 +383,52 @@ export class Player {
                     this.hpAmount -= 1;
                 }
                 {// 一堆交叉圈的特效
-                    const makeMissFilter = (dx: number, dy: number) => {
-                        const missFilter = new pixi.Sprite({
+                    const missFIlterSprites: pixi.Sprite[] = []
+                    const makeMissFilterSprite = (dx: number, dy: number) => {
+                        const spr = new pixi.Sprite({
                             parent: this.backParts.parent ?? undefined,
                             texture: this.game.prefabTextures.player.miss_filter,
                             anchor: 0.5,
                             x: this.x + dx, y: this.y + dy,
                             scale: 0,
                             zIndex: 500,
-                            blendMode: "difference",
+                            filters: new DifferenceBlendFilter(),
                         });
                         let radius = 0;
-                        let t = 0;
                         this.game.forever(loop => {
-                            if (t < 120) {
-                                radius += (radius * 0.075 + 0.25) * this.game.timeScale;
-                                missFilter.scale = radius * 0.01;
-                                t += this.game.timeScale;
-                            } else {
-                                missFilter.destroy();
-                            }
-                        }, { owns: missFilter, refs: this.combat });
+                            radius += (radius * 0.075 + 0.25) * this.game.timeScale;
+                            spr.scale = radius * 0.01;
+                        }, { owns: spr, refs: this.combat });
+                        missFIlterSprites.push(spr);
                     }
                     const self = this;
                     this.game.coDo(function*(loop) {
-                        makeMissFilter(0, 0);
+                        makeMissFilterSprite(0, 0);
                         yield* self.game.Sleep(6);
-                        makeMissFilter(-40, 0);
-                        makeMissFilter(40, 0);
-                        makeMissFilter(0, -40);
-                        makeMissFilter(0, 40);
+                        makeMissFilterSprite(-40, 0);
+                        makeMissFilterSprite(40, 0);
+                        makeMissFilterSprite(0, -40);
+                        makeMissFilterSprite(0, 40);
                         yield* self.game.Sleep(24);
-                        makeMissFilter(0, 0);
+                        makeMissFilterSprite(0, 0);
+                        yield* self.game.Sleep(70);
+                        missFIlterSprites.forEach(spr => spr.destroy());
                     }, { refs: this.combat });
                 }
                 yield* this.game.Sleep(40);
-                // 消弹
-                this.combat.danmakuPool.forEachAlive(dan => dan.erase());
+                {// 消弹
+                    const self = this;
+                    const { x, y } = this;
+                    this.game.coDo(function*() {
+                        // 弹幕引擎的消弹只有一瞬间，但这里消弹持续很长一段时间
+                        for (let radius = 0; radius <= 600; radius += 10 * self.game.timeScale) {
+                            self.combat.danmakuPool.eraseByRadius({ x, y, radius });
+                            // TODO: damage (circle) r=radius, dmg=10*timescale, dmg to boss = 0.2
+                            yield;
+                        }
+                        self.combat.danmakuPool.forEachAlive(dan => dan.erase());
+                    }, { refs: this.combat });
+                }
                 yield* this.game.Sleep(20);
                 // 重生动画
                 this.alpha = 1;
