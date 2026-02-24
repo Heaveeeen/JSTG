@@ -76,44 +76,43 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
     const { app } = options;
     const base = options.baseUrl ?? "./assets/images/";
     const resScale = options.resolutionScale ?? 1;
-    const danBase = "danmaku/danmaku/";
     const lsvg = async (url: string, res = 2) => await LoadSvg(base + url, res * resScale);
     const lsd = async (url: string, res = 2) => makeDyedTextures({ redTexture: await lsvg(url, res), app });
     return {
         danmaku: {
             danmaku: {
-                smallball: await lsd(`${danBase}smallball.svg`) as DyedTextures, // 这里断言一下是为了折叠悬停提示
-                ringball: await lsd(`${danBase}ringball.svg`) as DyedTextures,
-                glowball: await lsd(`${danBase}glowball.svg`) as DyedTextures,
-                fireball: await lsd(`${danBase}fireball.svg`) as DyedTextures,
-                dot: await lsd(`${danBase}dot.svg`) as DyedTextures,
-                bacteria: await lsd(`${danBase}bacteria.svg`) as DyedTextures,
-                bacillus: await lsd(`${danBase}bacillus.svg`) as DyedTextures,
-                grain: await lsd(`${danBase}grain.svg`) as DyedTextures,
-                chain: await lsd(`${danBase}chain.svg`) as DyedTextures,
-                seed: await lsd(`${danBase}seed.svg`) as DyedTextures,
-                scale: await lsd(`${danBase}scale.svg`) as DyedTextures,
-                bullet: await lsd(`${danBase}bullet.svg`) as DyedTextures,
-                drip: await lsd(`${danBase}drip.svg`) as DyedTextures,
-                card: await lsd(`${danBase}card.svg`) as DyedTextures,
-                note: await lsd(`${danBase}note.svg`) as DyedTextures,
+                smallball: await lsd(`danmaku/danmaku/smallball.svg`) as DyedTextures, // 这里断言一下是为了折叠悬停提示
+                ringball: await lsd(`danmaku/danmaku/ringball.svg`) as DyedTextures,
+                glowball: await lsd(`danmaku/danmaku/glowball.svg`) as DyedTextures,
+                fireball: await lsd(`danmaku/danmaku/fireball.svg`) as DyedTextures,
+                dot: await lsd(`danmaku/danmaku/dot.svg`) as DyedTextures,
+                bacteria: await lsd(`danmaku/danmaku/bacteria.svg`) as DyedTextures,
+                bacillus: await lsd(`danmaku/danmaku/bacillus.svg`) as DyedTextures,
+                grain: await lsd(`danmaku/danmaku/grain.svg`) as DyedTextures,
+                chain: await lsd(`danmaku/danmaku/chain.svg`) as DyedTextures,
+                seed: await lsd(`danmaku/danmaku/seed.svg`) as DyedTextures,
+                scale: await lsd(`danmaku/danmaku/scale.svg`) as DyedTextures,
+                bullet: await lsd(`danmaku/danmaku/bullet.svg`) as DyedTextures,
+                drip: await lsd(`danmaku/danmaku/drip.svg`) as DyedTextures,
+                card: await lsd(`danmaku/danmaku/card.svg`) as DyedTextures,
+                note: await lsd(`danmaku/danmaku/note.svg`) as DyedTextures,
                 // TODO: 音符和炎弹的动画
-                arrow: await lsd(`${danBase}arrow.svg`) as DyedTextures,
-                butterfly: await lsd(`${danBase}butterfly.svg`) as DyedTextures,
-                smallstar: await lsd(`${danBase}smallstar.svg`) as DyedTextures,
-                bigstar: await lsd(`${danBase}bigstar.svg`) as DyedTextures,
-                ellipse: await lsd(`${danBase}ellipse.svg`) as DyedTextures,
-                heart: await lsd(`${danBase}heart.svg`) as DyedTextures,
-                middleball: await lsd(`${danBase}middleball.svg`) as DyedTextures,
-                lightball: await lsd(`${danBase}lightball.svg`) as DyedTextures,
-                bubble: await lsd(`${danBase}bubble.svg`) as DyedTextures,
-                nuclear: await lsd(`${danBase}nuclear.svg`) as DyedTextures,
-                crystal: await lsd(`${danBase}crystal.svg`) as DyedTextures,
-                particle: await lsd(`${danBase}particle.svg`) as DyedTextures,
-                nova: await lsd(`${danBase}nova.svg`) as DyedTextures,
-                coin: await lsd(`${danBase}coin.svg`) as DyedTextures,
-                knife: await lsd(`${danBase}knife.svg`) as DyedTextures,
-                sword: await lsd(`${danBase}sword.svg`) as DyedTextures,
+                arrow: await lsd(`danmaku/danmaku/arrow.svg`) as DyedTextures,
+                butterfly: await lsd(`danmaku/danmaku/butterfly.svg`) as DyedTextures,
+                smallstar: await lsd(`danmaku/danmaku/smallstar.svg`) as DyedTextures,
+                bigstar: await lsd(`danmaku/danmaku/bigstar.svg`) as DyedTextures,
+                ellipse: await lsd(`danmaku/danmaku/ellipse.svg`) as DyedTextures,
+                heart: await lsd(`danmaku/danmaku/heart.svg`) as DyedTextures,
+                middleball: await lsd(`danmaku/danmaku/middleball.svg`) as DyedTextures,
+                lightball: await lsd(`danmaku/danmaku/lightball.svg`) as DyedTextures,
+                bubble: await lsd(`danmaku/danmaku/bubble.svg`) as DyedTextures,
+                nuclear: await lsd(`danmaku/danmaku/nuclear.svg`) as DyedTextures,
+                crystal: await lsd(`danmaku/danmaku/crystal.svg`) as DyedTextures,
+                particle: await lsd(`danmaku/danmaku/particle.svg`) as DyedTextures,
+                nova: await lsd(`danmaku/danmaku/nova.svg`) as DyedTextures,
+                coin: await lsd(`danmaku/danmaku/coin.svg`) as DyedTextures,
+                knife: await lsd(`danmaku/danmaku/knife.svg`) as DyedTextures,
+                sword: await lsd(`danmaku/danmaku/sword.svg`) as DyedTextures,
             },
             particle: {
                 fog: await lsd(`danmaku/particle/fog.svg`) as DyedTextures,
@@ -121,19 +120,19 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
         },
         ingameUI: {
             window: await lsvg(`ingameUI/window.svg`),
-            enemyScBarIcon: {
-                nonSpellcard: await lsvg(`ingameUI/enemy_sc_bar_icon/non_spellcard.svg`),
+            enemy_sc_bar_icon: {
+                non_spellcard: await lsvg(`ingameUI/enemy_sc_bar_icon/non_spellcard.svg`),
                 spellcard: await lsvg(`ingameUI/enemy_sc_bar_icon/spellcard.svg`),
             },
-            plStateBarIcon: {
-                bombFull: await lsvg(`ingameUI/pl_state_bar_icon/bomb_full.svg`, 3),
-                bombEmpty: await lsvg(`ingameUI/pl_state_bar_icon/bomb_empty.svg`, 3),
-                hpFull: await lsvg(`ingameUI/pl_state_bar_icon/hp_full.svg`, 3),
-                hpEmpty: await lsvg(`ingameUI/pl_state_bar_icon/hp_empty.svg`, 3),
+            pl_state_bar_icon: {
+                bomb_full: await lsvg(`ingameUI/pl_state_bar_icon/bomb_full.svg`, 3),
+                bomb_empty: await lsvg(`ingameUI/pl_state_bar_icon/bomb_empty.svg`, 3),
+                hp_full: await lsvg(`ingameUI/pl_state_bar_icon/hp_full.svg`, 3),
+                hp_empty: await lsvg(`ingameUI/pl_state_bar_icon/hp_empty.svg`, 3),
             },
-            plStateBarFrame: {
-                spdeCommon: await lsvg(`ingameUI/pl_state_bar_frame/spde_common.svg`, 3),
-                spdeWideScreen: await lsvg(`ingameUI/pl_state_bar_frame/spde_wide_screen.svg`),
+            pl_state_bar_frame: {
+                spde_common: await lsvg(`ingameUI/pl_state_bar_frame/spde_common.svg`, 3),
+                spde_wide_screen: await lsvg(`ingameUI/pl_state_bar_frame/spde_wide_screen.svg`),
             }
         },
         player: {
@@ -141,6 +140,7 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
             hitbox: await lsvg(`player/hitbox.svg`),
             invincible_ring: await lsvg(`player/invincible_ring.svg`),
             slow_mode: await lsvg(`player/slow_mode.svg`),
+            miss_filter: await lsvg(`player/miss_filter.svg`),
         },
     }
 }

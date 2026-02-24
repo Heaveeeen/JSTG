@@ -1,6 +1,6 @@
 import * as pixi from "pixi";
 import { Input, Key } from "../Input.js";
-import { Board, Combat, Game } from "../jstg.js";
+import { Board, Combat, Game, LoopController } from "../jstg.js";
 import { alphaTo, deg, clamp, staticAssert } from "../utils.js";
 import { AbstractDanmaku } from "../danmaku/abstractDanmaku.js";
 
@@ -95,7 +95,7 @@ export class Player {
     /** 当前残机数量 */
     get hpAmount() { return this._hpAmount; }
     set hpAmount(n: number) {
-        this._hpAmount = Math.min(n, this.maxHpAmount);
+        this._hpAmount = clamp(n, 0, this.maxHpAmount);
     }
     /** 起始残机数量 */
     initHpAmount: number;
@@ -107,7 +107,7 @@ export class Player {
     /** 当前 Bomb 数量 */
     get bombAmount() { return this._bombAmount; }
     set bombAmount(n: number) {
-        this._bombAmount = Math.min(n, this.maxBombAmount);
+        this._bombAmount = clamp(n, 0, this.maxBombAmount);
     }
     /** 起始 Bomb 数量 */
     initBombAmount: number;
@@ -376,9 +376,49 @@ export class Player {
                 this.game.debug.godMode.dieCount ++;
                 this.state = { type: "common", invincibleTime: 30, };
             } else {
-                // TODO: 扣血 & 那四个圈的特效
+                if (this.hpAmount < 1) {
+                    // TODO: 疮痍
+                } else {
+                    this.hpAmount -= 1;
+                }
+                {// 一堆交叉圈的特效
+                    const makeMissFilter = (dx: number, dy: number) => {
+                        const missFilter = new pixi.Sprite({
+                            parent: this.backParts.parent ?? undefined,
+                            texture: this.game.prefabTextures.player.miss_filter,
+                            anchor: 0.5,
+                            x: this.x + dx, y: this.y + dy,
+                            scale: 0,
+                            zIndex: 500,
+                            blendMode: "difference",
+                        });
+                        let radius = 0;
+                        let t = 0;
+                        this.game.forever(loop => {
+                            if (t < 120) {
+                                radius += (radius * 0.075 + 0.25) * this.game.timeScale;
+                                missFilter.scale = radius * 0.01;
+                                t += this.game.timeScale;
+                            } else {
+                                missFilter.destroy();
+                            }
+                        }, { owns: missFilter, refs: this.combat });
+                    }
+                    const self = this;
+                    this.game.coDo(function*(loop) {
+                        makeMissFilter(0, 0);
+                        yield* self.game.Sleep(6);
+                        makeMissFilter(-40, 0);
+                        makeMissFilter(40, 0);
+                        makeMissFilter(0, -40);
+                        makeMissFilter(0, 40);
+                        yield* self.game.Sleep(24);
+                        makeMissFilter(0, 0);
+                    }, { refs: this.combat });
+                }
                 yield* this.game.Sleep(40);
-                // TODO: 消弹
+                // 消弹
+                this.combat.danmakuPool.forEachAlive(dan => dan.erase());
                 yield* this.game.Sleep(20);
                 // 重生动画
                 this.alpha = 1;
@@ -387,6 +427,7 @@ export class Player {
                 this.slowModeRing.alpha = 0;
                 this.x = 0;
                 this.y = 224;
+                // 重置 Bomb 的数量
                 if (this.missGainBombType === "reset-to-init-amount") {
                     this.bombAmount = this.initBombAmount;
                 } else if (this.missGainBombType === "increase-to-init-amount") {

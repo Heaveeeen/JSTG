@@ -55,67 +55,59 @@ import { prefabDanmakuHitboxRadius } from "./dist/danmaku/commonDanmaku.js";
     //@ts-expect-error
     window.game=game;
 
-    //const greenContainer = new pixi.Container();
-    const greenFilter = new pixi.ColorMatrixFilter();
-    greenFilter.hue(140, false);
-    //greenContainer.filters = greenFilter;
-
     // 示例：山城高岭非符
-    // 旋转米弹
-    /*coDo(function*(){
-        let gunOmega = deg(28.5);
-        while (true) {
-            //let gunDir = Math.atan2(pl.y, pl.x) - Math.sign(gunOmega) * 2;
-            let gunDir = Math.PI * -0.5;
-            gunOmega *= -1;
-            for (let i = 0; i < 16; i++) {
-                gunDir += gunOmega;
-                se.tan00.play({volume: 0.1});
-                se.kira00.play({volume: 0.1});
-                for (let i = 0; i < 7; i++) {
-                    const dan = makeDanmaku("grain");
-                    dan.sprite.filters = greenFilter;
+    function scglff() {
+        // 旋转米弹
+        coDo(function*(){
+            let gunOmega = deg(28.5);
+            while (true) {
+                //let gunDir = Math.atan2(pl.y, pl.x) - Math.sign(gunOmega) * 2;
+                let gunDir = Math.PI * -0.5;
+                gunOmega *= -1;
+                for (let i = 0; i < 16; i++) {
+                    gunDir += gunOmega;
+                    se.tan00.play({volume: 0.1});
+                    se.kira00.play({volume: 0.1});
+                    for (let i = 0; i < 7; i++) {
+                        const dan = makeDanmaku("grain", "h150");
+                        dan.y = -80;
+                        dan.rotation = gunDir + deg((i - 3) * 25);
+                        dan.speed = 1;
+                        const danBaseOmega = -Math.sign(gunOmega);
+                        forever(loop => {
+                            dan.speedToA(Infinity, 0.04 * game.timeScale);
+                            dan.move();
+                            dan.rotation += danBaseOmega * deg(1.5) * game.timeScale;
+                            dan.boundaryDelete();
+                        }, { owns: dan });
+                    }
+                    yield* game.Sleep(9);
+                }
+                yield* game.Sleep(15);
+            }
+        });
+
+        // 中玉
+        coDo(function*(){
+            while (true) {
+                let gunDir = Math.atan2(pl.y, pl.x);
+                for (let i = 0; i < 36; i++) {
+                    const dan = makeDanmaku("middleball", "white");
                     dan.y = -80;
-                    dan.rotation = gunDir + deg((i - 3) * 25);
-                    dan.speed = 1;
-                    const danBaseOmega = -Math.sign(gunOmega);
+                    dan.rotation = gunDir + deg(i / 36 * 360);
+                    dan.speed = 4.5;
+                    dan.sprite.blendMode = "add";
                     forever(loop => {
-                        dan.speedToA(Infinity, 0.04 * game.timeScale);
+                        dan.speedToA(0.8, 0.1);
                         dan.move();
-                        dan.rotation += danBaseOmega * deg(1) * game.timeScale;
                         dan.boundaryDelete();
                     }, { owns: dan });
                 }
-                yield* game.Sleep(9);
+                yield* game.Sleep(150);
             }
-            yield* game.Sleep(15);
-        }
-    });
-
-    const blueFilter = new pixi.ColorMatrixFilter();
-    blueFilter.hue(200, false);
-    blueFilter.blendMode = "add";
-
-    // 中玉
-    coDo(function*(){
-        while (true) {
-            let gunDir = Math.atan2(pl.y, pl.x);
-            for (let i = 0; i < 36; i++) {
-                const dan = makeDanmaku("middleball");
-                dan.sprite.filters = blueFilter;
-                dan.y = -80;
-                dan.rotation = gunDir + deg(i / 36 * 360);
-                dan.speed = 4;
-                forever(loop => {
-                    dan.speedToA(0.8, 0.1);
-                    dan.move();
-                    dan.boundaryDelete();
-                }, { owns: dan });
-            }
-            yield* game.Sleep(180);
-        }
-    });*/
-
+        });
+    }
+    scglff();
 
 
     // 弹幕一览（红色）
@@ -184,7 +176,7 @@ import { prefabDanmakuHitboxRadius } from "./dist/danmaku/commonDanmaku.js";
         makeDanmaku({ type: "nuclear", x: 115, y: 0 });
         makeDanmaku({ type: "sword", x: 155, y: 100 });
     }
-    makeFooMuseum();
+    //makeFooMuseum();
 
     /*for (let i = 0; i < 5; i++) {
         combat.makeLaserBeam({

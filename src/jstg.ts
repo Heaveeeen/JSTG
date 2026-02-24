@@ -11,6 +11,11 @@ import { LoadPrefabSounds, LoadPrefabSoundsOptions, LoadSound } from "./sounds.j
 import { LaserBeam, makePrefabLaserBeam } from "./danmaku/laserBeam.js";
 import { Player } from "./player/player.js";
 
+// @ts-expect-error
+globalThis.PIXI = pixi;
+// @ts-expect-error
+import("../lib/pixi/advanced-blend-modes.js").then(() => delete globalThis.PIXI);
+
 /**
  * 循环的控制器对象，用于控制该循环
  * @example
@@ -25,11 +30,11 @@ export interface LoopController {
      * 会考虑 timeScale，并且尽可能根据 timeScale 向下取整。（取整机制与弹幕引擎略有不同，我感觉我写的这个应该稍微好点）
      */
     get clock(): number,
-    then(callback: () => any): void,
+    then(callback: () => unknown): void,
 }
 
 export interface Destroyable {
-    destroy(): any;
+    destroy(): unknown;
     readonly destroyed: boolean;
 }
 
@@ -136,7 +141,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
 
     function forever(
         /** 要循环执行的回调函数 */
-        fn: (loop: LoopController) => any,
+        fn: (loop: LoopController) => unknown,
         options: LoopOptions = {}
     ): LoopController {
         const owns = utils.makeElements(options.owns);
@@ -145,11 +150,11 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         const kills = [...new Set([...utils.makeElements(options.kills), ...owns])];
 
         let clock = 0;
-        const callbacks: (() => any)[] = [];
+        const callbacks: (() => unknown)[] = [];
         const loop: LoopController = {
             stop,
             get clock() { return clock },
-            then(callback: () => any) { callbacks.push(callback); }
+            then(callback: () => unknown) { callbacks.push(callback); }
         };
         const tickerFn = () => {
             if (refs.some(r => r.destroyed)) {
@@ -271,9 +276,9 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
             });
 
             const playerStateBar = (()=>{
-                const { hpFull, hpEmpty, bombFull, bombEmpty } = prefabTextures.ingameUI.plStateBarIcon;
+                const { hp_full: hpFull, hp_empty: hpEmpty, bomb_full: bombFull, bomb_empty: bombEmpty } = prefabTextures.ingameUI.pl_state_bar_icon;
                 const stateBarRoot = new pixi.Sprite({
-                    parent: ingameUIRoot, texture: prefabTextures.ingameUI.plStateBarFrame.spdeCommon,
+                    parent: ingameUIRoot, texture: prefabTextures.ingameUI.pl_state_bar_frame.spde_common,
                     anchor: 0.5,
                     scale: 4/3,
                     x: stageWidth / 2 + 160 * 4/3, y: stageHeight / 2 - 70 * 4/3,
@@ -328,7 +333,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         //#region danmakuPool
         const danmakuPool = (() => {
             const pool = makeObjPool<AbstractDanmaku>();
-            const { objects: danmakus, push, clean, _validCount, destroy } = pool;
+            const { objects: danmakus, push, clean, forEachAlive, _validCount, destroy } = pool;
 
             const update = (player: Player) => {
                 for (let i = 0; i < danmakus.length; i++) {
@@ -347,6 +352,8 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
                 update,
                 /** 立即清理弹幕列表，一般不用管这个东西 */
                 clean,
+                /** 遍历所有未被摧毁的弹幕，可以用来消弹 */
+                forEachAlive,
                 /** @readonly @internal 当前场上的弹幕数量（⚠️包含无效弹幕） */
                 get _validCount() { return _validCount; },
                 destroy,
