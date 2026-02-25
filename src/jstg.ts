@@ -10,46 +10,13 @@ import { makeObjPool } from "./objPool.js";
 import { LoadPrefabSounds, LoadPrefabSoundsOptions, LoadSound } from "./sounds.js";
 import { LaserBeam, makePrefabLaserBeam } from "./danmaku/laserBeam.js";
 import { Player } from "./player/player.js";
+import { LoopController, LoopOptions, makeLooper } from "./looper.js";
 
 
-/**
- * 循环的控制器对象，用于控制该循环
- * @example
- * loop.stop(); // 从下一帧开始，停止该循环
- */
-export interface LoopController {
-    /** 从下一帧起，停止该循环 */
-    stop(): void,
-    /**
-     * @readonly
-     * 该循环进行到了第几帧。第一帧为0。  
-     * 会考虑 timeScale，并且尽可能根据 timeScale 向下取整。（取整机制与弹幕引擎略有不同，我感觉我写的这个应该稍微好点）
-     */
-    get clock(): number,
-    then(callback: () => unknown): void,
-}
 
 export interface Destroyable {
     destroy(): unknown;
     readonly destroyed: boolean;
-}
-
-interface LoopOptions {
-    /**
-     * 执行优先级，每帧都会先执行优先级较大的脚本
-     * @default 0
-     */
-    priority?: number,
-    /** 借用，或者说依赖的对象，这些对象只要死了任意一个，该脚本就会停止。 */
-    refs?: Destroyable | Destroyable[],
-    /** 该脚本停止时，自动摧毁这些对象。 */
-    kills?: Destroyable | Destroyable[],
-    /**
-     * 绑定所有权的对象。  
-     * 这些对象只要死了任意一个，该脚本就会停止；  
-     * 该脚本停止时，自动摧毁这些对象。
-     */
-    owns?: Destroyable | Destroyable[],
 }
 
 export type CoDoGenerator = Generator<void, void, void>;
@@ -135,67 +102,9 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
 
     let timeScale: number = 1;
 
-    function forever(
-        /** 要循环执行的回调函数 */
-        fn: (loop: LoopController) => unknown,
-        options: LoopOptions = {}
-    ): LoopController {
-        const owns = utils.makeElements(options.owns);
+    const looper = makeLooper({ getTimescale: () => timeScale });
 
-        const refs = [...new Set([...utils.makeElements(options.refs), ...owns])];
-        const kills = [...new Set([...utils.makeElements(options.kills), ...owns])];
-
-        let clock = 0;
-        const callbacks: (() => unknown)[] = [];
-        const loop: LoopController = {
-            stop,
-            get clock() { return clock },
-            then(callback: () => unknown) { callbacks.push(callback); }
-        };
-        const tickerFn = () => {
-            if (refs.some(r => r.destroyed)) {
-                stop();
-            } else {
-                fn(loop);
-                if (clock % timeScale > 0) {
-                    clock = Math.floor(clock / timeScale)
-                }
-                clock += timeScale;
-            }
-        };
-        function stop() {
-            app.ticker.remove(tickerFn);
-            kills.forEach(d => d.destroy());
-            callbacks.forEach(fn => fn());
-        }
-        app.ticker.add(tickerFn, undefined, options.priority);
-        return loop;
-    };
-
-    function coDo(
-        /**
-         * 要执行的生成器函数  
-         * 注意：应为生成器函数，而非生成器实例！
-         * @example
-         * // 现场构造一个生成器函数
-         * function*(loop) {
-         *     // 干啥干啥
-         *     loop.stop();
-         *     return; // return 和 loop.stop() 都能停止该协程
-         * }
-         */
-        generatorFn: (loop: LoopController) => CoDoGenerator,
-        options: LoopOptions = {}
-    ): LoopController {
-        const loop = forever(loop => {
-            const result = generator.next();
-            if (result.done) {
-                loop.stop();
-            }
-        }, options);
-        const generator = generatorFn(loop);
-        return loop;
-    }
+    const { forever, coDo } = looper;
 
     function* Sleep(
         /** 要等待的时间（帧） */
@@ -208,7 +117,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
     }
 
     const input = makeInput();
-    if (gameOptions.autoUpdateInput ?? true) { forever(() => input._update(), { priority: 30000 }); }
+    if (gameOptions.autoUpdateInput ?? true) { forever(() => input._update(), { order: 0 }); }
 
     //#region combat
 
@@ -290,7 +199,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
                 }
                 let loop: LoopController | null = null;
                 function updateWithPlayer(player: Player) {
-                    loop?.stop();
+                    loop?.destroy();
                     loop = game.forever(()=>{
                         for (let i = 0; i < iconAmount; i++) {
                             if (i < player.maxHpAmount) {
@@ -537,28 +446,22 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
     });
     let fps = 60;
     let timeRecords: number[] = [];
-    forever(() => {
+    const fpsCounterLoop = forever(() => {
         const now = performance.now();
         timeRecords.push(now);
         if (timeRecords.length > 10) {
             fps = Math.round(1000000 / (now - (timeRecords.shift() as number))) / 100;
         }
         fpsMonitor.text = `FPS:${fps}`;
-    }, { priority: 1e9 });
+    }, { order: 0 });
 
-    let frameCompCount = 0;
-    // 跳帧补偿
-    const endingLoop = forever(() => {
-        if (app.ticker.deltaMS > (frameCompCount + 1.5) * 16.66 && fps < 63) {
-            frameCompCount ++;
-            const rawfps = app.ticker.maxFPS;
-            app.ticker.maxFPS = 0;
-            app.ticker.update();
-            app.ticker.maxFPS = rawfps;
-        } else {
-            frameCompCount = 0;
+    app.ticker.add(() => {
+        looper.stepThreads();
+        // 跳帧补偿
+        if (app.ticker.deltaMS > 1.5 * 16.66 && fps < 63) {
+            looper.stepThreads();
         }
-    }, { priority: -2e9 });
+    });
 
     const debug = (()=>{
         const godMode = {
@@ -670,7 +573,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
          * 会考虑 timeScale，并且尽可能根据 timeScale 向下取整。（取整机制与弹幕引擎略有不同，我感觉我写的这个应该稍微好点）
          */
         get clock() {
-            return endingLoop.clock;
+            return fpsCounterLoop.clock;
         },
     };
 

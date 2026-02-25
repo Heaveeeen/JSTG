@@ -1,0 +1,166 @@
+import { Destroyable, Game } from "./jstg.js";
+import { makeObjPool } from "./objPool.js";
+import * as utils from "./utils.js"
+
+
+/**
+ * 循环的控制器对象，用于控制该循环
+ * @example
+ * loop.stop(); // 从下一帧开始，停止该循环
+ */
+export interface LoopController {
+    /** 从下一帧起，停止该循环。 */
+    destroy(): void,
+    readonly destroyed: boolean
+    /**
+     * @readonly
+     * 该循环进行到了第几帧。第一帧为0。  
+     * 会考虑 timeScale，并且尽可能根据 timeScale 向下取整。（取整机制与弹幕引擎略有不同，我感觉我写的这个应该稍微好点）
+     */
+    readonly clock: number,
+    then(callback: () => unknown): void,
+}
+
+type LoopOrder = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+
+export type LooperFn = (loop: LoopController) => unknown;
+
+export interface LoopOptions {
+    /**
+     * 执行顺序编号。每帧都会先执行编号较小的脚本，再执行编号较大的脚本。  
+     * 可以是 [0, 10] 之间的整数。
+     * 编号相同者，先来后到。  
+     * ⚠️ 0 和 10 是内部使用的，不建议使用 0 或 10。  
+     * @default 5
+     */
+    order?: LoopOrder,
+    /** 借用，或者说依赖的对象，这些对象只要死了任意一个，该脚本就会停止。 */
+    refs?: Destroyable | Destroyable[],
+    /** 该脚本停止时，自动摧毁这些对象。 */
+    kills?: Destroyable | Destroyable[],
+    /**
+     * 绑定所有权的对象。  
+     * 这些对象只要死了任意一个，该脚本就会停止；  
+     * 该脚本停止时，自动摧毁这些对象。
+     */
+    owns?: Destroyable | Destroyable[],
+}
+
+export type CoDoGenerator = Generator<unknown, unknown, void>;
+
+export const makeLooper = (options: {
+    getTimescale: () => number,
+}) => {
+
+    const { getTimescale } = options;
+
+    type Thread = ((() => unknown) | null)[];
+
+    const threads: [
+        Thread, Thread, Thread, Thread, Thread,
+        Thread, Thread, Thread, Thread, Thread, Thread
+    ] = [[], [], [], [], [], [], [], [], [], [], []];
+
+    let fnTotalCount = 0;
+    let fnLastCleanCount = 50;
+
+    const cleanThreads = () => {
+        fnTotalCount = 0;
+        threads.forEach(thread => {
+            let fnCount = 0;
+            const len = thread.length;
+            for (let i = 0; i < len; i++) {
+                if (thread[i] !== null) {
+                    thread[fnCount++] = thread[i];
+                }
+            }
+            thread.length = fnCount;
+            fnTotalCount += fnCount;
+        });
+        fnLastCleanCount = fnTotalCount;
+    };
+
+    const stepThreads = () => {
+        threads.forEach(thread => {
+            for (let i = 0; i < thread.length; i++) { thread[i]?.(); }
+        });
+        if (fnTotalCount > fnLastCleanCount * 2) cleanThreads();
+    };
+
+    
+    const forever = (
+        /** 要循环执行的回调函数 */
+        fn: LooperFn,
+        options: LoopOptions = {}
+    ) => {
+        const thread = threads[options.order ?? 5];
+        const owns = utils.makeElements(options.owns);
+
+        const refs = [...new Set([...utils.makeElements(options.refs), ...owns])];
+        const kills = [...new Set([...utils.makeElements(options.kills), ...owns])];
+
+        let clock = 0;
+        let destroyed = false;
+        const callbacks: (() => unknown)[] = [];
+        const loop: LoopController = {
+            destroy,
+            get destroyed() { return destroyed; },
+            get clock() { return clock },
+            then(callback: () => unknown) { callbacks.push(callback); }
+        };
+        const looperFn = () => {
+            if (refs.some(r => r.destroyed)) {
+                destroy();
+            } else {
+                fn(loop);
+                if (clock % getTimescale() > 0) {
+                    clock = Math.floor(clock / getTimescale())
+                }
+                clock += getTimescale();
+            }
+        };
+        let idx = thread.length;
+        thread.push(looperFn)
+        function destroy() {
+            if (destroyed) { return; }
+            destroyed = true;
+            thread[idx] = null;
+            kills.forEach(d => d.destroy());
+            callbacks.forEach(callback => callback());
+        }
+        return loop;
+    };
+    
+    const coDo = (
+        /**
+         * 要执行的生成器函数  
+         * 注意：应为生成器函数，而非生成器实例！
+         * @example
+         * // 现场构造一个生成器函数
+         * function*(loop) {
+         *     // 干啥干啥
+         *     loop.stop();
+         *     return; // return 和 loop.stop() 都能停止该协程
+         * }
+         */
+        generatorFn: (loop: LoopController) => CoDoGenerator,
+        options: LoopOptions = {}
+    ) => {
+        const loop = forever(loop => {
+            const result = generator.next();
+            if (result.done) {
+                loop.destroy();
+            }
+        }, options);
+        const generator = generatorFn(loop);
+        return loop;
+    }
+
+    return {
+        forever,
+        coDo,
+        stepThreads,
+        threads,
+        cleanThreads,
+    }
+}

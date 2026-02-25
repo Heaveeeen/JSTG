@@ -1,6 +1,6 @@
 import * as pixi from "pixi";
 import { Input, Key } from "../Input.js";
-import { Board, Combat, Game, LoopController } from "../jstg.js";
+import { Board, Combat, Game } from "../jstg.js";
 import { alphaTo, deg, clamp, staticAssert } from "../utils.js";
 import { AbstractDanmaku } from "../danmaku/abstractDanmaku.js";
 import { DifferenceBlendFilter } from "../graphics/differenceBlendFilter.js";
@@ -250,11 +250,11 @@ export class Player {
         this.y = this._lastY = 185;
 
         if (options.autoUpdateSelf ?? true) {
-            this.game.forever(() => this.update(), { priority: 29900, refs: this });
+            this.game.forever(() => this.update(), { order: 0, refs: this });
         }
 
         if (options.autoUpdateDanmakuPool ?? true) {
-            this.game.forever(() => this.combat.danmakuPool.update(this), { priority: -30000, owns: this, refs: this.combat });
+            this.game.forever(() => this.combat.danmakuPool.update(this), { order: 10, owns: this, refs: this.combat });
         }
     }
 

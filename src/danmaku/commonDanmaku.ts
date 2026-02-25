@@ -1,5 +1,5 @@
 import * as pixi from "pixi";
-import { Board, Combat, Game, LoopController } from "../jstg.js";
+import { Board, Combat, Game } from "../jstg.js";
 import { Player } from "../player/player.js";
 import { alphaTo, decibel, getPointToSegmentDist2, staticAssert, Vec2 } from "../utils.js";
 import { DyedTextures, PrefabDanmakuNames } from "../textures.js";
