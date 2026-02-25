@@ -27,6 +27,7 @@ export class DifferenceBlendFilter extends pixi.BlendModeFilter {
                 `
             },
         });
+        // 这条貌似就是 issue-#6 的元凶，不加上这条就会导致分辨率爆炸。虽然我早就看出来了好像分辨率有点问题但是没想到这么简单。。。
         this.resolution = "inherit";
     }
 }
