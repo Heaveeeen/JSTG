@@ -1,4 +1,5 @@
-import { Destroyable } from "./jstg";
+import { Destroyable } from "./jstg.js";
+import * as utils from "./utils.js"
 
 
 const ctx = new AudioContext();
@@ -12,10 +13,10 @@ export interface PlaySoundOptions {
 
 export const globalMusicGain = ctx.createGain();
 globalMusicGain.connect(ctx.destination);
-globalMusicGain.gain.value = 0.8;
+globalMusicGain.gain.value = utils.decibel(-2);
 export const globalSfxGain = ctx.createGain();
 globalSfxGain.connect(ctx.destination);
-globalSfxGain.gain.value = 0.8;
+globalSfxGain.gain.value = utils.decibel(-3);
 
 interface PlaySoundPoolItem {
     controller: PlaySoundController | null,
@@ -96,87 +97,88 @@ export interface LoadPrefabSoundsOptions {
     /**
      * @default 1
      */
-    poolSize?: number
+    poolSizeScale?: number
 }
 
 export async function LoadPrefabSounds(options: LoadPrefabSoundsOptions = {}) {
     const base = options.baseUrl ?? "./assets/sounds/";
-    const poolSize = options.poolSize ?? 1;
+    const poolSizeScale = options.poolSizeScale ?? 1;
+    const lsfx = (url: string, poolSize: number = 1) => LoadSound({ src: base + url, poolSize: poolSize * poolSizeScale, globalGainType: "sfx", })
     return {
         thse: {
-            big: await LoadSound({ src: `${base}thse/big.wav`, poolSize, globalGainType: "sfx" }),
-            bonus: await LoadSound({ src: `${base}thse/bonus.wav`, poolSize, globalGainType: "sfx" }),
-            bonus2: await LoadSound({ src: `${base}thse/bonus2.wav`, poolSize, globalGainType: "sfx" }),
-            bonus4: await LoadSound({ src: `${base}thse/bonus4.wav`, poolSize, globalGainType: "sfx" }),
-            boon00: await LoadSound({ src: `${base}thse/boon00.wav`, poolSize, globalGainType: "sfx" }),
-            boon01: await LoadSound({ src: `${base}thse/boon01.wav`, poolSize, globalGainType: "sfx" }),
-            cancel00: await LoadSound({ src: `${base}thse/cancel00.wav`, poolSize, globalGainType: "sfx" }),
-            cardget: await LoadSound({ src: `${base}thse/cardget.wav`, poolSize, globalGainType: "sfx" }),
-            cat00: await LoadSound({ src: `${base}thse/cat00.wav`, poolSize, globalGainType: "sfx" }),
-            ch00: await LoadSound({ src: `${base}thse/ch00.wav`, poolSize, globalGainType: "sfx" }),
-            ch01: await LoadSound({ src: `${base}thse/ch01.wav`, poolSize, globalGainType: "sfx" }),
-            ch02: await LoadSound({ src: `${base}thse/ch02.wav`, poolSize, globalGainType: "sfx" }),
-            ch03: await LoadSound({ src: `${base}thse/ch03.wav`, poolSize, globalGainType: "sfx" }),
-            changeitem: await LoadSound({ src: `${base}thse/changeitem.wav`, poolSize, globalGainType: "sfx" }),
-            damage00: await LoadSound({ src: `${base}thse/damage00.wav`, poolSize, globalGainType: "sfx" }),
-            damage01: await LoadSound({ src: `${base}thse/damage01.wav`, poolSize, globalGainType: "sfx" }),
-            don00: await LoadSound({ src: `${base}thse/don00.wav`, poolSize, globalGainType: "sfx" }),
-            enep00: await LoadSound({ src: `${base}thse/enep00.wav`, poolSize, globalGainType: "sfx" }),
-            enep01: await LoadSound({ src: `${base}thse/enep01.wav`, poolSize, globalGainType: "sfx" }),
-            enep02: await LoadSound({ src: `${base}thse/enep02.wav`, poolSize, globalGainType: "sfx" }),
-            etbreak: await LoadSound({ src: `${base}thse/etbreak.wav`, poolSize, globalGainType: "sfx" }),
-            extend: await LoadSound({ src: `${base}thse/extend.wav`, poolSize, globalGainType: "sfx" }),
-            extend2: await LoadSound({ src: `${base}thse/extend2.wav`, poolSize, globalGainType: "sfx" }),
-            fault: await LoadSound({ src: `${base}thse/fault.wav`, poolSize, globalGainType: "sfx" }),
-            graze: await LoadSound({ src: `${base}thse/graze.wav`, poolSize, globalGainType: "sfx" }),
-            gun00: await LoadSound({ src: `${base}thse/gun00.wav`, poolSize, globalGainType: "sfx" }),
-            heal: await LoadSound({ src: `${base}thse/heal.wav`, poolSize, globalGainType: "sfx" }),
-            invalid: await LoadSound({ src: `${base}thse/invalid.wav`, poolSize, globalGainType: "sfx" }),
-            item00: await LoadSound({ src: `${base}thse/item00.wav`, poolSize, globalGainType: "sfx" }),
-            item01: await LoadSound({ src: `${base}thse/item01.wav`, poolSize, globalGainType: "sfx" }),
-            kira00: await LoadSound({ src: `${base}thse/kira00.wav`, poolSize, globalGainType: "sfx" }),
-            kira01: await LoadSound({ src: `${base}thse/kira01.wav`, poolSize, globalGainType: "sfx" }),
-            kira02: await LoadSound({ src: `${base}thse/kira02.wav`, poolSize, globalGainType: "sfx" }),
-            lazer00: await LoadSound({ src: `${base}thse/lazer00.wav`, poolSize, globalGainType: "sfx" }),
-            lazer01: await LoadSound({ src: `${base}thse/lazer01.wav`, poolSize, globalGainType: "sfx" }),
-            lazer02: await LoadSound({ src: `${base}thse/lazer02.wav`, poolSize, globalGainType: "sfx" }),
-            lgods1: await LoadSound({ src: `${base}thse/lgods1.wav`, poolSize, globalGainType: "sfx" }),
-            lgods2: await LoadSound({ src: `${base}thse/lgods2.wav`, poolSize, globalGainType: "sfx" }),
-            lgods3: await LoadSound({ src: `${base}thse/lgods3.wav`, poolSize, globalGainType: "sfx" }),
-            lgods4: await LoadSound({ src: `${base}thse/lgods4.wav`, poolSize, globalGainType: "sfx" }),
-            lgodsget: await LoadSound({ src: `${base}thse/lgodsget.wav`, poolSize, globalGainType: "sfx" }),
-            msl: await LoadSound({ src: `${base}thse/msl.wav`, poolSize, globalGainType: "sfx" }),
-            msl2: await LoadSound({ src: `${base}thse/msl2.wav`, poolSize, globalGainType: "sfx" }),
-            msl3: await LoadSound({ src: `${base}thse/msl3.wav`, poolSize, globalGainType: "sfx" }),
-            nep00: await LoadSound({ src: `${base}thse/nep00.wav`, poolSize, globalGainType: "sfx" }),
-            nodamage: await LoadSound({ src: `${base}thse/nodamage.wav`, poolSize, globalGainType: "sfx" }),
-            noise: await LoadSound({ src: `${base}thse/noise.wav`, poolSize, globalGainType: "sfx" }),
-            notice: await LoadSound({ src: `${base}thse/notice.wav`, poolSize, globalGainType: "sfx" }),
-            ok00: await LoadSound({ src: `${base}thse/ok00.wav`, poolSize, globalGainType: "sfx" }),
-            pause: await LoadSound({ src: `${base}thse/pause.wav`, poolSize, globalGainType: "sfx" }),
-            pin00: await LoadSound({ src: `${base}thse/pin00.wav`, poolSize, globalGainType: "sfx" }),
-            pin01: await LoadSound({ src: `${base}thse/pin01.wav`, poolSize, globalGainType: "sfx" }),
-            pldead00: await LoadSound({ src: `${base}thse/pldead00.wav`, poolSize, globalGainType: "sfx" }),
-            pldead01: await LoadSound({ src: `${base}thse/pldead01.wav`, poolSize, globalGainType: "sfx" }),
-            plst00: await LoadSound({ src: `${base}thse/plst00.wav`, poolSize, globalGainType: "sfx" }),
-            power0: await LoadSound({ src: `${base}thse/power0.wav`, poolSize, globalGainType: "sfx" }),
-            power1: await LoadSound({ src: `${base}thse/power1.wav`, poolSize, globalGainType: "sfx" }),
-            powerup: await LoadSound({ src: `${base}thse/powerup.wav`, poolSize, globalGainType: "sfx" }),
-            release: await LoadSound({ src: `${base}thse/release.wav`, poolSize, globalGainType: "sfx" }),
-            select00: await LoadSound({ src: `${base}thse/select00.wav`, poolSize, globalGainType: "sfx" }),
-            slash: await LoadSound({ src: `${base}thse/slash.wav`, poolSize, globalGainType: "sfx" }),
-            tan00: await LoadSound({ src: `${base}thse/tan00.wav`, poolSize, globalGainType: "sfx" }),
-            tan01: await LoadSound({ src: `${base}thse/tan01.wav`, poolSize, globalGainType: "sfx" }),
-            tan02: await LoadSound({ src: `${base}thse/tan02.wav`, poolSize, globalGainType: "sfx" }),
-            tan03: await LoadSound({ src: `${base}thse/tan03.wav`, poolSize, globalGainType: "sfx" }),
-            timeout: await LoadSound({ src: `${base}thse/timeout.wav`, poolSize, globalGainType: "sfx" }),
-            timeout2: await LoadSound({ src: `${base}thse/timeout2.wav`, poolSize, globalGainType: "sfx" }),
-            trophy: await LoadSound({ src: `${base}thse/trophy.wav`, poolSize, globalGainType: "sfx" }),
-            ufo: await LoadSound({ src: `${base}thse/ufo.wav`, poolSize, globalGainType: "sfx" }),
-            ufoalert: await LoadSound({ src: `${base}thse/ufoalert.wav`, poolSize, globalGainType: "sfx" }),
-            warpl: await LoadSound({ src: `${base}thse/warpl.wav`, poolSize, globalGainType: "sfx" }),
-            warpr: await LoadSound({ src: `${base}thse/warpr.wav`, poolSize, globalGainType: "sfx" }),
-            wolf: await LoadSound({ src: `${base}thse/wolf.wav`, poolSize, globalGainType: "sfx" }),
+            big: await lsfx(`thse/big.wav`),
+            bonus: await lsfx(`thse/bonus.wav`),
+            bonus2: await lsfx(`thse/bonus2.wav`),
+            bonus4: await lsfx(`thse/bonus4.wav`),
+            boon00: await lsfx(`thse/boon00.wav`),
+            boon01: await lsfx(`thse/boon01.wav`),
+            cancel00: await lsfx(`thse/cancel00.wav`),
+            cardget: await lsfx(`thse/cardget.wav`),
+            cat00: await lsfx(`thse/cat00.wav`),
+            ch00: await lsfx(`thse/ch00.wav`),
+            ch01: await lsfx(`thse/ch01.wav`),
+            ch02: await lsfx(`thse/ch02.wav`),
+            ch03: await lsfx(`thse/ch03.wav`),
+            changeitem: await lsfx(`thse/changeitem.wav`),
+            damage00: await lsfx(`thse/damage00.wav`),
+            damage01: await lsfx(`thse/damage01.wav`),
+            don00: await lsfx(`thse/don00.wav`),
+            enep00: await lsfx(`thse/enep00.wav`),
+            enep01: await lsfx(`thse/enep01.wav`),
+            enep02: await lsfx(`thse/enep02.wav`),
+            etbreak: await lsfx(`thse/etbreak.wav`),
+            extend: await lsfx(`thse/extend.wav`),
+            extend2: await lsfx(`thse/extend2.wav`),
+            fault: await lsfx(`thse/fault.wav`),
+            graze: await lsfx(`thse/graze.wav`),
+            gun00: await lsfx(`thse/gun00.wav`),
+            heal: await lsfx(`thse/heal.wav`),
+            invalid: await lsfx(`thse/invalid.wav`),
+            item00: await lsfx(`thse/item00.wav`),
+            item01: await lsfx(`thse/item01.wav`),
+            kira00: await lsfx(`thse/kira00.wav`),
+            kira01: await lsfx(`thse/kira01.wav`),
+            kira02: await lsfx(`thse/kira02.wav`),
+            lazer00: await lsfx(`thse/lazer00.wav`),
+            lazer01: await lsfx(`thse/lazer01.wav`),
+            lazer02: await lsfx(`thse/lazer02.wav`),
+            lgods1: await lsfx(`thse/lgods1.wav`),
+            lgods2: await lsfx(`thse/lgods2.wav`),
+            lgods3: await lsfx(`thse/lgods3.wav`),
+            lgods4: await lsfx(`thse/lgods4.wav`),
+            lgodsget: await lsfx(`thse/lgodsget.wav`),
+            msl: await lsfx(`thse/msl.wav`),
+            msl2: await lsfx(`thse/msl2.wav`),
+            msl3: await lsfx(`thse/msl3.wav`),
+            nep00: await lsfx(`thse/nep00.wav`),
+            nodamage: await lsfx(`thse/nodamage.wav`),
+            noise: await lsfx(`thse/noise.wav`),
+            notice: await lsfx(`thse/notice.wav`),
+            ok00: await lsfx(`thse/ok00.wav`),
+            pause: await lsfx(`thse/pause.wav`),
+            pin00: await lsfx(`thse/pin00.wav`),
+            pin01: await lsfx(`thse/pin01.wav`),
+            pldead00: await lsfx(`thse/pldead00.wav`),
+            pldead01: await lsfx(`thse/pldead01.wav`),
+            plst00: await lsfx(`thse/plst00.wav`),
+            power0: await lsfx(`thse/power0.wav`),
+            power1: await lsfx(`thse/power1.wav`),
+            powerup: await lsfx(`thse/powerup.wav`),
+            release: await lsfx(`thse/release.wav`),
+            select00: await lsfx(`thse/select00.wav`),
+            slash: await lsfx(`thse/slash.wav`),
+            tan00: await lsfx(`thse/tan00.wav`),
+            tan01: await lsfx(`thse/tan01.wav`),
+            tan02: await lsfx(`thse/tan02.wav`),
+            tan03: await lsfx(`thse/tan03.wav`),
+            timeout: await lsfx(`thse/timeout.wav`),
+            timeout2: await lsfx(`thse/timeout2.wav`),
+            trophy: await lsfx(`thse/trophy.wav`),
+            ufo: await lsfx(`thse/ufo.wav`),
+            ufoalert: await lsfx(`thse/ufoalert.wav`),
+            warpl: await lsfx(`thse/warpl.wav`),
+            warpr: await lsfx(`thse/warpr.wav`),
+            wolf: await lsfx(`thse/wolf.wav`),
         }
     }
 }

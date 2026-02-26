@@ -94,7 +94,7 @@ export class CommonDanmaku extends AbstractDanmaku {
             player.hitByEnemy({ enemy: this });
         } else if (this.isGrazing) {
             // 擦弹
-            this.game.prefabSounds.thse.graze.play({ volume: decibel(-5), });
+            this.game.prefabSounds.thse.graze.play({ volume: decibel(-6), });
             this.grazeCd = 200;
         }
 
@@ -242,8 +242,8 @@ export const prefabDanmakuHitboxRadius = {
     knife: 4,
     sword: 5.7,
     nuclear: 46.5,
-    // TODO: 激光段
-    // MAY TODO: 阴阳玉，休止符
+    laserseg: 4,
+    // MAY TODO: 阴阳玉，休止符，宝珠（大水滴？），岩石（木糖醇）
 } as const;
 
 export const makePrefabDanmaku = (options: {
@@ -255,6 +255,7 @@ export const makePrefabDanmaku = (options: {
     /** @default prefabDanmakuHitboxRadius[type] */
     radius: number | null,
     zIndex: number | null,
+    // TODO: canBeErase: number | null,
 }) => {
     const { type, color, game, combat, board, x, y, rotation, zIndex } = options;
     const parent = options.parent ?? board.commonDanmakuLayer;

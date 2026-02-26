@@ -241,8 +241,10 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
             const { objects: danmakus, push, clean, forEachAlive, _validCount, destroy } = pool;
 
             const update = (player: Player) => {
-                for (let i = 0; i < danmakus.length; i++) {
-                    if (!danmakus[i].destroyed) { danmakus[i].update(player); }
+                if (player.state.type === "common") {
+                    for (let i = 0; i < danmakus.length; i++) {
+                        if (!danmakus[i].destroyed) { danmakus[i].update(player); }
+                    }
                 }
                 player._lastX = player.x;
                 player._lastY = player.y;
@@ -373,7 +375,8 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         combat.makeDanmaku = makeDanmaku;
 
         type MakeLaserBeamOptions = {
-            type: PrefabDanmakuNames,
+            /** @default "laserseg" */
+            type?: PrefabDanmakuNames,
             /** @default red */
             color?: keyof DyedTextures,
             /** @default 0 */
@@ -404,14 +407,14 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
             zIndex?: number,
         };
 
-        function makeLaserBeam(type: PrefabDanmakuNames, /** @default "red" */color?: keyof DyedTextures): LaserBeam;
+        function makeLaserBeam(type?: PrefabDanmakuNames, /** @default "red" */color?: keyof DyedTextures): LaserBeam;
         function makeLaserBeam(options: MakeLaserBeamOptions): LaserBeam;
-        function makeLaserBeam(options: PrefabDanmakuNames | MakeLaserBeamOptions, color?: keyof DyedTextures) {
-            if (typeof options === "string") {
+        function makeLaserBeam(options?: PrefabDanmakuNames | MakeLaserBeamOptions, color?: keyof DyedTextures) {
+            if (options === undefined || typeof options === "string") {
                 options = { type: options, color };
             };
             return makePrefabLaserBeam({
-                game, combat, board, type: options.type, color: options.color ?? "red",
+                game, combat, board, type: options.type ?? "laserseg", color: options.color ?? "red",
                 x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
                 parent: options.parent ?? null,
                 halfWidth: options.width ?? 2, length: options.length ?? 400,

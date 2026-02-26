@@ -51,7 +51,7 @@ export function makeDyedTextures(options: {
 
     return {
         red: h0, pink: h300, purple: h270, blue: h240, cyan: h180, green: h150, yellowGreen: h90, yellow: h60, orange: h30,
-        black: dyeGray(0.25), white: dyeGray(0.5),
+        black: dyeGray(0.25), white: dyeGray(0.4),
         h0, h30, h60, h90, h120, h150, h180, h210, h240, h270, h300, h330,
     };
 };
@@ -113,6 +113,7 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
                 coin: await lsd(`danmaku/danmaku/coin.svg`) as DyedTextures,
                 knife: await lsd(`danmaku/danmaku/knife.svg`) as DyedTextures,
                 sword: await lsd(`danmaku/danmaku/sword.svg`) as DyedTextures,
+                laserseg: await lsd(`danmaku/danmaku/laserseg.svg`) as DyedTextures,
             },
             particle: {
                 fog: await lsd(`danmaku/particle/fog.svg`) as DyedTextures,

@@ -19,7 +19,7 @@ import { prefabDanmakuHitboxRadius } from "./dist/danmaku/commonDanmaku.js";
     const { asAny } = jstg.utils;
 
     const combat = await game.StartCombat()
-    const { board, ingameUI, makeDanmaku } = combat;
+    const { board, ingameUI, makeDanmaku, makeLaserBeam } = combat;
 
     console.log("game:", game);
     console.log("combat:", combat);
@@ -107,25 +107,7 @@ import { prefabDanmakuHitboxRadius } from "./dist/danmaku/commonDanmaku.js";
             }
         });
     }
-    scglff();
-
-
-    // 弹幕一览（红色）
-    /*let x = -180, y = -200;
-    let maxR = 0;
-    for (const danType in prefabDanmakuHitboxRadius) {
-        const dan = asAny(makeDanmaku(danType));
-        x += dan.hitboxRadius * 2 + 20;
-        dan.x = x;
-        dan.y = y;
-        dan.canBeErase = false;
-        x += dan.hitboxRadius * 2 + 20;
-        maxR = Math.max(maxR, dan.hitboxRadius)
-        if (x >= 160) {
-            x = -180;
-            y += maxR * 4 + 40;
-        }
-    }/**/
+    //scglff();
 
 
     // 弹幕一览（彩色）
@@ -156,12 +138,12 @@ import { prefabDanmakuHitboxRadius } from "./dist/danmaku/commonDanmaku.js";
                 y += dy(prefabDanmakuHitboxRadius[type]);
             }
         }
-        makeFooExsibits(-188, (/** @type {number} */ r) => r * 3 + 4.3, (/** @type {number} */ r) => r * 3 + 5.6, [
+        makeFooExsibits(-188, (/** @type {number} */ r) => r * 3 + 4.3, (/** @type {number} */ r) => r * 3 + 5.2, [
             "dot", "bacteria", "drip", "scale", "grain", "chain", "seed", "bullet", "bacillus", "crystal", "particle", "card",
-            "smallball", "ringball", "glowball", "fireball", "smallstar", "nova", "coin",
+            "smallball", "ringball", "glowball", "fireball", "smallstar", "nova", "coin", "laserseg",
         ]);
         y += 4;
-        makeFooExsibits(-182, (/** @type {number} */ r) => r * 3 + 15, (/** @type {number} */ r) => r * 3 + 15,
+        makeFooExsibits(-182, (/** @type {number} */ r) => r * 3 + 15, (/** @type {number} */ r) => r * 3 + 13,
             ["knife", "note", "arrow", "butterfly"], ["white", "h300", "h240", "h180", "h150", "h120", "h60", "h30", "h0"]);
         y = -220;
         makeFooExsibits(182, (/** @type {number} */ r) => -32, (/** @type {number} */ r) => 36,
@@ -173,10 +155,13 @@ import { prefabDanmakuHitboxRadius } from "./dist/danmaku/commonDanmaku.js";
         //makeFooExsibits(170, (/** @type {number} */ r) => -45, () => 0, ["sword"], ["h180", "h60", "h0"]);
         y = 207;
         makeFooExsibits(-166, (/** @type {number} */ r) => 66, () => 0, ["bubble"], ["h0", "h60", "h120", "h240", "h300", "white"]);
-        makeDanmaku({ type: "nuclear", x: 115, y: 0 });
-        makeDanmaku({ type: "sword", x: 155, y: 100 });
+        makeDanmaku({ type: "nuclear", x: 115, y: -10 });
+        makeDanmaku({ type: "sword", x: 155, y: 70 });
+        makeLaserBeam({ type: "laserseg", color: "h0", x: 60, y: 90, width: 1, length: 120, startPoint: {}, endPoint: {} });
+        makeLaserBeam({ type: "laserseg", color: "h60", x: 60, y: 110, width: 3, length: 100, startPoint: {}, endPoint: {} });
+        makeLaserBeam({ type: "laserseg", color: "h120", x: 60, y: 150, width: 5, length: 80, startPoint: {}, endPoint: {} });
     }
-    //makeFooMuseum();
+    makeFooMuseum();
 
     /*for (let i = 0; i < 5; i++) {
         combat.makeLaserBeam({

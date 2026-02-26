@@ -137,19 +137,22 @@ export class LaserBeam extends AbstractDanmaku {
         if (!this.isDamageToPlayer) { return; }
 
         this.updateDebugHitbox(player);
+        this.isGrazing = false;
 
         const { x: dx, y: dy } = rotateVec({ x: player.x - this.x, y: player.y - this.y }, this.rotation);
         
         const radius = this.hitboxHalfWidth + player.hitboxRadius;
         const isHit = (dx >= 0) && (dx <= this.hitboxLength) && (Math.abs(dy) <= radius);
-        this.isGrazing = (dx >= -24) && (dx <= this.hitboxLength + 24) && (Math.abs(dy) <= radius + 24);
+        if (this.grazeCd <= 0) {
+            this.isGrazing = (dx >= -24) && (dx <= this.hitboxLength + 24) && (Math.abs(dy) <= radius + 24);
+        }
 
         if (isHit) {
             player.hitByEnemy({ enemy: this });
         } else if (this.isGrazing) {
             // 擦弹
-            this.game.prefabSounds.thse.graze.play({ volume: decibel(-5), });
-            this.grazeCd = 5;
+            this.game.prefabSounds.thse.graze.play({ volume: decibel(-6), });
+            this.grazeCd = 4;
         }
 
         if (!this.destroyed) {
@@ -195,23 +198,33 @@ export class LaserBeam extends AbstractDanmaku {
     
     /** @internal @generator 虚化至消失 */
     *_EraseEffectBehaviorGhost() {
-        const eraseEffectSprite = new pixi.Sprite({
+        if (this.destroyed) { return; }
+        const makeEff = (spr: pixi.Sprite) => new pixi.Sprite({
             parent: this.board.danmakuEraseLayer,
-            texture: this.mainSprite.texture,
-            anchor: 0.5,
-            x: this.x, y: this.y, 
-            scale: this.mainSprite.scale,
-            rotation: this.mainSprite.rotation,
-            filters: this.mainSprite.filters,
-        });
+            texture: spr.texture,
+            anchor: spr.anchor,
+            x: spr.x, y: spr.y,
+            scale: spr.scale,
+            rotation: spr.rotation,
+            filters: spr.filters,
+        })
+        const eraseMain = makeEff(this.mainSprite);
+        const eraseStartPoint = this.startPoint ? makeEff(this.startPoint.sprite) : null;
+        const eraseEndPoint = this.endPoint ? makeEff(this.endPoint.sprite) : null;
         this.destroy();
-        while (eraseEffectSprite.alpha > 0) {
-            eraseEffectSprite.scale.x -= 0.05 * this.game.timeScale;
-            eraseEffectSprite.scale.y -= 0.05 * this.game.timeScale;
-            alphaTo(eraseEffectSprite, 0, 0.05 * this.game.timeScale);
+        const anim = (spr: pixi.Sprite) => {
+            spr.scale.y -= 0.05 * this.game.timeScale;
+            alphaTo(spr, 0, 0.05 * this.game.timeScale);
+        }
+        while (eraseMain.alpha > 0) {
+            anim(eraseMain);
+            if (eraseStartPoint) { anim(eraseStartPoint); }
+            if (eraseEndPoint) { anim(eraseEndPoint); }
             yield;
         }
-        eraseEffectSprite.destroy();
+        eraseMain.destroy();
+        eraseStartPoint?.destroy();
+        eraseEndPoint?.destroy();
     }
 
     isInBoundary() {
