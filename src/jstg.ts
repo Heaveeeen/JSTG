@@ -4,8 +4,8 @@ import { Key, makeInput } from "./Input.js";
 import { makeSimple } from "./player/simple.js";
 import { makeRng } from "./random.js";
 import * as utils from './utils.js';
-import { CommonDanmaku, makePrefabDanmaku, prefabDanmakuHitboxRadius } from "./danmaku/commonDanmaku.js";
-import { AbstractDanmaku } from "./danmaku/abstractDanmaku.js";
+import { CommonDanmaku, makePrefabDanmaku } from "./danmaku/commonDanmaku.js";
+import { AbstractDanmaku, prefabDanmakuHitboxRadius } from "./danmaku/abstractDanmaku.js";
 import { makeObjPool } from "./objPool.js";
 import { LoadPrefabSounds, LoadPrefabSoundsOptions, LoadSound } from "./sounds.js";
 import { LaserBeam, makePrefabLaserBeam } from "./danmaku/laserBeam.js";
@@ -594,4 +594,5 @@ export {
     Player,
     makeRng,
     utils,
+    prefabDanmakuHitboxRadius
 }

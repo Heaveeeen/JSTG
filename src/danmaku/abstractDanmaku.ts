@@ -131,3 +131,40 @@ export abstract class AbstractDanmaku {
      */
     abstract readonly destroyed: boolean;
 }
+
+/** 此处的数值与弹幕引擎有所不同 */
+export const prefabDanmakuHitboxRadius = {
+    smallball: 4,
+    ringball: 4,
+    glowball: 4,
+    fireball: 4,
+    dot: 2.8,
+    bacteria: 2.8,
+    bacillus: 3,
+    grain: 3,
+    chain: 3,
+    seed: 3,
+    scale: 3,
+    bullet: 3,
+    drip: 2.8,
+    card: 3.25,
+    note: 4,
+    arrow: 4,
+    butterfly: 4,
+    smallstar: 4,
+    bigstar: 8,
+    ellipse: 5.7,
+    heart: 8,
+    middleball: 8,
+    lightball: 10.4,
+    bubble: 15,
+    crystal: 3.25,
+    particle: 3.25,
+    nova: 4,
+    coin: 4,
+    knife: 4,
+    sword: 5.7,
+    nuclear: 46.5,
+    laserseg: 4,
+    // MAY TODO: 阴阳玉，休止符，宝珠（大水滴？），岩石（木糖醇）
+} as const;

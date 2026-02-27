@@ -1,6 +1,5 @@
 import * as pixi from "pixi";
-import { NewCommonDanmakuOptions, prefabDanmakuHitboxRadius } from "./commonDanmaku.js";
-import { AbstractDanmaku, NewAbstractDanmakuOptions } from "./abstractDanmaku.js";
+import { AbstractDanmaku, NewAbstractDanmakuOptions, prefabDanmakuHitboxRadius } from "./abstractDanmaku.js";
 import { Game, Board, Player, Combat } from "../jstg.js";
 import { alphaTo, cast, decibel, getPointToSegmentDist2, rotateVec, staticAssert } from "../utils.js";
 import { DyedTextures, PrefabDanmakuNames } from "../textures.js";
