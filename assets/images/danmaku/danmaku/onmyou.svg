@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 26.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd" [
+	<!ENTITY st0 "fill:#990F0F;">
+	<!ENTITY st1 "fill:#FFFFFF;">
+	<!ENTITY st2 "fill:url(#外圈红晕_00000028284217013480333720000016959369115581698976_);">
+	<!ENTITY st3 "fill:none;stroke:#800000;stroke-width:0.04821;stroke-miterlimit:10;">
+]>
+<svg version="1.0" id="图层_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 width="30px" height="30px" viewBox="0 0 30 30" style="enable-background:new 0 0 30 30;" xml:space="preserve">
+<path id="红鱼" style="&st0;" d="M21.75,8.25C18.00633,8.25,15,11.25633,15,15s-3.06301,6.75-6.75,6.75
+	c-3.45651,0-6.36467-2.69205-6.71469-6.06657C1.90162,22.74666,7.85655,28.5,15,28.5c7.37392,0,13.5-6.0126,13.5-13.5
+	C28.5,11.25633,25.49367,8.25,21.75,8.25z"/>
+<path id="白眼" style="&st1;" d="M20.30357,15c0-0.80222,0.64421-1.44643,1.44643-1.44643S23.19643,14.19778,23.19643,15
+	s-0.65636,1.44643-1.44643,1.44643S20.30357,15.79007,20.30357,15z"/>
+<path id="白鱼_00000155863501164568044230000009016920857915971747_" style="&st1;" d="M15,1.5C7.5126,1.5,1.5,7.5126,1.5,15
+	c0,3.68699,3.06306,6.75,6.75,6.75c3.68699,0,6.75-3.00633,6.75-6.75s3.00633-6.75,6.75-6.75S28.5,11.25633,28.5,15
+	C28.5,7.5126,22.4874,1.5,15,1.5z"/>
+<path id="红眼" style="&st0;" d="M6.80357,15c0-0.80222,0.64421-1.44643,1.44643-1.44643S9.69643,14.19778,9.69643,15
+	S9.04007,16.44643,8.25,16.44643S6.80357,15.79007,6.80357,15z"/>
+<radialGradient id="外圈红晕_00000029744683896518920010000003882228032521294976_" cx="15" cy="17" r="13.5" gradientTransform="matrix(1 0 0 -1 0 32)" gradientUnits="userSpaceOnUse">
+	<stop  offset="0" style="stop-color:#FF6666;stop-opacity:0"/>
+	<stop  offset="0.42866" style="stop-color:#FD6464;stop-opacity:0.05"/>
+	<stop  offset="0.58308" style="stop-color:#F65F5F;stop-opacity:0.1"/>
+	<stop  offset="0.69316" style="stop-color:#EB5656;stop-opacity:0.16"/>
+	<stop  offset="0.78213" style="stop-color:#DA4848;stop-opacity:0.25"/>
+	<stop  offset="0.85831" style="stop-color:#C43636;stop-opacity:0.4"/>
+	<stop  offset="0.92579" style="stop-color:#A82121;stop-opacity:0.6"/>
+	<stop  offset="0.98539" style="stop-color:#890707;stop-opacity:0.9"/>
+	<stop  offset="1" style="stop-color:#800000"/>
+</radialGradient>
+<path id="外圈红晕" style="fill:url(#外圈红晕_00000029744683896518920010000003882228032521294976_);" d="M1.5,15
+	C1.5,7.5126,7.5126,1.5,15,1.5S28.5,7.5126,28.5,15S22.37395,28.5,15,28.5S1.5,22.37395,1.5,15z"/>
+<circle style="&st3;" cx="15" cy="15" r="13.5"/>
+</svg>

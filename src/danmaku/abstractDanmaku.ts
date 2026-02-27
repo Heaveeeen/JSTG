@@ -164,7 +164,9 @@ export const prefabDanmakuHitboxRadius = {
     coin: 4,
     knife: 4,
     sword: 5.7,
-    nuclear: 46.5,
+    nuclear: 46.6,
     laserseg: 4,
-    // MAY TODO: 阴阳玉，休止符，宝珠（大水滴？），岩石（木糖醇）
+    onmyou: 9.5,
+    bigonmyou: 27,
+    // MAY TODO: 休止符，宝珠（大水滴？），岩石（木糖醇）
 } as const;

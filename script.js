@@ -7,7 +7,7 @@
 import * as jstg from "./dist/jstg.js";
 import * as pixi from "pixi";
 import { deg } from "./dist/utils.js";
-import { prefabDanmakuHitboxRadius } from "./dist/danmaku/commonDanmaku.js";
+import { prefabDanmakuHitboxRadius } from "./dist/danmaku/abstractDanmaku.js";
 
 
 // 启动游戏
@@ -127,6 +127,7 @@ import { prefabDanmakuHitboxRadius } from "./dist/danmaku/commonDanmaku.js";
                 for (const color of colors) {
                     // @ts-expect-error
                     const dan = makeDanmaku({ type, color, x, y, rotation });
+                    dan.canBeErase = false;
                     forever(loop => {
                         dan.rotation += 0.006;
                     }, { refs: dan }),
@@ -151,15 +152,50 @@ import { prefabDanmakuHitboxRadius } from "./dist/danmaku/commonDanmaku.js";
         makeFooExsibits(182, (/** @type {number} */ r) => -29, (/** @type {number} */ r) => 30, [
             "bigstar", "ellipse", "heart", "middleball"//, "sword", "bubble", "nuclear"
         ], ["white", "h300", "h240", "h180", "h150", "h30", "h0"]);
-        //y = -215;
-        //makeFooExsibits(170, (/** @type {number} */ r) => -45, () => 0, ["sword"], ["h180", "h60", "h0"]);
+        y = -50;
+        makeFooExsibits(170, (/** @type {number} */ r) => -45, () => 0, ["sword"], ["h180", "h60", "h0"]);
+        y = -15;
+        makeFooExsibits(170, (/** @type {number} */ r) => -45, () => 0, ["sword"], ["white", "h300", "h240"]);
+        y = 35;
+        makeFooExsibits(180, (/** @type {number} */ r) => -32, (/** @type {number} */ r) => 32, ["onmyou"], ["h120", "h60", "h30", "h0"]);
+        makeFooExsibits(180, (/** @type {number} */ r) => -32, (/** @type {number} */ r) => 32, ["onmyou"], ["white", "h300", "h240", "h180"]);
         y = 207;
         makeFooExsibits(-166, (/** @type {number} */ r) => 66, () => 0, ["bubble"], ["h0", "h60", "h120", "h240", "h300", "white"]);
-        makeDanmaku({ type: "nuclear", x: 115, y: -10 });
-        makeDanmaku({ type: "sword", x: 155, y: 70 });
-        makeLaserBeam({ type: "laserseg", color: "h0", x: 60, y: 90, width: 1, length: 120, startPoint: {}, endPoint: {} });
-        makeLaserBeam({ type: "laserseg", color: "h60", x: 60, y: 110, width: 3, length: 100, startPoint: {}, endPoint: {} });
-        makeLaserBeam({ type: "laserseg", color: "h120", x: 60, y: 150, width: 5, length: 80, startPoint: {}, endPoint: {} });
+    }
+    function makeFooMuseum2() {
+        let y = -200;
+        let rotation = 0;
+        /**
+         * @param {number} x0
+         * @param {function} dx
+         * @param {function} dy
+         * @param {string[]} types
+         */
+        function makeFooExsibits(x0, dx, dy, types, colors=["h0", "h30", "h60", "h90", "h120", "h150", "h180", "h210", "h240", "h270", "h300", "h330", "black", "white"]) {
+            for (const type of types) {
+                let x = x0;
+                for (const color of colors) {
+                    // @ts-expect-error
+                    const dan = makeDanmaku({ type, color, x, y, rotation });
+                    dan.canBeErase = false;
+                    forever(loop => {
+                        dan.rotation += 0.006;
+                    }, { refs: dan }),
+                    // @ts-expect-error
+                    x += dx(prefabDanmakuHitboxRadius[type]);
+                    rotation += 0.4;
+                }
+                // @ts-expect-error
+                y += dy(prefabDanmakuHitboxRadius[type]);
+            }
+        }
+        makeFooExsibits(-165, ()=>65, ()=>0, ["bigonmyou"], ["h0", "h60", "h120", "h180", "h240", "h300"]);
+        makeDanmaku({ type: "nuclear", x: 115, y: -10 }).canBeErase = false;
+        makeLaserBeam({ type: "laserseg", color: "h0", x: 60, y: 50, width: 1, length: 120, startPoint: {}, endPoint: {} }).canBeErase = false;
+        makeLaserBeam({ type: "laserseg", color: "h60", x: 70, y: 70, width: 3, length: 100, startPoint: {}, endPoint: {} }).canBeErase = false;
+        makeLaserBeam({ type: "laserseg", color: "h120", x: 80, y: 110, width: 5, length: 80, startPoint: {}, endPoint: {} }).canBeErase = false;
+        makeLaserBeam({ type: "smallball", color: "h180", x: 40, y: 150, width: 3, length: 140, startPoint: {}, endPoint: {} }).canBeErase = false;
+        makeLaserBeam({ type: "scale", color: "h240", x: 60, y: 180, width: 3, length: 120 }).canBeErase = false;
     }
     makeFooMuseum();
 

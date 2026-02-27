@@ -114,6 +114,8 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
                 knife: await lsd(`danmaku/danmaku/knife.svg`) as DyedTextures,
                 sword: await lsd(`danmaku/danmaku/sword.svg`) as DyedTextures,
                 laserseg: await lsd(`danmaku/danmaku/laserseg.svg`) as DyedTextures,
+                onmyou: await lsd(`danmaku/danmaku/onmyou.svg`) as DyedTextures,
+                bigonmyou: await lsd(`danmaku/danmaku/bigonmyou.svg`) as DyedTextures,
             },
             particle: {
                 fog: await lsd(`danmaku/particle/fog.svg`) as DyedTextures,
