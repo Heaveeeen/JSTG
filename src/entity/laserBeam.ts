@@ -1,5 +1,5 @@
 import * as pixi from "pixi";
-import { AbstractDanmaku, NewAbstractDanmakuOptions, prefabDanmakuHitboxRadius } from "./abstractDanmaku.js";
+import { Entity, NewEntityOptions, prefabDanmakuHitboxRadius } from "./entity.js";
 import { Game, Board, Player, Combat } from "../jstg.js";
 import { alphaTo, cast, decibel, getPointToSegmentDist2, rotateVec, staticAssert } from "../utils.js";
 import { DyedTextures, PrefabDanmakuNames } from "../textures.js";
@@ -12,7 +12,7 @@ interface LaserPoint {
     pos: number;
 }
 
-export interface NewLaserBeamOptions extends NewAbstractDanmakuOptions {
+export interface NewLaserBeamOptions extends NewEntityOptions {
     /** 激光的判定宽度的一半 */
     hitboxHalfWidth: number;
     /** 激光的判定长度 */
@@ -31,7 +31,7 @@ export interface NewLaserBeamOptions extends NewAbstractDanmakuOptions {
  * 这种直线激光不像车万原作那样能够被截断。
  * 这种直线激光的判定是个矩形。
  */
-export class LaserBeam extends AbstractDanmaku {
+export class LaserBeam extends Entity {
 
     private _hitboxHalfWidth: number;
     /* 激光的判定宽度的一半 */

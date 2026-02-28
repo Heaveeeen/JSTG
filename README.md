@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://github.com/Heaveeeen/JSTG">
-    <img style="height: 120px" alt="JSTG-logo" src="./assets/jstg-icon/jstg-logo-2.svg">
+    <img style="height: 120px" alt="JSTG-logo" src="./assets/jstgIcon/jstgLogo2.svg">
   </a>
 </p>
 

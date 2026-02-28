@@ -2,7 +2,7 @@ import * as pixi from "pixi";
 import { Input, Key } from "../Input.js";
 import { Board, Combat, Game } from "../jstg.js";
 import { alphaTo, deg, clamp, staticAssert } from "../utils.js";
-import { AbstractDanmaku } from "../danmaku/abstractDanmaku.js";
+import { Entity } from "../entity/entity.js";
 import { DifferenceBlendFilter } from "../graphics/differenceBlendFilter.js";
 
 interface PlayerKeyMapOptions {
@@ -39,7 +39,7 @@ interface PlayerUpdateOptions {
 }
 
 interface PlayerHitByEnemyOptions {
-    enemy?: AbstractDanmaku,
+    enemy?: Entity,
 }
 
 export type MissGainBombType = "reset-to-init-amount" | "increase-to-init-amount" | "none";
@@ -387,7 +387,7 @@ export class Player {
                     const makeMissFilterSprite = (dx: number, dy: number) => {
                         const spr = new pixi.Sprite({
                             parent: this.backParts.parent ?? undefined,
-                            texture: this.game.prefabTextures.player.miss_filter,
+                            texture: this.game.prefabTextures.player.missFilter,
                             anchor: 0.5,
                             x: this.x + dx, y: this.y + dy,
                             scale: 0,
@@ -455,7 +455,7 @@ export class Player {
         }
     }}.call(this);
 
-    _defaultHitByEnemy(enemy: AbstractDanmaku) {
+    _defaultHitByEnemy(enemy: Entity) {
         if (this.state.type === "common") {
             if (this.state.invincibleTime === 0) {
                 const { pldead00 } = this.game.prefabSounds.thse;

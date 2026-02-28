@@ -19,7 +19,7 @@ import { prefabDanmakuHitboxRadius } from "./dist/danmaku/abstractDanmaku.js";
     const { asAny } = jstg.utils;
 
     const combat = await game.StartCombat()
-    const { board, ingameUI, makeDanmaku, makeLaserBeam } = combat;
+    const { board, makeDanmaku, makeLaserBeam } = combat;
 
     console.log("game:", game);
     console.log("combat:", combat);
@@ -157,8 +157,8 @@ import { prefabDanmakuHitboxRadius } from "./dist/danmaku/abstractDanmaku.js";
         y = -15;
         makeFooExsibits(170, (/** @type {number} */ r) => -45, () => 0, ["sword"], ["white", "h300", "h240"]);
         y = 35;
-        makeFooExsibits(180, (/** @type {number} */ r) => -32, (/** @type {number} */ r) => 32, ["onmyou"], ["h120", "h60", "h30", "h0"]);
-        makeFooExsibits(180, (/** @type {number} */ r) => -32, (/** @type {number} */ r) => 32, ["onmyou"], ["white", "h300", "h240", "h180"]);
+        makeFooExsibits(180, (/** @type {number} */ r) => -32, (/** @type {number} */ r) => 32, ["yinyang"], ["h120", "h60", "h30", "h0"]);
+        makeFooExsibits(180, (/** @type {number} */ r) => -32, (/** @type {number} */ r) => 32, ["yinyang"], ["white", "h300", "h240", "h180"]);
         y = 207;
         makeFooExsibits(-166, (/** @type {number} */ r) => 66, () => 0, ["bubble"], ["h0", "h60", "h120", "h240", "h300", "white"]);
     }
@@ -189,7 +189,7 @@ import { prefabDanmakuHitboxRadius } from "./dist/danmaku/abstractDanmaku.js";
                 y += dy(prefabDanmakuHitboxRadius[type]);
             }
         }
-        makeFooExsibits(-165, ()=>65, ()=>0, ["bigonmyou"], ["h0", "h60", "h120", "h180", "h240", "h300"]);
+        makeFooExsibits(-165, ()=>65, ()=>0, ["bigyinyang"], ["h0", "h60", "h120", "h180", "h240", "h300"]);
         makeDanmaku({ type: "nuclear", x: 115, y: -10 }).canBeErase = false;
         makeLaserBeam({ type: "laserseg", color: "h0", x: 60, y: 50, width: 1, length: 120, startPoint: {}, endPoint: {} }).canBeErase = false;
         makeLaserBeam({ type: "laserseg", color: "h60", x: 70, y: 70, width: 3, length: 100, startPoint: {}, endPoint: {} }).canBeErase = false;

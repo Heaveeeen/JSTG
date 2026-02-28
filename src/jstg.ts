@@ -4,11 +4,11 @@ import { Key, makeInput } from "./Input.js";
 import { makeSimple } from "./player/simple.js";
 import { makeRng } from "./random.js";
 import * as utils from './utils.js';
-import { CommonDanmaku, makePrefabDanmaku } from "./danmaku/commonDanmaku.js";
-import { AbstractDanmaku, prefabDanmakuHitboxRadius } from "./danmaku/abstractDanmaku.js";
+import { CommonDanmaku, makePrefabDanmaku } from "./entity/commonDanmaku.js";
+import { Entity, prefabDanmakuHitboxRadius } from "./entity/entity.js";
 import { makeObjPool } from "./objPool.js";
 import { LoadPrefabSounds, LoadPrefabSoundsOptions, LoadSound } from "./sounds.js";
-import { LaserBeam, makePrefabLaserBeam } from "./danmaku/laserBeam.js";
+import { LaserBeam, makePrefabLaserBeam } from "./entity/laserBeam.js";
 import { Player } from "./player/player.js";
 import { LoopController, LoopOptions, makeLooper } from "./looper.js";
 
@@ -27,7 +27,7 @@ export type Game = ExtractPromiseType<ReturnType<typeof LaunchGame>>;
 export type Combat = ExtractPromiseType<ReturnType<Game["StartCombat"]>>;
 
 export type Board = Combat["board"];
-export type IngameUI = Combat["ingameUI"];
+export type IngameUi = Combat["ingameUi"];
 
 /** @async 启动 JSTG 游戏 */
 export async function LaunchGame(/** 不建议填参数，想干啥自己去改源码吧 */gameOptions: {
@@ -170,20 +170,20 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         })();
         //#endregion board
 
-        //#region ingameUI
-        const ingameUI = (() => {
-            const ingameUIRoot = new pixi.Sprite({
+        //#region ingameUi
+        const ingameUi = (() => {
+            const ingameUiRoot = new pixi.Sprite({
                 parent: app.stage,
                 zIndex: 0,
             });
             const windowFrame = new pixi.Sprite({
-                parent: ingameUIRoot, texture: prefabTextures.ingameUI.window,
+                parent: ingameUiRoot, texture: prefabTextures.ingameUi.window,
             });
 
             const playerStateBar = (()=>{
-                const { hp_full: hpFull, hp_empty: hpEmpty, bomb_full: bombFull, bomb_empty: bombEmpty } = prefabTextures.ingameUI.pl_state_bar_icon;
+                const { hpFull: hpFull, hpEmpty: hpEmpty, bombFull: bombFull, bombEmpty: bombEmpty } = prefabTextures.ingameUi.plStateBarIcon;
                 const stateBarRoot = new pixi.Sprite({
-                    parent: ingameUIRoot, texture: prefabTextures.ingameUI.pl_state_bar_frame.spde_common,
+                    parent: ingameUiRoot, texture: prefabTextures.ingameUi.plStateBarFrame.spdeCommon,
                     anchor: 0.5,
                     scale: 4/3,
                     x: stageWidth / 2 + 160 * 4/3, y: stageHeight / 2 - 70 * 4/3,
@@ -224,20 +224,20 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
 
             return {
                 /** 根节点 */
-                root: ingameUIRoot,
+                root: ingameUiRoot,
                 /** 游戏内 UI 的那个像窗口框架的大背景 */
                 windowFrame,
                 /** 显示残机和 Bomb 数量的那个状态栏 */
                 playerStateBar,
-                destroy() { ingameUIRoot.destroy(); },
-                get destroyed() { return ingameUIRoot.destroyed; },
+                destroy() { ingameUiRoot.destroy(); },
+                get destroyed() { return ingameUiRoot.destroyed; },
             }
         })();
         //#endregion
 
         //#region danmakuPool
         const danmakuPool = (() => {
-            const pool = makeObjPool<AbstractDanmaku>();
+            const pool = makeObjPool<Entity>();
             const { objects: danmakus, push, clean, forEachAlive, _validCount, destroy } = pool;
 
             const update = (player: Player) => {
@@ -286,7 +286,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
 
         const combat = {
             /** @readonly  游戏内 UI ，版面上盖着的那一层 UI ，包括血条啥的以及那个像窗口框架的东西 */
-            ingameUI,
+            ingameUi,
             /** @readonly 版面，就是自机和弹幕所处的那个主要场地 */
             board,
             /**
@@ -303,7 +303,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
             /** TODO: DOC makeLaserBeam */
             makeLaserBeam: null as unknown as typeof makeLaserBeam, // 又是奇技淫巧
             destroy() {
-                ingameUI.destroy();
+                ingameUi.destroy();
                 board.destroy();
                 danmakuPool.destroy();
                 for (const pl of players) { pl.destroy(); }
@@ -314,7 +314,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         const makePrefabPlayer = (()=>{
             const makePlayer = (player: Player) => {
                 players.push(player);
-                ingameUI.playerStateBar.updateWithPlayer(player);
+                ingameUi.playerStateBar.updateWithPlayer(player);
                 return player;
             }
 

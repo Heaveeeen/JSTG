@@ -21,20 +21,23 @@ export function LoadSvg(
     }) as Promise<pixi.Texture>;
 }
 
+const dyeTexture = (app: pixi.Application, redTexture: pixi.Texture, hue: number) => {
+    const hueFilter = new pixi.ColorMatrixFilter({ resolution: "inherit", });
+    hueFilter.hue(hue, false);
+    const spr = new pixi.Sprite({ texture: redTexture, filters: hueFilter, });
+    const dyedTexture = app.renderer.generateTexture(spr);
+    spr.destroy();
+    hueFilter.destroy();
+    return dyedTexture;
+};
+
 /** 给定一个红色的贴图（通常是弹幕），为它染成几种不同的颜色，并输出这些染色过的纹理。 */
 export function makeDyedTextures(options: {
     app: pixi.Application, redTexture: pixi.Texture,
 }) {
     const h0 = options.redTexture;
-    const dye = (hue: number) => {
-        const hueFilter = new pixi.ColorMatrixFilter({ resolution: "inherit", });
-        hueFilter.hue(hue, false);
-        const spr = new pixi.Sprite({ texture: h0, filters: hueFilter, });
-        const dyedTexture = options.app.renderer.generateTexture(spr);
-        spr.destroy();
-        hueFilter.destroy();
-        return dyedTexture;
-    }
+    const dye = (hue: number) => dyeTexture(options.app, h0, hue);
+
     const h30 = dye(30),   h60 = dye(60),   h90 = dye(90),   h120 = dye(120),
           h150 = dye(150), h180 = dye(180), h210 = dye(210), h240 = dye(240),
           h270 = dye(270), h300 = dye(300), h330 = dye(330);
@@ -114,37 +117,43 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
                 knife: await lsd(`danmaku/danmaku/knife.svg`) as DyedTextures,
                 sword: await lsd(`danmaku/danmaku/sword.svg`) as DyedTextures,
                 laserseg: await lsd(`danmaku/danmaku/laserseg.svg`) as DyedTextures,
-                onmyou: await lsd(`danmaku/danmaku/onmyou.svg`) as DyedTextures,
-                bigonmyou: await lsd(`danmaku/danmaku/bigonmyou.svg`) as DyedTextures,
+                yinyang: await lsd(`danmaku/danmaku/yinyang.svg`) as DyedTextures,
+                bigyinyang: await lsd(`danmaku/danmaku/bigyinyang.svg`) as DyedTextures,
             },
             particle: {
                 fog: await lsd(`danmaku/particle/fog.svg`) as DyedTextures,
             },
         },
-        ingameUI: {
-            window: await lsvg(`ingameUI/window.svg`),
-            enemy_sc_bar_icon: {
-                non_spellcard: await lsvg(`ingameUI/enemy_sc_bar_icon/non_spellcard.svg`),
-                spellcard: await lsvg(`ingameUI/enemy_sc_bar_icon/spellcard.svg`),
+        ingameUi: {
+            window: await lsvg(`ingameUi/window.svg`),
+            enemyScBarIcon: {
+                nonSpellcard: await lsvg(`ingameUi/enemyScBarIcon/nonSpellcard.svg`),
+                spellcard: await lsvg(`ingameUi/enemyScBarIcon/spellcard.svg`),
             },
-            pl_state_bar_icon: {
-                bomb_full: await lsvg(`ingameUI/pl_state_bar_icon/bomb_full.svg`, 3),
-                bomb_empty: await lsvg(`ingameUI/pl_state_bar_icon/bomb_empty.svg`, 3),
-                hp_full: await lsvg(`ingameUI/pl_state_bar_icon/hp_full.svg`, 3),
-                hp_empty: await lsvg(`ingameUI/pl_state_bar_icon/hp_empty.svg`, 3),
+            plStateBarIcon: {
+                bombFull: await lsvg(`ingameUi/plStateBarIcon/bombFull.svg`, 3),
+                bombEmpty: await lsvg(`ingameUi/plStateBarIcon/bombEmpty.svg`, 3),
+                hpFull: await lsvg(`ingameUi/plStateBarIcon/hpFull.svg`, 3),
+                hpEmpty: await lsvg(`ingameUi/plStateBarIcon/hpEmpty.svg`, 3),
             },
-            pl_state_bar_frame: {
-                spde_common: await lsvg(`ingameUI/pl_state_bar_frame/spde_common.svg`, 3),
-                spde_wide_screen: await lsvg(`ingameUI/pl_state_bar_frame/spde_wide_screen.svg`),
+            plStateBarFrame: {
+                spdeCommon: await lsvg(`ingameUi/plStateBarFrame/spdeCommon.svg`, 3),
+                spdeWideScreen: await lsvg(`ingameUi/plStateBarFrame/spdeWideScreen.svg`),
             }
         },
         player: {
             Simple: await lsvg(`player/Simple.svg`),
             hitbox: await lsvg(`player/hitbox.svg`),
-            invincible_ring: await lsvg(`player/invincible_ring.svg`),
-            slow_mode: await lsvg(`player/slow_mode.svg`),
-            miss_filter: await lsvg(`player/miss_filter.svg`),
+            invincibleRing: await lsvg(`player/invincibleRing.svg`),
+            slowMode: await lsvg(`player/slowMode.svg`),
+            missFilter: await lsvg(`player/missFilter.svg`),
         },
+        enemy: {
+            yinYangOrb: {
+                main: await lsd(`enemy/yinYangOrb/main.svg`) as DyedTextures,
+                ring: await lsd(`enemy/yinYangOrb/ring.svg`) as DyedTextures,
+            },
+        }
     }
 }
 

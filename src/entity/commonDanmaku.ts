@@ -3,18 +3,18 @@ import { Board, Combat, Game } from "../jstg.js";
 import { Player } from "../player/player.js";
 import { alphaTo, decibel, getPointToSegmentDist2, staticAssert, Vec2 } from "../utils.js";
 import { DyedTextures, PrefabDanmakuNames } from "../textures.js";
-import { AbstractDanmaku, NewAbstractDanmakuOptions, prefabDanmakuHitboxRadius } from "./abstractDanmaku.js";
+import { Entity, NewEntityOptions, prefabDanmakuHitboxRadius } from "./entity.js";
 
 
 
-export interface NewCommonDanmakuOptions extends NewAbstractDanmakuOptions {
+export interface NewCommonDanmakuOptions extends NewEntityOptions {
     /** 弹幕判定圆的半径 */
     hitboxRadius: number;
     /** 弹幕所对应的 Sprite */
     sprite: pixi.Sprite;
 }
 
-export class CommonDanmaku extends AbstractDanmaku {
+export class CommonDanmaku extends Entity {
     private _hitboxRadius: number;
     /* 弹幕判定圆的半径 */
     get hitboxRadius() { return this._hitboxRadius; }

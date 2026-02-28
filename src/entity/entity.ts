@@ -3,7 +3,7 @@ import { Game, Board, Player, Combat } from "../jstg.js";
 import { DyedTextures } from "../textures.js";
 
 
-export interface NewAbstractDanmakuOptions {
+export interface NewEntityOptions {
     /**
      * 弹幕的种类名称
      * @example
@@ -16,7 +16,7 @@ export interface NewAbstractDanmakuOptions {
     board: Board;
 }
 
-export abstract class AbstractDanmaku {
+export abstract class Entity {
     /**
      * 弹幕的种类名称
      * @example
@@ -28,7 +28,7 @@ export abstract class AbstractDanmaku {
     readonly combat: Combat;
     readonly board: Board;
 
-    constructor(options: NewAbstractDanmakuOptions) {
+    constructor(options: NewEntityOptions) {
         this.type = options.type;
         this.color = options.color;
         this.game = options.game;
@@ -166,7 +166,7 @@ export const prefabDanmakuHitboxRadius = {
     sword: 5.7,
     nuclear: 46.6,
     laserseg: 4,
-    onmyou: 9.5,
-    bigonmyou: 27,
+    yinyang: 9.5,
+    bigyinyang: 27,
     // MAY TODO: 休止符，宝珠（大水滴？），岩石（木糖醇）
 } as const;
