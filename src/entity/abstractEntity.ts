@@ -1,9 +1,10 @@
 import * as pixi from "pixi";
 import { Game, Board, Player, Combat } from "../jstg.js";
 import { DyedTextures } from "../textures.js";
+import { AbstractEnemy } from "./abstractEnemy.js";
 
 
-export interface NewEntityOptions {
+export interface NewAbstractEntityOptions {
     /**
      * 弹幕的种类名称
      * @example
@@ -16,7 +17,7 @@ export interface NewEntityOptions {
     board: Board;
 }
 
-export abstract class Entity {
+export abstract class AbstractEntity {
     /**
      * 弹幕的种类名称
      * @example
@@ -28,7 +29,10 @@ export abstract class Entity {
     readonly combat: Combat;
     readonly board: Board;
 
-    constructor(options: NewEntityOptions) {
+    /** @readonly */
+    enemy: AbstractEnemy<this> | null = null;
+
+    constructor(options: NewAbstractEntityOptions) {
         this.type = options.type;
         this.color = options.color;
         this.game = options.game;
@@ -77,23 +81,23 @@ export abstract class Entity {
     isGrazing: boolean = false;
 
     /**
-     * 该弹幕是否会与玩家交互并造成伤害
+     * 该实体是否会与玩家交互并造成伤害
      * @example
-     * myDanmaku.isDamageToPlayer = false; // 让这个弹幕不再与玩家产生交互，取消伤害判定
+     * myDanmaku.isDamageToPlayer = false; // 让这个实体不再与玩家产生交互，取消伤害判定
      * myDanmaku.isDamageToPlayer = true; // 重新启用伤害判定
      */
     isDamageToPlayer: boolean = true;
     /**
-     * 该弹幕是否能够被消弹效果消除
+     * 该实体是否能够被消弹效果消除
      * @example
-     * myDanmaku.canBeErase = false; // 让这个弹幕无法被消弹效果消除
+     * myDanmaku.canBeErase = false; // 让这个实体无法被消弹效果消除
      * myDanmaku.canBeErase = true; // 又能消掉了
      */
     canBeErase: boolean = true;
 
     /**
-     * 预置的消弹效果，立即摧毁该弹幕，并生成一个消弹特效。  
-     * 如果该弹幕无法被消除，则该函数什么也不做。  
+     * 预置的消弹效果，立即摧毁该实体，并生成一个消弹特效。  
+     * 如果该实体无法被消除，则该函数什么也不做。  
      * 必须注意：调用该函数之后，该弹幕的生死是未知的。它可能会立即被摧毁，或者等下一帧才被摧毁，也有可能不会被摧毁。  
      */
     abstract erase(options?: {

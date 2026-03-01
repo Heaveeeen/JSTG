@@ -1,5 +1,5 @@
 import * as pixi from "pixi";
-import { Entity, NewEntityOptions, prefabDanmakuHitboxRadius } from "./entity.js";
+import { AbstractEntity, NewAbstractEntityOptions, prefabDanmakuHitboxRadius } from "./abstractEntity.js";
 import { Game, Board, Player, Combat } from "../jstg.js";
 import { alphaTo, cast, decibel, getPointToSegmentDist2, rotateVec, staticAssert } from "../utils.js";
 import { DyedTextures, PrefabDanmakuNames } from "../textures.js";
@@ -12,7 +12,7 @@ interface LaserPoint {
     pos: number;
 }
 
-export interface NewLaserBeamOptions extends NewEntityOptions {
+export interface NewLaserBeamOptions extends NewAbstractEntityOptions {
     /** 激光的判定宽度的一半 */
     hitboxHalfWidth: number;
     /** 激光的判定长度 */
@@ -31,7 +31,7 @@ export interface NewLaserBeamOptions extends NewEntityOptions {
  * 这种直线激光不像车万原作那样能够被截断。
  * 这种直线激光的判定是个矩形。
  */
-export class LaserBeam extends Entity {
+export class LaserBeam extends AbstractEntity {
 
     private _hitboxHalfWidth: number;
     /* 激光的判定宽度的一半 */
@@ -147,7 +147,7 @@ export class LaserBeam extends Entity {
         }
 
         if (isHit) {
-            player.hitByEnemy({ enemy: this });
+            player.getHurt({ entity: this });
         } else if (this.isGrazing) {
             // 擦弹
             this.game.prefabSounds.thse.graze.play({ volume: decibel(-6), });
@@ -246,6 +246,7 @@ export class LaserBeam extends Entity {
         this.startPoint?.sprite.destroy();
         this.endPoint?.sprite.destroy();
         this.mainSprite.destroy();
+        this.enemy?.destroy();
     }
 
     get destroyed() {

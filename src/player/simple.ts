@@ -21,13 +21,11 @@ export const makeSimple = async (options: {
         hitboxRadius: 1, highSpeed: 4, slowSpeed: 1.6,
         dyingBombTime: null, initHpAmount: null, initBombAmount: null, missGainBombType: null,
         maxHpAmount: null, maxBombAmount: null,
-        updateFn(options = {}) {
-            this._defaultUpdate(options);
+        updateFn(self, options) {
+            self._defaultUpdate(options);
         },
-        hitByEnemyFn(options = {}) {
-            if (options.enemy) {
-                this._defaultHitByEnemy(options.enemy);
-            }
+        getHurtFn(self, options) {
+            self._defaultGetHurt(options);
         },
         autoUpdateDanmakuPool, autoUpdateSelf,
     });

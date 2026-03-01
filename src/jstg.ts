@@ -5,7 +5,7 @@ import { makeSimple } from "./player/simple.js";
 import { makeRng } from "./random.js";
 import * as utils from './utils.js';
 import { CommonDanmaku, makePrefabDanmaku } from "./entity/commonDanmaku.js";
-import { Entity, prefabDanmakuHitboxRadius } from "./entity/entity.js";
+import { AbstractEntity, prefabDanmakuHitboxRadius } from "./entity/abstractEntity.js";
 import { makeObjPool } from "./objPool.js";
 import { LoadPrefabSounds, LoadPrefabSoundsOptions, LoadSound } from "./sounds.js";
 import { LaserBeam, makePrefabLaserBeam } from "./entity/laserBeam.js";
@@ -237,7 +237,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
 
         //#region danmakuPool
         const danmakuPool = (() => {
-            const pool = makeObjPool<Entity>();
+            const pool = makeObjPool<AbstractEntity>();
             const { objects: danmakus, push, clean, forEachAlive, _validCount, destroy } = pool;
 
             const update = (player: Player) => {

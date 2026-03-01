@@ -2,7 +2,7 @@ import * as pixi from "pixi";
 import { Input, Key } from "../Input.js";
 import { Board, Combat, Game } from "../jstg.js";
 import { alphaTo, deg, clamp, staticAssert } from "../utils.js";
-import { Entity } from "../entity/entity.js";
+import { AbstractEntity } from "../entity/abstractEntity.js";
 import { DifferenceBlendFilter } from "../graphics/differenceBlendFilter.js";
 
 interface PlayerKeyMapOptions {
@@ -38,11 +38,11 @@ interface PlayerUpdateOptions {
     slowSpeed?: number,
 }
 
-interface PlayerHitByEnemyOptions {
-    enemy?: Entity,
+interface PlayerGetHurtOptions {
+    entity: AbstractEntity | null,
 }
 
-export type MissGainBombType = "reset-to-init-amount" | "increase-to-init-amount" | "none";
+export type MissGainBombType = "resetToInitAmount" | "increaseByInitAmount" | "none";
 
 const MissInvincibleTime = 180;
 
@@ -171,14 +171,14 @@ export class Player {
         maxHpAmount: number | null,
         /** @default 8 */
         maxBombAmount: number | null,
-        /** @default "reset-to-init-amount" */
+        /** @default "resetToInitAmount" */
         missGainBombType: MissGainBombType | null,
         /** @default true */
         autoUpdateDanmakuPool: boolean | null,
         /** @default true */
         autoUpdateSelf: boolean | null,
-        updateFn: (this: Player, options?: PlayerUpdateOptions) => any,
-        hitByEnemyFn: (this: Player, options?: PlayerHitByEnemyOptions) => any,
+        updateFn: (self: Player, options: PlayerUpdateOptions) => any,
+        getHurtFn: (self: Player, options: PlayerGetHurtOptions) => any,
     }) {
         this.name = options.name;
         this.game = options.game;
@@ -193,10 +193,10 @@ export class Player {
         this.initBombAmount = this._bombAmount = options.initBombAmount ?? 3;
         this.maxHpAmount = options.maxHpAmount ?? 8;
         this.maxBombAmount = options.maxBombAmount ?? 8;
-        this.missGainBombType = options.missGainBombType ?? "reset-to-init-amount";
+        this.missGainBombType = options.missGainBombType ?? "resetToInitAmount";
 
-        this.update = options.updateFn;
-        this.hitByEnemy = options.hitByEnemyFn;
+        this.update = (opt: PlayerUpdateOptions) => options.updateFn(this, opt);
+        this.getHurt = (opt: PlayerGetHurtOptions) => options.getHurtFn(this, opt);
 
         this.backParts = new pixi.Sprite({
             parent: options.board.root,
@@ -250,7 +250,7 @@ export class Player {
         this.y = this._lastY = 185;
 
         if (options.autoUpdateSelf ?? true) {
-            this.game.forever(() => this.update(), { order: 0, refs: this });
+            this.game.forever(() => this.update({}), { order: 0, refs: this });
         }
 
         if (options.autoUpdateDanmakuPool ?? true) {
@@ -278,9 +278,9 @@ export class Player {
      *     );
      * });
      */
-    update: (this: Player, options?: PlayerUpdateOptions) => any;
+    update: (options: PlayerUpdateOptions) => unknown;
 
-    hitByEnemy: (this: Player, options?: PlayerHitByEnemyOptions) => any;
+    getHurt: (options: PlayerGetHurtOptions) => unknown;
 
     /** 移动自机 */
     _updateMove(options: PlayerUpdateOptions) {
@@ -292,7 +292,7 @@ export class Player {
         let dy = 0;
 
         const kh = (keyOrKeys: string | string[]) => typeof keyOrKeys === "string" ? isHold(keyOrKeys) : keyOrKeys.some(key => isHold(key));
-        // @ts-expect-error 隐式转换的奇技淫巧
+        // @ts-expect-error 隐式转换的奇技淫巧，布尔值隐式转换为 0 和 1 ，可以用于数学运算
         dx = kh(keyMap.right ?? Key.ArrowRight) - kh(keyMap.left ?? Key.ArrowLeft);
         // @ts-expect-error
         dy = kh(keyMap.down ?? Key.ArrowDown) - kh(keyMap.up ?? Key.ArrowUp);
@@ -437,9 +437,9 @@ export class Player {
                 this.x = 0;
                 this.y = 224;
                 // 重置 Bomb 的数量
-                if (this.missGainBombType === "reset-to-init-amount") {
+                if (this.missGainBombType === "resetToInitAmount") {
                     this.bombAmount = this.initBombAmount;
-                } else if (this.missGainBombType === "increase-to-init-amount") {
+                } else if (this.missGainBombType === "increaseByInitAmount") {
                     this.bombAmount = Math.max(this.bombAmount, this.initBombAmount);
                 } else {
                     staticAssert<"none">(this.missGainBombType)
@@ -455,7 +455,7 @@ export class Player {
         }
     }}.call(this);
 
-    _defaultHitByEnemy(enemy: Entity) {
+    _defaultGetHurt(options: PlayerGetHurtOptions) {
         if (this.state.type === "common") {
             if (this.state.invincibleTime === 0) {
                 const { pldead00 } = this.game.prefabSounds.thse;
@@ -467,7 +467,7 @@ export class Player {
                     this.state = { type: "dying", timeSinceDying: 0 };
                 }
             }
-            if (this._isNeedEraseHitDanmaku) { enemy.erase(); }
+            if (this._isNeedEraseHitDanmaku) { options.entity?.erase(); }
         }
     }
 

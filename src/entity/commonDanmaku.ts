@@ -3,18 +3,18 @@ import { Board, Combat, Game } from "../jstg.js";
 import { Player } from "../player/player.js";
 import { alphaTo, decibel, getPointToSegmentDist2, staticAssert, Vec2 } from "../utils.js";
 import { DyedTextures, PrefabDanmakuNames } from "../textures.js";
-import { Entity, NewEntityOptions, prefabDanmakuHitboxRadius } from "./entity.js";
+import { AbstractEntity, NewAbstractEntityOptions, prefabDanmakuHitboxRadius } from "./abstractEntity.js";
 
 
 
-export interface NewCommonDanmakuOptions extends NewEntityOptions {
+export interface NewCommonDanmakuOptions extends NewAbstractEntityOptions {
     /** 弹幕判定圆的半径 */
     hitboxRadius: number;
     /** 弹幕所对应的 Sprite */
     sprite: pixi.Sprite;
 }
 
-export class CommonDanmaku extends Entity {
+export class CommonDanmaku extends AbstractEntity {
     private _hitboxRadius: number;
     /* 弹幕判定圆的半径 */
     get hitboxRadius() { return this._hitboxRadius; }
@@ -91,7 +91,7 @@ export class CommonDanmaku extends Entity {
         }
         
         if (isHit) {
-            player.hitByEnemy({ enemy: this });
+            player.getHurt({ entity: this });
         } else if (this.isGrazing) {
             // 擦弹
             this.game.prefabSounds.thse.graze.play({ volume: decibel(-6), });
@@ -202,6 +202,7 @@ export class CommonDanmaku extends Entity {
         if (this.destroyed) { return };
         this.hitboxGraphics?.destroy();
         this.sprite.destroy();
+        this.enemy?.destroy();
     }
 
     get destroyed() {
