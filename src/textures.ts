@@ -96,15 +96,15 @@ function MakeDyedFrames<T extends pixi.FrameObject[]>(options: {
     app: pixi.Application, redFrames: T,
 }): DyedTextures<T> {
     const { app, redFrames } = options;
-    const dyed = redFrames.map(({ texture, time }) => { return {
+    const dyed = redFrames.map(({ texture, time }) => ({
         dyedTextures: makeDyedTextures({ app, redTexture: texture }),
         time,
-    }; });
+    }));
     const dyedFrames: DyedTextures<T> = {} as any;
     for (const color of dyedTextureColors) {
-        dyedFrames[color] = dyed.map(({dyedTextures, time}) => { return {
+        dyedFrames[color] = dyed.map(({dyedTextures, time}) => ({
             texture: dyedTextures[color], time,
-        }; }) as any;
+        })) as any;
     }
     return dyedFrames;
 }
@@ -226,10 +226,10 @@ export function makeCommonOrAnimatedSprite(options: {
         let loopLength = 0;
         for (const { time } of texture) { loopLength += time; }
         // ASSERTS: 帧列表不为空，loopLength > 0
-        const selectTextures = texture.map(frame => { return {
+        const selectTextures = texture.map(frame => ({
             weight: frame.time,
             value: frame.texture
-        }; });
+        }));
         game.forever(loop => {
             sprite.texture = select(t % loopLength, selectTextures);
             t += game.timeScale;
