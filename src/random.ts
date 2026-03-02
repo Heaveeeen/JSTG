@@ -1,3 +1,4 @@
+import * as utils from "./utils.js";
 
 
 /**
@@ -44,21 +45,17 @@ export function makeRng(
          * 根据权重随机选择一个结果返回
          * @example
          * const rng = makeRng();
-         * const danmakuType = rng.select(
-         *     [1, "smallball"],
-         *     [3, "ringball"],
-         *     [6, "glowball"],
-         * );
+         * const danmakuType = rng.select([
+         *     { weight: 1, value: "smallball" },
+         *     { weight: 3, value: "ringball" },
+         *     { weight: 6, value: "glowball" },
+         * ]);
          * // 10% 的概率是小玉，30% 的概率是环玉，60% 的概率是水光弹
          */
-        select<T>(...results: [number, T][]): typeof results[number][1] {
-            const totalWeight = results.reduce((a, b) => a + b[0], 0);
+        select<T>(results: Readonly<utils.SelectItem<T>[]>): typeof results[number]["value"] {// TODO: 改成 utils.SelectItem
+            const totalWeight = results.reduce((a, b) => a + b.weight, 0);
             let r = float(0, totalWeight);
-            for (const [weight, result] of results) {
-                if (r < weight) { return result };
-                r -= weight;
-            }
-            return results[results.length - 1][1];
-        }
+            return utils.select(r, results);
+        },
     }
 }

@@ -78,7 +78,7 @@ export const gainToDecibel = (gain: number) => Math.log10(gain) * 20;
 
 export type SelectItem<T> = { weight: number, value: T };
 
-export const select = <T>(t: number, results: SelectItem<T>[]): typeof results[number]["value"] => {
+export const select = <T>(t: number, results: Readonly<SelectItem<T>[]>): typeof results[number]["value"] => {
     for (const {weight, value} of results) {
         if (t < weight) { return value };
         t -= weight;
