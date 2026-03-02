@@ -1,3 +1,3 @@
-import { AbstractEntity } from "./abstractEntity";
+import { AbstractEntity } from "./abstractEntity.js";
 
 // TODO: export class CurveLaser extends AbstractDanmaku {}

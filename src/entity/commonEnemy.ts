@@ -1,5 +1,5 @@
 import { AbstractEnemy, newAbstractEnemyOptions } from "./abstractEnemy.js";
-import { CommonDanmaku } from "./commonDanmaku";
+import { CommonDanmaku } from "./commonDanmaku.js";
 
 
 

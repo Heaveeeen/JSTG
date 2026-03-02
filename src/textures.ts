@@ -1,6 +1,6 @@
 import * as pixi from "pixi";
-import { cast, select } from "./utils";
-import { Combat, Game } from "./jstg";
+import { cast, select } from "./utils.js";
+import { Combat, Game } from "./jstg.js";
 
 /** @async 加载一个素材（如图像）。加载 svg 时请使用 {@linkcode LoadSvg} */
 export function LoadPixiAsset<T = pixi.Texture>(url: string, options?: pixi.LoadOptions): Promise<T> {
@@ -137,7 +137,8 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
                 glowball: await lsdye(`danmaku/danmaku/glowball.svg`),
                 fireball: MakeDyedFrames({ app, redFrames: [
                     { texture: await lsvg(`danmaku/danmaku/fireball.svg`), time: 100, },
-                ]}),
+                    // MAY TODO: 炎弹的动画我不会画，喵😇
+                ] as const}),
                 dot: await lsdye(`danmaku/danmaku/dot.svg`),
                 bacteria: await lsdye(`danmaku/danmaku/bacteria.svg`),
                 bacillus: await lsdye(`danmaku/danmaku/bacillus.svg`),
@@ -148,8 +149,12 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
                 bullet: await lsdye(`danmaku/danmaku/bullet.svg`),
                 drip: await lsdye(`danmaku/danmaku/drip.svg`),
                 card: await lsdye(`danmaku/danmaku/card.svg`),
-                note: await lsdye(`danmaku/danmaku/note.svg`),
-                // TODO: 音符和炎弹的动画
+                note: MakeDyedFrames({ app, redFrames: [
+                    { texture: await lsvg(`danmaku/danmaku/note2.svg`), time: 150, },
+                    { texture: await lsvg(`danmaku/danmaku/note1.svg`), time: 150, },
+                    { texture: await lsvg(`danmaku/danmaku/note2.svg`), time: 150, },// 此处有两个相同的路径加载了两次，姑且先这么写，以后考虑优化一下。
+                    { texture: await lsvg(`danmaku/danmaku/note3.svg`), time: 150, },
+                ] as const}),
                 arrow: await lsdye(`danmaku/danmaku/arrow.svg`),
                 butterfly: await lsdye(`danmaku/danmaku/butterfly.svg`),
                 smallstar: await lsdye(`danmaku/danmaku/smallstar.svg`),
@@ -231,7 +236,7 @@ export function makeCommonOrAnimatedSprite(options: {
             value: frame.texture
         }));
         game.forever(loop => {
-            sprite.texture = select(t % loopLength, selectTextures);
+            sprite.texture = select((1000 * t / game.standardFps) % loopLength, selectTextures);
             t += game.timeScale;
         }, { refs: [combat, sprite] });
     }

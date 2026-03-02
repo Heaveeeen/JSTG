@@ -7,13 +7,12 @@
 import * as jstg from "./dist/jstg.js";
 import * as pixi from "pixi";
 import { deg } from "./dist/utils.js";
-import { prefabDanmakuHitboxRadius } from "./dist/danmaku/abstractDanmaku.js";
 
 
 // 启动游戏
 (async () => {
     const game = await jstg.LaunchGame();
-    const { Key } = jstg;
+    const { Key, prefabDanmakuHitboxRadius } = jstg;
     const { input, forever, coDo, app, debug } = game;
     const { isDown, isUp, isHold, isIdle } = input;
     const { asAny } = jstg.utils;
