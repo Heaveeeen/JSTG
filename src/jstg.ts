@@ -1,5 +1,5 @@
 import * as pixi from "pixi";
-import { DyedTextures, LoadPixiAsset, LoadPrefabTextures, LoadPrefabTexturesOptions, LoadSvg, PrefabDanmakuNames } from "./textures.js";
+import { DyedTextures, LoadPixiAsset, LoadPrefabTextures, LoadPrefabTexturesOptions, LoadSvg, PrefabDanmakuNames, DyedTextureColors } from "./textures.js";
 import { Key, makeInput } from "./Input.js";
 import { makeSimple } from "./player/simple.js";
 import { makeRng } from "./random.js";
@@ -30,7 +30,7 @@ export type Board = Combat["board"];
 export type IngameUi = Combat["ingameUi"];
 
 /** @async 启动 JSTG 游戏 */
-export async function LaunchGame(/** 不建议填参数，想干啥自己去改源码吧 */gameOptions: {
+export async function LaunchGame(/** 不建议填参数，因为我处理得不太完备。想干啥建议直接改源码。 */gameOptions: {
     /** @default 640 */
     stageWidth?: number,
     /** @default 480 */
@@ -45,7 +45,11 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
     onResizeWindow?: (app: pixi.Application) => any,
     loadPrefabTexturesOptions?: LoadPrefabTexturesOptions,
     loadPrefabSoundsOptions?: LoadPrefabSoundsOptions,
+    /** @default 60 */
+    standardFps?: number,
 } = {}) {
+
+    const standardFps = gameOptions.standardFps ?? 60;
 
     const app = new pixi.Application();
 
@@ -94,7 +98,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
 
     const prefabSounds = await LoadPrefabSounds(gameOptions.loadPrefabSoundsOptions);
 
-    app.ticker.maxFPS = 60;
+    app.ticker.maxFPS = standardFps;
 
     //#region game
 
@@ -343,7 +347,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         type MakeDanmakuOptions = {
             type: PrefabDanmakuNames,
             /** @default red */
-            color?: keyof DyedTextures,
+            color?: DyedTextureColors,
             /** @default game.commonDanmakuLayer */
             parent?: pixi.Container,
             /** @default 0 */
@@ -358,9 +362,9 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
             zIndex?: number,
         };
 
-        function makeDanmaku(type: PrefabDanmakuNames, /** @default "red" */color?: keyof DyedTextures): CommonDanmaku;
+        function makeDanmaku(type: PrefabDanmakuNames, /** @default "red" */color?: DyedTextureColors): CommonDanmaku;
         function makeDanmaku(options: MakeDanmakuOptions): CommonDanmaku;
-        function makeDanmaku(options: PrefabDanmakuNames | MakeDanmakuOptions, color?: keyof DyedTextures) {
+        function makeDanmaku(options: PrefabDanmakuNames | MakeDanmakuOptions, color?: DyedTextureColors) {
             if (typeof options === "string") {
                 options = { type: options, color };
             };
@@ -378,7 +382,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
             /** @default "laserseg" */
             type?: PrefabDanmakuNames,
             /** @default red */
-            color?: keyof DyedTextures,
+            color?: DyedTextureColors,
             /** @default 0 */
             x?: number, 
             /** @default 0 */
@@ -407,9 +411,9 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
             zIndex?: number,
         };
 
-        function makeLaserBeam(type?: PrefabDanmakuNames, /** @default "red" */color?: keyof DyedTextures): LaserBeam;
+        function makeLaserBeam(type?: PrefabDanmakuNames, /** @default "red" */color?: DyedTextureColors): LaserBeam;
         function makeLaserBeam(options: MakeLaserBeamOptions): LaserBeam;
-        function makeLaserBeam(options?: PrefabDanmakuNames | MakeLaserBeamOptions, color?: keyof DyedTextures) {
+        function makeLaserBeam(options?: PrefabDanmakuNames | MakeLaserBeamOptions, color?: DyedTextureColors) {
             if (options === undefined || typeof options === "string") {
                 options = { type: options, color };
             };
@@ -447,7 +451,7 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         },
         zIndex: 100,
     });
-    let fps = 60;
+    let fps = standardFps;
     let timeRecords: number[] = [];
     const fpsCounterLoop = forever(() => {
         const now = performance.now();
@@ -494,6 +498,8 @@ export async function LaunchGame(/** 不建议填参数，想干啥自己去改�
         StartCombat,
         /** fps 指示器 */
         fpsMonitor,
+        /** @readonly 游戏的标准帧率 */
+        standardFps,
         /**
          * @readonly
          * 每帧执行一次给定的回调函数。  

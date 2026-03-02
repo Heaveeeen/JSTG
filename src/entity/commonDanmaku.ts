@@ -1,8 +1,8 @@
 import * as pixi from "pixi";
 import { Board, Combat, Game } from "../jstg.js";
 import { Player } from "../player/player.js";
-import { alphaTo, decibel, getPointToSegmentDist2, staticAssert, Vec2 } from "../utils.js";
-import { DyedTextures, PrefabDanmakuNames } from "../textures.js";
+import { alphaTo, decibel, getPointToSegmentDist2, select, SelectItem, staticAssert, Vec2 } from "../utils.js";
+import { DyedTextureColors, DyedTextures, makeCommonOrAnimatedSprite, PrefabDanmakuNames } from "../textures.js";
 import { AbstractEntity, NewAbstractEntityOptions, prefabDanmakuHitboxRadius } from "./abstractEntity.js";
 
 
@@ -212,7 +212,7 @@ export class CommonDanmaku extends AbstractEntity {
 
 export const makePrefabDanmaku = (options: {
     game: Game, combat: Combat, board: Board,
-    type: PrefabDanmakuNames, color: keyof DyedTextures,
+    type: PrefabDanmakuNames, color: DyedTextureColors,
     x: number, y: number, rotation: number,
     /** @default board.commonDanmakuLayer */
     parent: pixi.Container | null,
@@ -224,16 +224,19 @@ export const makePrefabDanmaku = (options: {
     const { type, color, game, combat, board, x, y, rotation, zIndex } = options;
     const parent = options.parent ?? board.commonDanmakuLayer;
     const hitboxRadius = options.radius ?? prefabDanmakuHitboxRadius[type];
-    const danmaku = new CommonDanmaku({
-        type, color, game, combat, board,
-        hitboxRadius,
+    const texture = game.prefabTextures.danmaku.danmaku[type][color];
+    const sprite = makeCommonOrAnimatedSprite({
+        game, combat, texture,
         sprite: new pixi.Sprite({
             parent, x, y, rotation,
-            texture: game.prefabTextures.danmaku.danmaku[type][color],
             anchor: 0.5,
             scale: hitboxRadius / prefabDanmakuHitboxRadius[type],
             zIndex: zIndex ?? -hitboxRadius,
         }),
+    });
+    const danmaku = new CommonDanmaku({
+        type, color, game, combat, board,
+        hitboxRadius, sprite,
     });
     combat.danmakuPool.push(danmaku);
     return danmaku;

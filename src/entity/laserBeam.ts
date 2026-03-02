@@ -2,7 +2,7 @@ import * as pixi from "pixi";
 import { AbstractEntity, NewAbstractEntityOptions, prefabDanmakuHitboxRadius } from "./abstractEntity.js";
 import { Game, Board, Player, Combat } from "../jstg.js";
 import { alphaTo, cast, decibel, getPointToSegmentDist2, rotateVec, staticAssert } from "../utils.js";
-import { DyedTextures, PrefabDanmakuNames } from "../textures.js";
+import { DyedTextures, PrefabDanmakuNames, DyedTextureColors, makeCommonOrAnimatedSprite } from "../textures.js";
 
 
 /** 激光上附带的一个端点 */
@@ -256,7 +256,7 @@ export class LaserBeam extends AbstractEntity {
 
 export const makePrefabLaserBeam = (options: {
     game: Game, combat: Combat, board: Board,
-    type: PrefabDanmakuNames, color: keyof DyedTextures,
+    type: PrefabDanmakuNames, color: DyedTextureColors,
     x: number, y: number, rotation: number,
     /** @default board.commonDanmakuLayer */
     parent: pixi.Container | null,
@@ -286,22 +286,36 @@ export const makePrefabLaserBeam = (options: {
             const pos = point.pos ?? defaultPos;
             const scale = point.scale ?? (1 * hitboxHalfWidth / pointBaseRadius) + 0.3;// 这里可以考虑加个sqrt，防止端点大的太大、小的太小；另外，这个尺寸应当能够随激光尺寸的变化而变化0
             return {
-                sprite: new pixi.Sprite({
-                    parent, texture,
-                    anchor: 0.5,
-                    scale, zIndex,
-                    blendMode: "add",
+                sprite: makeCommonOrAnimatedSprite({
+                    game, combat, texture,
+                    sprite: new pixi.Sprite({
+                        parent,
+                        anchor: 0.5,
+                        scale, zIndex,
+                        blendMode: "add",
+                    })
                 }), pos
             };
         }
     };
 
     // 这里明确三者的构造顺序，因为这玩意图层是有讲究的，后来居上
-    let mainSprite = new pixi.Sprite({
-        parent, texture, x, y, rotation,
-        anchor: { x: 0.5 - (baseHalfLength / texture.width), y: 0.5 },
-        scale: { x: hitboxLength * 0.5 / baseHalfLength, y: hitboxHalfWidth / baseHalfWidth },
-        zIndex,
+    let anchor: pixi.PointData;
+    if (texture instanceof pixi.Texture) {
+        anchor = { x: 0.5 - (baseHalfLength / texture.width), y: 0.5 };
+    } else {
+        // ASSERTS: texture 不为空，至少有一个贴图，且所有贴图尺寸均相同
+        // 此处不需要增加运行时判断，因为如果 texture 是空的，texture[0].texture 自己就会报错
+        anchor = { x: 0.5 - (baseHalfLength / texture[0].texture.width), y: 0.5 };
+    }
+    let mainSprite = makeCommonOrAnimatedSprite({
+        game, combat, texture,
+        sprite: new pixi.Sprite({
+            parent, x, y, rotation,
+            anchor,
+            scale: { x: hitboxLength * 0.5 / baseHalfLength, y: hitboxHalfWidth / baseHalfWidth },
+            zIndex,
+        })
     });
     let startPoint = makeLaserPoint(options.startPoint, 0);
     let endPoint = makeLaserPoint(options.endPoint, 1);

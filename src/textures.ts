@@ -1,4 +1,6 @@
 import * as pixi from "pixi";
+import { cast, select } from "./utils";
+import { Combat, Game } from "./jstg";
 
 /** @async 加载一个素材（如图像）。加载 svg 时请使用 {@linkcode LoadSvg} */
 export function LoadPixiAsset<T = pixi.Texture>(url: string, options?: pixi.LoadOptions): Promise<T> {
@@ -31,10 +33,19 @@ const dyeTexture = (app: pixi.Application, redTexture: pixi.Texture, hue: number
     return dyedTexture;
 };
 
+export const dyedTextureColors = [
+    "red", "pink", "purple", "blue", "cyan", "green", "yellowGreen", "yellow", "orange", "black", "white",
+    "h0", "h30", "h60", "h90", "h120", "h150", "h180", "h210", "h240", "h270", "h300", "h330",
+] as const;
+
+export type DyedTextureColors = typeof dyedTextureColors[number];
+
+export type DyedTextures<T = pixi.Texture> = Record<DyedTextureColors, T>;
+
 /** 给定一个红色的贴图（通常是弹幕），为它染成几种不同的颜色，并输出这些染色过的纹理。 */
 export function makeDyedTextures(options: {
     app: pixi.Application, redTexture: pixi.Texture,
-}) {
+}): DyedTextures {
     const h0 = options.redTexture;
     const dye = (hue: number) => dyeTexture(options.app, h0, hue);
 
@@ -59,7 +70,44 @@ export function makeDyedTextures(options: {
     };
 };
 
-export type DyedTextures = ReturnType<typeof makeDyedTextures>;
+/**
+ * redFrames 的结构像这样：
+ * [
+ *   {texture, time: 100},
+ *   {texture, time: 200},
+ *   ...
+ * ]
+ * dyed 的结构像这样：
+ * [
+ *   {dyedTextures: {red, pink, purple...}, time: 100},
+ *   {dyedTextures: {red, pink, purple...}, time: 200},
+ *   ...
+ * ]
+ * 输出这样：
+ * {
+ *   red: [ {texture, time: 100}, {texture, time: 200}, ... ],
+ *   pink: [ {texture, time: 100}, {texture, time: 200}, ... ],
+ *   purple: [ {texture, time: 100}, {texture, time: 200}, ... ],
+ *   ...
+ * }
+ * 换句话说，就是把给定的序列帧染色成几份不同颜色的序列帧，每一种颜色都能单独取出来，取出来的东西类型等同于输入。
+ */
+function MakeDyedFrames<T extends pixi.FrameObject[]>(options: {
+    app: pixi.Application, redFrames: T,
+}): DyedTextures<T> {
+    const { app, redFrames } = options;
+    const dyed = redFrames.map(({ texture, time }) => { return {
+        dyedTextures: makeDyedTextures({ app, redTexture: texture }),
+        time,
+    }; });
+    const dyedFrames: DyedTextures<T> = {} as any;
+    for (const color of dyedTextureColors) {
+        dyedFrames[color] = dyed.map(({dyedTextures, time}) => { return {
+            texture: dyedTextures[color], time,
+        }; }) as any;
+    }
+    return dyedFrames;
+}
 
 export interface LoadPrefabTexturesOptions {
     app: pixi.Application;
@@ -80,48 +128,50 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
     const base = options.baseUrl ?? "./assets/images/";
     const resScale = options.resolutionScale ?? 1;
     const lsvg = async (url: string, res = 2) => await LoadSvg(base + url, res * resScale);
-    const lsd = async (url: string, res = 2) => makeDyedTextures({ redTexture: await lsvg(url, res), app });
+    const lsdye = async (url: string, res = 2) => makeDyedTextures({ redTexture: await lsvg(url, res), app });
     return {
         danmaku: {
             danmaku: {
-                smallball: await lsd(`danmaku/danmaku/smallball.svg`) as DyedTextures, // 这里断言一下是为了折叠悬停提示
-                ringball: await lsd(`danmaku/danmaku/ringball.svg`) as DyedTextures,
-                glowball: await lsd(`danmaku/danmaku/glowball.svg`) as DyedTextures,
-                fireball: await lsd(`danmaku/danmaku/fireball.svg`) as DyedTextures,
-                dot: await lsd(`danmaku/danmaku/dot.svg`) as DyedTextures,
-                bacteria: await lsd(`danmaku/danmaku/bacteria.svg`) as DyedTextures,
-                bacillus: await lsd(`danmaku/danmaku/bacillus.svg`) as DyedTextures,
-                grain: await lsd(`danmaku/danmaku/grain.svg`) as DyedTextures,
-                chain: await lsd(`danmaku/danmaku/chain.svg`) as DyedTextures,
-                seed: await lsd(`danmaku/danmaku/seed.svg`) as DyedTextures,
-                scale: await lsd(`danmaku/danmaku/scale.svg`) as DyedTextures,
-                bullet: await lsd(`danmaku/danmaku/bullet.svg`) as DyedTextures,
-                drip: await lsd(`danmaku/danmaku/drip.svg`) as DyedTextures,
-                card: await lsd(`danmaku/danmaku/card.svg`) as DyedTextures,
-                note: await lsd(`danmaku/danmaku/note.svg`) as DyedTextures,
+                smallball: await lsdye(`danmaku/danmaku/smallball.svg`), // 这里断言一下是为了折叠悬停提示
+                ringball: await lsdye(`danmaku/danmaku/ringball.svg`),
+                glowball: await lsdye(`danmaku/danmaku/glowball.svg`),
+                fireball: MakeDyedFrames({ app, redFrames: [
+                    { texture: await lsvg(`danmaku/danmaku/fireball.svg`), time: 100, },
+                ]}),
+                dot: await lsdye(`danmaku/danmaku/dot.svg`),
+                bacteria: await lsdye(`danmaku/danmaku/bacteria.svg`),
+                bacillus: await lsdye(`danmaku/danmaku/bacillus.svg`),
+                grain: await lsdye(`danmaku/danmaku/grain.svg`),
+                chain: await lsdye(`danmaku/danmaku/chain.svg`),
+                seed: await lsdye(`danmaku/danmaku/seed.svg`),
+                scale: await lsdye(`danmaku/danmaku/scale.svg`),
+                bullet: await lsdye(`danmaku/danmaku/bullet.svg`),
+                drip: await lsdye(`danmaku/danmaku/drip.svg`),
+                card: await lsdye(`danmaku/danmaku/card.svg`),
+                note: await lsdye(`danmaku/danmaku/note.svg`),
                 // TODO: 音符和炎弹的动画
-                arrow: await lsd(`danmaku/danmaku/arrow.svg`) as DyedTextures,
-                butterfly: await lsd(`danmaku/danmaku/butterfly.svg`) as DyedTextures,
-                smallstar: await lsd(`danmaku/danmaku/smallstar.svg`) as DyedTextures,
-                bigstar: await lsd(`danmaku/danmaku/bigstar.svg`) as DyedTextures,
-                ellipse: await lsd(`danmaku/danmaku/ellipse.svg`) as DyedTextures,
-                heart: await lsd(`danmaku/danmaku/heart.svg`) as DyedTextures,
-                middleball: await lsd(`danmaku/danmaku/middleball.svg`) as DyedTextures,
-                lightball: await lsd(`danmaku/danmaku/lightball.svg`) as DyedTextures,
-                bubble: await lsd(`danmaku/danmaku/bubble.svg`) as DyedTextures,
-                nuclear: await lsd(`danmaku/danmaku/nuclear.svg`) as DyedTextures,
-                crystal: await lsd(`danmaku/danmaku/crystal.svg`) as DyedTextures,
-                particle: await lsd(`danmaku/danmaku/particle.svg`) as DyedTextures,
-                nova: await lsd(`danmaku/danmaku/nova.svg`) as DyedTextures,
-                coin: await lsd(`danmaku/danmaku/coin.svg`) as DyedTextures,
-                knife: await lsd(`danmaku/danmaku/knife.svg`) as DyedTextures,
-                sword: await lsd(`danmaku/danmaku/sword.svg`) as DyedTextures,
-                laserseg: await lsd(`danmaku/danmaku/laserseg.svg`) as DyedTextures,
-                yinyang: await lsd(`danmaku/danmaku/yinyang.svg`) as DyedTextures,
-                bigyinyang: await lsd(`danmaku/danmaku/bigyinyang.svg`) as DyedTextures,
+                arrow: await lsdye(`danmaku/danmaku/arrow.svg`),
+                butterfly: await lsdye(`danmaku/danmaku/butterfly.svg`),
+                smallstar: await lsdye(`danmaku/danmaku/smallstar.svg`),
+                bigstar: await lsdye(`danmaku/danmaku/bigstar.svg`),
+                ellipse: await lsdye(`danmaku/danmaku/ellipse.svg`),
+                heart: await lsdye(`danmaku/danmaku/heart.svg`),
+                middleball: await lsdye(`danmaku/danmaku/middleball.svg`),
+                lightball: await lsdye(`danmaku/danmaku/lightball.svg`),
+                bubble: await lsdye(`danmaku/danmaku/bubble.svg`),
+                nuclear: await lsdye(`danmaku/danmaku/nuclear.svg`),
+                crystal: await lsdye(`danmaku/danmaku/crystal.svg`),
+                particle: await lsdye(`danmaku/danmaku/particle.svg`),
+                nova: await lsdye(`danmaku/danmaku/nova.svg`),
+                coin: await lsdye(`danmaku/danmaku/coin.svg`),
+                knife: await lsdye(`danmaku/danmaku/knife.svg`),
+                sword: await lsdye(`danmaku/danmaku/sword.svg`),
+                laserseg: await lsdye(`danmaku/danmaku/laserseg.svg`),
+                yinyang: await lsdye(`danmaku/danmaku/yinyang.svg`),
+                bigyinyang: await lsdye(`danmaku/danmaku/bigyinyang.svg`),
             },
             particle: {
-                fog: await lsd(`danmaku/particle/fog.svg`) as DyedTextures,
+                fog: await lsdye(`danmaku/particle/fog.svg`),
             },
         },
         ingameUi: {
@@ -150,8 +200,8 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
         },
         enemy: {
             yinYangOrb: {
-                main: await lsd(`enemy/yinYangOrb/main.svg`) as DyedTextures,
-                ring: await lsd(`enemy/yinYangOrb/ring.svg`) as DyedTextures,
+                main: await lsdye(`enemy/yinYangOrb/main.svg`) as DyedTextures,
+                ring: await lsdye(`enemy/yinYangOrb/ring.svg`) as DyedTextures,
             },
         }
     }
@@ -162,3 +212,28 @@ type ExtractPromiseType<U> = U extends Promise<infer T> ? T : never;
 export type PrefabTextures = ExtractPromiseType<ReturnType<typeof LoadPrefabTextures>>;
 
 export type PrefabDanmakuNames = keyof ExtractPromiseType<ReturnType<typeof LoadPrefabTextures>>["danmaku"]["danmaku"];
+
+export function makeCommonOrAnimatedSprite(options: {
+    game: Game, combat: Combat,
+    sprite: pixi.Sprite,
+    texture: pixi.Texture | pixi.FrameObject[],
+}) {
+    const { game, combat, sprite, texture } = options;
+    if (texture instanceof pixi.Texture) {
+        sprite.texture = texture;
+    } else {
+        let t = 0;
+        let loopLength = 0;
+        for (const { time } of texture) { loopLength += time; }
+        // ASSERTS: 帧列表不为空，loopLength > 0
+        const selectTextures = texture.map(frame => { return {
+            weight: frame.time,
+            value: frame.texture
+        }; });
+        game.forever(loop => {
+            sprite.texture = select(t % loopLength, selectTextures);
+            t += game.timeScale;
+        }, { refs: [combat, sprite] });
+    }
+    return sprite;
+}

@@ -76,6 +76,16 @@ export const decibel = (db: number) => 10 ** (db / 20);
 /** 把振幅倍数转化为分贝数，是 decibel 的逆运算。 */
 export const gainToDecibel = (gain: number) => Math.log10(gain) * 20;
 
+export type SelectItem<T> = { weight: number, value: T };
+
+export const select = <T>(t: number, results: SelectItem<T>[]): typeof results[number]["value"] => {
+    for (const {weight, value} of results) {
+        if (t < weight) { return value };
+        t -= weight;
+    }
+    return results[results.length - 1].value;
+};
+
 
 
 /** 如果给定参数不属于 T，让 ts 报错 */
