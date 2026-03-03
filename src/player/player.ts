@@ -47,7 +47,7 @@ export type MissGainBombType = "resetToInitAmount" | "increaseByInitAmount" | "n
 const MissInvincibleTime = 180;
 
 /** 玩家处于 Miss 状态或其他非法状态时，尝试给予玩家无敌帧，该如何处理 */
-let _HandleApplyInvincibleButBadPlayerStateError: "throw" | "warn" | "ignore" = "throw";
+let _handleApplyInvincibleButBadPlayerStateError: "throw" | "warn" | "ignore" = "warn";
 
 export class Player {
 
@@ -464,6 +464,7 @@ export class Player {
                     this.game.debug.godMode.dieCount += 1;
                     this.applyInvincible(20);
                 } else {
+                    // TODO: 两种受伤行为，一种普通的，一种原地爆炸的
                     this.state = { type: "dying", timeSinceDying: 0 };
                 }
             }
@@ -475,11 +476,11 @@ export class Player {
     applyInvincible(time: number) {
         if (this.state.type === "common") {
             if (this.state.invincibleTime < time) { this.state.invincibleTime = time; }
-        } else if (this.state.type === "dying") {
+        } else if (this.state.type === "dying") { // 决死
             this.state = { type: "common", invincibleTime: time };
         } else {
-            if (_HandleApplyInvincibleButBadPlayerStateError === "ignore") {
-            } else if (_HandleApplyInvincibleButBadPlayerStateError === "warn") {
+            if (_handleApplyInvincibleButBadPlayerStateError === "ignore") {
+            } else if (_handleApplyInvincibleButBadPlayerStateError === "warn") {
                 console.warn(new Error(`警告：尝试给予玩家无敌效果时，玩家正处于 ${this.state.type} 状态，无敌效果未生效。`));
             } else {
                 throw new Error(`错误：尝试给予玩家无敌效果时，玩家正处于 ${this.state.type} 状态。`);
