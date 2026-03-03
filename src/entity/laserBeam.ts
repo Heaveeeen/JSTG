@@ -265,6 +265,8 @@ export const makePrefabLaserBeam = (options: {
     startPoint: { type?: PrefabDanmakuNames, scale?: number, pos?: number, } | null,
     endPoint: { type?: PrefabDanmakuNames, scale?: number, pos?: number, } | null,
     zIndex: number | null,
+    /** @default true */
+    canBeErase: boolean | null,
 }) => {
     const { type, color, game, combat, board, x, y, rotation } = options;
     const parent = options.parent ?? board.commonDanmakuLayer;
@@ -275,6 +277,7 @@ export const makePrefabLaserBeam = (options: {
     const hitboxHalfWidth = options.halfWidth;
     const hitboxLength = options.length;
     const zIndex = options.zIndex ?? -(hitboxHalfWidth + 0.5 * hitboxLength);
+    const canBeErase = options.canBeErase ?? true;
 
     const makeLaserPoint = (point: { type?: PrefabDanmakuNames, scale?: number, pos?: number, } | null, defaultPos: number) => {
         if (point === null) {
@@ -325,6 +328,7 @@ export const makePrefabLaserBeam = (options: {
         hitboxHalfWidth: hitboxHalfWidth, hitboxLength,
         mainSprite, startPoint, endPoint,
     });
+    beam.canBeErase = canBeErase;
     combat.danmakuPool.push(beam);
     return beam;
 }

@@ -360,6 +360,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             radius?: number,
             /** 图层顺序。若不填此参数，则自动根据弹幕尺寸排序，大的在底层、小的在顶层。 */
             zIndex?: number,
+            /** @default true */
+            canBeErase?: boolean,
         };
 
         function makeDanmaku(type: PrefabDanmakuNames, /** @default "red" */color?: DyedTextureColors): CommonDanmaku;
@@ -374,6 +376,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
                 radius: options.radius ?? null,
                 zIndex: options.zIndex ?? null,
+                canBeErase: options.canBeErase ?? null
             });
         }
         combat.makeDanmaku = makeDanmaku;
@@ -409,6 +412,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             endPoint?: { type?: PrefabDanmakuNames, pos?: number, },
             /** 图层顺序。若不填此参数，则自动根据弹幕尺寸排序，大的在底层、小的在顶层。 */
             zIndex?: number,
+            /** @default true */
+            canBeErase?: boolean,
         };
 
         function makeLaserBeam(type?: PrefabDanmakuNames, /** @default "red" */color?: DyedTextureColors): LaserBeam;
@@ -424,6 +429,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 halfWidth: options.width ?? 2, length: options.length ?? 400,
                 startPoint: options.startPoint ?? null, endPoint: options.endPoint ?? null,
                 zIndex: options.zIndex ?? null,
+                canBeErase: options.canBeErase ?? null,
             });
         }
         combat.makeLaserBeam = makeLaserBeam;

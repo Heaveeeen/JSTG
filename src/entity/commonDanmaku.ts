@@ -218,26 +218,31 @@ export const makePrefabDanmaku = (options: {
     parent: pixi.Container | null,
     /** @default prefabDanmakuHitboxRadius[type] */
     radius: number | null,
+    /** @default -radius */
     zIndex: number | null,
-    // TODO: canBeErase: number | null,
+    /** @default true */
+    canBeErase: boolean | null,
 }) => {
-    const { type, color, game, combat, board, x, y, rotation, zIndex } = options;
+    const { type, color, game, combat, board, x, y, rotation } = options;
     const parent = options.parent ?? board.commonDanmakuLayer;
     const hitboxRadius = options.radius ?? prefabDanmakuHitboxRadius[type];
     const texture = game.prefabTextures.danmaku.danmaku[type][color];
+    const zIndex = options.zIndex ?? -hitboxRadius;
+    const canBeErase = options.canBeErase ?? true;
     const sprite = makeCommonOrAnimatedSprite({
         game, combat, texture,
         sprite: new pixi.Sprite({
             parent, x, y, rotation,
             anchor: 0.5,
             scale: hitboxRadius / prefabDanmakuHitboxRadius[type],
-            zIndex: zIndex ?? -hitboxRadius,
+            zIndex,
         }),
     });
     const danmaku = new CommonDanmaku({
         type, color, game, combat, board,
         hitboxRadius, sprite,
     });
+    danmaku.canBeErase = canBeErase;
     combat.danmakuPool.push(danmaku);
     return danmaku;
 }
