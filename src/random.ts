@@ -52,7 +52,7 @@ export function makeRng(
          * ]);
          * // 10% 的概率是小玉，30% 的概率是环玉，60% 的概率是水光弹
          */
-        select<T>(results: Readonly<utils.SelectItem<T>[]>): typeof results[number]["value"] {// TODO: 改成 utils.SelectItem
+        select<T>(results: Readonly<utils.SelectItem<T>[]>): typeof results[number]["value"] {
             const totalWeight = results.reduce((a, b) => a + b.weight, 0);
             let r = float(0, totalWeight);
             return utils.select(r, results);
