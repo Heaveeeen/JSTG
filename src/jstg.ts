@@ -1,7 +1,7 @@
 import * as pixi from "pixi";
 import { DyedTextures, LoadPixiAsset, LoadPrefabTextures, LoadPrefabTexturesOptions, LoadSvg, PrefabDanmakuNames, DyedTextureColors } from "./textures.js";
 import { Key, makeInput } from "./Input.js";
-import { makeSimple } from "./player/simple.js";
+import { prefabPlayerFactory } from "./player/prefabPlayerFactory.js";
 import { makeRng } from "./random.js";
 import * as utils from './utils.js';
 import { CommonDanmaku, makePrefabDanmaku } from "./entity/commonDanmaku.js";
@@ -11,6 +11,7 @@ import { LoadPrefabSounds, LoadPrefabSoundsOptions, LoadSound } from "./sounds.j
 import { LaserBeam, makePrefabLaserBeam } from "./entity/laserBeam.js";
 import { Player } from "./player/player.js";
 import { LoopController, LoopOptions, makeLooper } from "./looper.js";
+import { AbstractEnemy } from "./entity/abstractEnemy.js";
 
 
 
@@ -18,6 +19,7 @@ export interface Destroyable {
     destroy(): unknown;
     readonly destroyed: boolean;
 }
+// TODO: 给大部分 Destroyable 都加上 forever 和 coDo
 
 export type CoDoGenerator = Generator<void, void, void>;
 
@@ -246,15 +248,15 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         })();
         //#endregion
 
-        //#region danmakuPool
-        const danmakuPool = (() => {
+        //#region entityPool
+        const entityPool = (() => {
             const pool = makeObjPool<AbstractEntity>();
-            const { objects: danmakus, push, clean, forEachAlive, _validCount, destroy } = pool;
+            const { objects, push, clean, forEachAlive, destroy } = pool;
 
             const update = (player: Player) => {
                 if (player.state.type === "common") {
-                    for (let i = 0; i < danmakus.length; i++) {
-                        if (!danmakus[i].destroyed) { danmakus[i].update(player); }
+                    for (let i = 0; i < objects.length; i++) {
+                        if (!objects[i].destroyed) { objects[i].update(player); }
                     }
                 }
                 player._lastX = player.x;
@@ -273,25 +275,47 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             };
 
             return {
-                /** @readonly 所有接受判定的弹幕，⚠️可能含有已经摧毁的无效弹幕 */
-                danmakus,
-                /** 推入并开始更新一个弹幕，此函数会在合适的时机自动触发清理 */
+                /** @readonly 所有接受判定的实体，⚠️可能含有已经摧毁的无效实体 */
+                objects,
+                /** 推入并开始更新一个实体，此函数会在合适的时机自动触发清理 */
                 push,
-                /** 更新所有弹幕的攻击逻辑 */
+                /** 更新所有实体的攻击逻辑 */
                 update,
-                /** 立即清理弹幕列表，一般不用管这个东西 */
+                /** 立即清理实体列表，一般不用管这个东西 */
                 clean,
-                /** 遍历所有未被摧毁的弹幕，可以用来消弹 */
+                /** 遍历所有未被摧毁的实体，可以用来消弹 */
                 forEachAlive,
-                /** 消除一个圆形范围内的所有弹幕 */
+                /** 消除一个圆形范围内的所有实体 */
                 eraseByRadius,
-                /** @readonly @internal 当前场上的弹幕数量（⚠️包含无效弹幕） */
-                get _validCount() { return _validCount; },
+                /** @readonly @internal 当前场上的实体数量（⚠️包含无效实体） */
+                get _validCount() { return pool._validCount; },
                 destroy,
                 get destroyed() { return pool.destroyed; },
             };
         })();
-        //#endregion danmakuPool
+        //#endregion entityPool
+
+        //#region enemyPool
+        const enemyPool = (() => {
+            const pool = makeObjPool<AbstractEnemy<AbstractEntity>>();
+            const { objects, push, clean, forEachAlive, destroy } = pool;
+
+            return {
+                /** @readonly 所有接受判定的敌人，⚠️可能含有已经摧毁的无效敌人 */
+                objects,
+                /** 推入并开始更新一个敌人，此函数会在合适的时机自动触发清理 */
+                push,
+                /** 立即清理敌人列表，一般不用管这个东西 */
+                clean,
+                /** 遍历所有未被摧毁的敌人，可以用来全屏攻击啥的 */
+                forEachAlive,
+                /** @readonly @internal 当前场上的敌人数量（⚠️包含无效敌人） */
+                get _validCount() { return pool._validCount; },
+                destroy,
+                get destroyed() { return pool.destroyed; },
+            };
+        })();
+        //#endregion enemyPool
 
         const players: Player[] = [];
 
@@ -302,13 +326,17 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             board,
             /**
              * @readonly
-             * 弹幕池，可以利用这个东西来每帧更新所有弹幕，这样弹幕才能攻击玩家。  
+             * 实体池，可以利用这个东西来每帧更新所有实体（主要是弹幕），这样弹幕才能攻击玩家。  
              * 正常情况下不用管这个东西，因为自机会自动帮你调用它的 update 方法。  
              * 也可以用这个来遍历所有弹幕。  
              */
-            danmakuPool,
+            entityPool,
+            /** TODO: DOC enemyPool */
+            enemyPool,
             /** @readonly JSTG 预置的自机 */
             prefabPlayers: null as unknown as typeof prefabPlayers, // 奇技淫巧
+            /** @readonly JSTG 预置的敌人 */
+            prefabEnemys: null as unknown as typeof prefabEnemys, // 奇技淫巧
             /** 创建一个 JSTG 预置的弹幕 */
             makeDanmaku: null as unknown as typeof makeDanmaku, // 又是奇技淫巧
             /** TODO: DOC makeLaserBeam */
@@ -316,7 +344,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             destroy() {
                 ingameUi.destroy();
                 board.destroy();
-                danmakuPool.destroy();
+                entityPool.destroy();
                 for (const pl of players) { pl.destroy(); }
             },
             get destroyed() { return board.destroyed; },
@@ -329,14 +357,14 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 return player;
             }
 
-            const _makeSimple = async (options: {
+            const makeSimple = async (options: {
                 /** @default true */
-                autoUpdateDanmakuPool?: boolean,
+                autoUpdateEntityPool?: boolean,
                 /** @default true */
                 autoUpdateSelf?: boolean,
-            } = {}) => makePlayer(await makeSimple({
+            } = {}) => makePlayer(await prefabPlayerFactory.makeSimple({
                 game, combat, board,
-                autoUpdateDanmakuPool: options.autoUpdateDanmakuPool ?? null,
+                autoUpdateEntityPool: options.autoUpdateEntityPool ?? null,
                 autoUpdateSelf: options.autoUpdateSelf ?? null,
             }));
 
@@ -347,10 +375,15 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
              */
             return {
                 /** 创建预置自机：Simple */
-                makeSimple: _makeSimple,
+                makeSimple,
             }
         })();
         combat.prefabPlayers = prefabPlayers;
+
+        const prefabEnemys = (()=>{
+            
+        })();
+        combat.prefabEnemys = prefabEnemys;
 
         type MakeDanmakuOptions = {
             type: PrefabDanmakuNames,

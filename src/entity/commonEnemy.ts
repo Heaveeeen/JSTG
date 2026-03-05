@@ -1,8 +1,10 @@
 import * as pixi from "pixi";
-import { Combat, Board, Game } from "../jstg.js";
+import { Combat, Board, Game, Destroyable } from "../jstg.js";
 import { DyedTextureColors } from "../textures.js";
 import { AbstractEnemy, newAbstractEnemyOptions } from "./abstractEnemy.js";
 import { CommonDanmaku } from "./commonDanmaku.js";
+import * as utils from "../utils.js";
+import { EraseEntityOptions } from "./abstractEntity.js";
 
 
 
@@ -17,16 +19,57 @@ interface NewCommonEnemyOptions extends newAbstractEnemyOptions<CommonDanmaku> {
 export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
     hurtHitboxRadius: number;
     maxHp: number;
-    hp: number;
+
+    /** @private */
+    private _hp: number;
+    get hp() { return this._hp; }
+    set hp(n: number) {
+        this._hp = utils.clamp(n, 0, this.maxHp);
+        if (this._hp <= 0) {
+            this.kill();
+        }
+    }
 
     constructor(options: NewCommonEnemyOptions) {
         super(options);
         this.hurtHitboxRadius = options.hurtHitboxRadius ?? this.entity.hitboxRadius;
-        this.maxHp = this.hp = options.maxHp;
+        this.maxHp = this._hp = options.maxHp;
         this.entity.canBeErase = options.canBeErase ?? false;
+        this.entity.combat.enemyPool.push(this);
     }
 
-    destroy(): void {
+    getHurt(options: {
+        /** 造成了多少点伤害。原则上，这个值不应当小于0。 */
+        num: number,
+        // TODO: type
+    }) {
+        this.hp -= options.num;
+        if (this.hp / this.maxHp <= 0.1) {
+            this.entity.game.prefabSounds.thse.damage01.play();
+        } else {
+            this.entity.game.prefabSounds.thse.damage00.play();
+        }
+    }
+
+    // TODO: 这些方法要移动到 AbstractEnemy 里，暂时先写在这儿
+    /** 
+     * 击破这个敌人，并且消除与之对应的实体。  
+     * 调用此方法后，该敌人的生死是未知的。它可能会立即被摧毁，或者等下一帧才被摧毁，也有可能不会被摧毁。  
+     */
+    kill(options: {
+        forEachCorpse?: EraseEntityOptions["forEachCorpse"],
+    } = {}) {
+        if (this.destroyed) { return; }
+        this.entity.erase({
+            permissionType: "thisEnemyDie",
+            effectType: undefined, // TODO: "thisEnemyDie"
+            forEachCorpse: options.forEachCorpse,
+        });
+        // TODO: 击破音效
+    }
+
+    /** 摧毁该敌人，但不会摧毁实体。只是会让这个实体变得无法攻击。 */
+    destroy() {
         if (this.destroyed) { return; }
         this.entity.enemy = null;
     }
@@ -35,55 +78,3 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
         return this.entity.enemy === this;
     }
 }
-
-export const prefabEnemys = (()=>{
-
-    const makeYinYangOrb = (options: {
-        game: Game, combat: Combat, board: Board,
-        maxHp: number, color: DyedTextureColors,
-        x: number, y: number, rotation: number,
-        /** @default board.commonEnemyLayer */
-        parent: pixi.Container | null,
-    }) => {
-        const { game, combat, board, maxHp, color, x, y, rotation } = options;
-        const rootSprite = new pixi.Sprite({
-            parent: options.parent ?? board.commonEnemyLayer,
-            x, y, rotation, anchor: 0.5,
-        });
-        const innerRing = new pixi.Sprite({
-            parent: rootSprite,
-            anchor: 0.5,
-            texture: game.prefabTextures.enemy.yinYangOrb.innerRing[color],
-        });
-        const outerRing = new pixi.Sprite({
-            parent: rootSprite,
-            anchor: 0.5,
-            texture: game.prefabTextures.enemy.yinYangOrb.outerRing[color],
-        });
-        const mainOrb = new pixi.Sprite({
-            parent: rootSprite,
-            anchor: 0.5,
-            texture: game.prefabTextures.enemy.yinYangOrb.main[color],
-        });
-        const enemy = new CommonEnemy({
-            entity: new CommonDanmaku({
-                game, combat, board,
-                type: "enemyYinYangOrb",
-                color, hitboxRadius: 9.5,
-                sprite: rootSprite,
-            }),
-            maxHp, hurtHitboxRadius: 9.5,
-            canBeErase: false,
-        });
-        game.forever(loop => {
-            outerRing.rotation -= 0.07;
-            innerRing.rotation += 0.12;
-        }, { refs: enemy, });
-        return enemy;
-};
-
-    return {
-        /** 创建一个阴阳玉敌人。 */
-        makeYinYangOrb,
-    }
-})();

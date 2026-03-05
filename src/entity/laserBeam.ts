@@ -324,6 +324,6 @@ export const makePrefabLaserBeam = (options: {
         mainSprite, startPoint, endPoint,
     });
     beam.canBeErase = canBeErase;
-    combat.danmakuPool.push(beam);
+    combat.entityPool.push(beam);
     return beam;
 }

@@ -174,7 +174,7 @@ export class Player {
         /** @default "resetToInitAmount" */
         missGainBombType: MissGainBombType | null,
         /** @default true */
-        autoUpdateDanmakuPool: boolean | null,
+        autoUpdateEntityPool: boolean | null,
         /** @default true */
         autoUpdateSelf: boolean | null,
         updateFn: (self: Player, options: PlayerUpdateOptions) => any,
@@ -253,8 +253,8 @@ export class Player {
             this.game.forever(() => this.update({}), { order: 0, refs: this });
         }
 
-        if (options.autoUpdateDanmakuPool ?? true) {
-            this.game.forever(() => this.combat.danmakuPool.update(this), { order: 10, owns: this, refs: this.combat });
+        if (options.autoUpdateEntityPool ?? true) {
+            this.game.forever(() => this.combat.entityPool.update(this), { order: 10, owns: this, refs: this.combat });
         }
     }
 
@@ -421,11 +421,11 @@ export class Player {
                     const { x, y } = this;
                     this.game.coDo(function*() {
                         for (let radius = 0; radius <= 600; radius += 10 * self.game.timeScale) {
-                            self.combat.danmakuPool.eraseByRadius({ x, y, radius });
+                            self.combat.entityPool.eraseByRadius({ x, y, radius });
                             // TODO: damage (circle) r=radius, dmg=10*timescale, dmg to boss = 0.2
                             yield;
                         }
-                        self.combat.danmakuPool.forEachAlive(dan => dan.erase());
+                        self.combat.entityPool.forEachAlive(dan => dan.erase());
                     }, { refs: this.combat });
                 }
                 yield* this.game.Sleep(20);

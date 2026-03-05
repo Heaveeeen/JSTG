@@ -10,7 +10,7 @@
 
 pixi（或 pixi.js）是一个图形库，JSTG 依靠 pixi 来加载资源、绘制画面、维护基本的游戏循环。
 
-* [./pixi/pixi.min.js](./pixi/pixi.min.js) 包含了 pixi 的主要功能，程序运行的时候须导入这个文件。
+* [./pixi/pixi.min.mjs](./pixi/pixi.min.mjs) 包含了 pixi 的主要功能，程序运行的时候须导入这个文件。
 * [./pixi/pixi.min.mjs.map](./pixi/pixi.min.mjs.map) 是辅助调试用的，不想要的话可以删掉。
 * [./pixi/pixi.d.ts](./pixi/pixi.d.ts) 是 pixi 的类型注释，能在编程时提示你各个功能的用法，非常有用。
 * [./pixi/README.md](./pixi/README.md) 是 pixi 的自述文档。
@@ -21,7 +21,7 @@ pixi（或 pixi.js）是一个图形库，JSTG 依靠 pixi 来加载资源、绘
 
 总之：
 
-* 程序运行 **必须依赖** `pixi.min.js` 。
+* 程序运行 **必须依赖** `pixi.min.mjs` 。
 * `pixi.min.mjs.map` 和 `pixi.d.ts` 仅供开发和调试用，发布时可以不包含。
 * 自述文档 `README.md` 为了确保版权信息的完整， **应当保留**。
 * 版权声明 `LICENSE` 在原则上 **必须保留**。
