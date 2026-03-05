@@ -1,5 +1,5 @@
 import * as pixi from "pixi";
-import { AbstractEntity, NewAbstractEntityOptions, prefabDanmakuHitboxRadius } from "./abstractEntity.js";
+import { AbstractEntity, EraseEntityOptions, NewAbstractEntityOptions, prefabDanmakuHitboxRadius } from "./abstractEntity.js";
 import { Game, Board, Player, Combat } from "../jstg.js";
 import { alphaTo, cast, decibel, getPointToSegmentDist2, rotateVec, staticAssert } from "../utils.js";
 import { DyedTextures, PrefabDanmakuNames, DyedTextureColors, makeCommonOrAnimatedSprite } from "../textures.js";
@@ -159,7 +159,7 @@ export class LaserBeam extends AbstractEntity {
         }
     }
 
-    erase(options: {
+    erase(options: EraseEntityOptions & {
         /**
          * 每隔多长的距离算作一个“体节”并调用一次消弹回调函数。  
          * 例如：长度为70的激光，每隔20的距离就算作一个体节并调用一次回调函数，最终会产生3个“尸体”；  
@@ -168,15 +168,10 @@ export class LaserBeam extends AbstractEntity {
          * @default 10
          */
         stepPerCorpse?: number,
-        /**
-         * 消弹时的回调函数。可以利用这个回调函数，把消掉的弹幕转换成别的东西。例如，转化为得分道具，或者死尸弹。  
-         * 该回调函数会对激光的每一个“体节”都调用一次。  
-         * 如果该弹幕最终没有被消除（例如因为这个该弹幕无法被消除），则该回调函数不会被调用。  
-         */
-        forEachCorpse?: (corpseInfo: { x: number, y: number }) => unknown,
     } = {}) {
         // TODO: TEST
-        if (!this.canBeErase || this.destroyed) { return; }
+        if (!this._getIsCanBeEraseByPermissionType(options.permissionType ?? "common")) { return; }
+        this.enemy?.destroy();
         if (options.forEachCorpse !== undefined) {
             const stepPerCorpse = options.stepPerCorpse ?? 10;
             for (let pos = 0; pos <= this.hitboxLength; pos += stepPerCorpse) {

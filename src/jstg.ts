@@ -141,6 +141,11 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 zIndex: 0, // 在 -100 到 100 中间
             });
 
+            const commonEnemyLayer = new pixi.Sprite({
+                parent: root,
+                zIndex: -5,
+            });
+
             const danmakuEraseLayer = new pixi.Sprite({
                 parent: root,
                 zIndex: -10,
@@ -155,6 +160,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 root,
                 /** 装有所有普通弹幕节点的根节点 */
                 commonDanmakuLayer,
+                /** 装着所有常规敌人的根节点 */
+                commonEnemyLayer,
                 /** 装有所有消弹特效的根节点 */
                 danmakuEraseLayer,
                 /** 场地宽度的一半 */
@@ -301,7 +308,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
              */
             danmakuPool,
             /** @readonly JSTG 预置的自机 */
-            makePrefabPlayer: null as unknown as typeof makePrefabPlayer, // 奇技淫巧
+            prefabPlayers: null as unknown as typeof prefabPlayers, // 奇技淫巧
             /** 创建一个 JSTG 预置的弹幕 */
             makeDanmaku: null as unknown as typeof makeDanmaku, // 又是奇技淫巧
             /** TODO: DOC makeLaserBeam */
@@ -315,14 +322,14 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             get destroyed() { return board.destroyed; },
         };
 
-        const makePrefabPlayer = (()=>{
+        const prefabPlayers = (()=>{
             const makePlayer = (player: Player) => {
                 players.push(player);
                 ingameUi.playerStateBar.updateWithPlayer(player);
                 return player;
             }
 
-            const simple = async (options: {
+            const _makeSimple = async (options: {
                 /** @default true */
                 autoUpdateDanmakuPool?: boolean,
                 /** @default true */
@@ -336,13 +343,14 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             /* TODO: simple.homingOnly ...
              * maple, icu
              * reimu, marisa, sanae
+             * 类似锦上京的拼好机
              */
             return {
                 /** 创建预置自机：Simple */
-                simple,
+                makeSimple: _makeSimple,
             }
         })();
-        combat.makePrefabPlayer = makePrefabPlayer;
+        combat.prefabPlayers = prefabPlayers;
 
         type MakeDanmakuOptions = {
             type: PrefabDanmakuNames,
@@ -371,7 +379,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 options = { type: options, color };
             };
             return makePrefabDanmaku({
-                game, combat, board: board,
+                game, combat, board,
                 type: options.type, color: options.color ?? "red", parent: options.parent ?? null,
                 x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
                 radius: options.radius ?? null,
@@ -423,7 +431,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 options = { type: options, color };
             };
             return makePrefabLaserBeam({
-                game, combat, board, type: options.type ?? "laserseg", color: options.color ?? "red",
+                game, combat, board,
+                type: options.type ?? "laserseg", color: options.color ?? "red",
                 x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
                 parent: options.parent ?? null,
                 halfWidth: options.width ?? 2, length: options.length ?? 400,

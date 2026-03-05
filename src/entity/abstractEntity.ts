@@ -2,6 +2,7 @@ import * as pixi from "pixi";
 import { Game, Board, Player, Combat } from "../jstg.js";
 import { DyedTextureColors, DyedTextures } from "../textures.js";
 import { AbstractEnemy } from "./abstractEnemy.js";
+import { staticAssert } from "../utils.js";
 
 
 export interface NewAbstractEntityOptions {
@@ -17,6 +18,23 @@ export interface NewAbstractEntityOptions {
     board: Board;
 }
 
+export type EraseEntityOptions = {
+    /**
+     * 本次消弹的来源种类。决定本次消弹是否能够生效。
+     * * "common" - 最低级别的权限，本次消弹会被 canBeErase 拦住。
+     * * "thisEnemyDie" - 本次消弹的原因是“击破了该实体绑定的敌人”，本次消弹无视 canBeErase 。  
+     * * "force" - 本次消弹不会被任何因素阻止。  
+     * @default "common"
+     */
+    permissionType?: "common" | "thisEnemyDie" | "force";
+    /**
+     * 消弹时的回调函数。可以利用这个回调函数，把消掉的弹幕转换成别的东西。例如，转化为得分道具，或者死尸弹。
+     * 对于普通弹幕，该回调函数只会调用一次；对于激光，该回调函数会对激光的每一个“体节”都调用一次。
+     * 如果该实体最终没有被消除（例如因为这个该弹幕无法被消除），则该回调函数不会被调用。
+     */
+    forEachCorpse?: (corpseInfo: { x: number, y: number }) => unknown;
+}
+
 export abstract class AbstractEntity {
     /**
      * 弹幕的种类名称
@@ -29,7 +47,11 @@ export abstract class AbstractEntity {
     readonly combat: Combat;
     readonly board: Board;
 
-    /** @readonly */
+    /**
+     * @readonly  
+     * 与该实体绑定的敌人。  
+     * 绑定了敌人时，该实体会随着敌人的击破而消除。
+     */
     enemy: AbstractEnemy<this> | null = null;
 
     constructor(options: NewAbstractEntityOptions) {
@@ -88,7 +110,10 @@ export abstract class AbstractEntity {
      */
     isDamageToPlayer: boolean = true;
     /**
-     * 该实体是否能够被消弹效果消除
+     * 该实体是否能够被通常的消弹效果消除。  
+     * 此属性为 false 时，该实体不会被通常的消弹效果（如 Bomb）消除，但依然会在击破符卡时消除。
+     * 如果该实体是一个敌人，在击破该敌人时，哪怕 canBeErase 为 false ，此实体也会被消除。
+     * 构造一个敌人时，此值会被默认设置为 false 。
      * @example
      * myDanmaku.canBeErase = false; // 让这个实体无法被消弹效果消除
      * myDanmaku.canBeErase = true; // 又能消掉了
@@ -98,26 +123,35 @@ export abstract class AbstractEntity {
     /**
      * 预置的消弹效果，立即摧毁该实体，并生成一个消弹特效。  
      * 如果该实体无法被消除，则该函数什么也不做。  
-     * 必须注意：调用该函数之后，该弹幕的生死是未知的。它可能会立即被摧毁，或者等下一帧才被摧毁，也有可能不会被摧毁。  
+     * 必须注意：调用该函数之后，该实体的生死是未知的。它可能会立即被摧毁，或者等下一帧才被摧毁，也有可能不会被摧毁。  
      */
-    abstract erase(options?: {
-        /**
-         * 消弹时的回调函数。可以利用这个回调函数，把消掉的弹幕转换成别的东西。例如，转化为得分道具，或者死尸弹。  
-         * 对于普通弹幕，该回调函数只会调用一次；对于激光，该回调函数会对激光的每一个“体节”都调用一次。  
-         * 如果该弹幕最终没有被消除（例如因为这个该弹幕无法被消除），则该回调函数不会被调用。  
-         */
-        forEachCorpse?: (corpseInfo: { x: number, y: number }) => unknown,
-    }): void;
+    abstract erase(options?: EraseEntityOptions): void;
+
+    /** @internal */
+    _getIsCanBeEraseByPermissionType(permissionType: Exclude<EraseEntityOptions["permissionType"], undefined>) {
+        if (this.destroyed) {
+            return false;
+        } else if (permissionType === "force") {
+            return true;
+        } else if (permissionType === "thisEnemyDie") {
+            // ASSERTS: this.enemy !== null
+            return true;
+        } else {
+            staticAssert<"common">(permissionType);
+            return this.canBeErase;
+        }
+    }
 
     /**
-     * 更新该弹幕，每帧都会调用一次这个函数。
+     * 更新该实体，每帧都会调用一次这个函数。
      * 会更新与玩家的交互逻辑（即伤害判定），除非 isDamageToPlayer 属性为 false。
      */
     abstract update(player: Player): void;
 
     /**
-     * 判断该弹幕是否在版面内。
-     * 注意，该判断是必要不充分的。如果弹幕刚刚离开版面但离得不远，该函数仍然有可能返回 true。
+     * 判断该实体是否在版面内。  
+     * 注意，该判断是必要不充分的。false 则实体一定在版面外，true 则该实体不一定在版面内。  
+     * 如果弹幕刚刚离开版面但离得不远，该函数仍然有可能返回 true。  
      */
     abstract isInBoundary(): boolean;
 

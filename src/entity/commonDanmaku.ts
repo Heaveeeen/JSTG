@@ -3,7 +3,7 @@ import { Board, Combat, Game } from "../jstg.js";
 import { Player } from "../player/player.js";
 import { alphaTo, decibel, getPointToSegmentDist2, select, SelectItem, staticAssert, Vec2 } from "../utils.js";
 import { DyedTextureColors, DyedTextures, makeCommonOrAnimatedSprite, PrefabDanmakuNames } from "../textures.js";
-import { AbstractEntity, NewAbstractEntityOptions, prefabDanmakuHitboxRadius } from "./abstractEntity.js";
+import { AbstractEntity, EraseEntityOptions, NewAbstractEntityOptions, prefabDanmakuHitboxRadius } from "./abstractEntity.js";
 
 
 
@@ -122,20 +122,19 @@ export class CommonDanmaku extends AbstractEntity {
     get zIndex() { return this.sprite.zIndex; }
     set zIndex(v: number) { this.sprite.zIndex = v; }
 
-    erase(options: {
-        /** 根据 this.type 自动决定。对于一般的弹幕，消弹特效为雾化消失；对于大玉和核弹，缩小虚化至消失。 */
-        eraseEffectType?: "fog" | "reduce",
+    erase(options: EraseEntityOptions & {
         /**
-         * 消弹时的回调函数。可以利用这个回调函数，把消掉的弹幕转换成别的东西。例如，转化为得分道具，或者死尸弹。  
-         * 如果该弹幕最终没有被消除（例如因为这个该弹幕无法被消除），则该回调函数不会被调用。  
+         * 消弹的特效种类。
+         * 若不填写此参数，则会根据 this.type 自动决定。对于一般的弹幕，消弹特效为雾化消失；对于大玉和核弹，缩小虚化至消失。
          */
-        forEachCorpse?: (corpseInfo: { x: number, y: number }) => unknown,
+        effectType?: "fog" | "reduce",
     } = {}) {
-        if (!this.canBeErase || this.destroyed) { return };
+        if (!this._getIsCanBeEraseByPermissionType(options.permissionType ?? "common")) { return };
+        this.enemy?.destroy();
         options.forEachCorpse?.({ x: this.x, y: this.y });
         if (this.isInBoundary() && this.visible && this.sprite.alpha > 0) {
             // 如果能看见，则生成消弹特效，之后再删除
-            const eraseEffectType: "fog" | "reduce" = options.eraseEffectType ?? (this.type === "bubble" || this.type === "nuclear" ? "reduce" : "fog");
+            const eraseEffectType: "fog" | "reduce" = options.effectType ?? (this.type === "bubble" || this.type === "nuclear" ? "reduce" : "fog");
             if (eraseEffectType === "fog") {
                 // 常规雾化消弹
                 this.game.coDo(this._EraseEffectBehaviorFog.bind(this));

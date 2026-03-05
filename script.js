@@ -7,6 +7,7 @@
 import * as jstg from "./dist/jstg.js";
 import * as pixi from "pixi";
 import { deg } from "./dist/utils.js";
+import { prefabEnemys } from "./dist/entity/commonEnemy.js";
 
 
 // 启动游戏
@@ -46,7 +47,7 @@ import { deg } from "./dist/utils.js";
     });
 
     /** 自机 */
-    const pl = await combat.makePrefabPlayer.simple({
+    const pl = await combat.prefabPlayers.makeSimple({
         autoUpdateSelf: false,
     });
     const se = game.prefabSounds.thse;
@@ -196,7 +197,13 @@ import { deg } from "./dist/utils.js";
         makeLaserBeam({ type: "smallball", color: "h180", x: 40, y: 150, width: 3, length: 140, startPoint: {}, endPoint: {} }).canBeErase = false;
         makeLaserBeam({ type: "scale", color: "h240", x: 60, y: 180, width: 3, length: 120 }).canBeErase = false;
     }
-    makeFooMuseum();
+    //makeFooMuseum();
+
+    const colors = ["h0", "h30", "h60", "h90", "h120", "h150", "h180", "h210", "h240", "h270", "h300", "h330", "black", "white"];
+    for (let i = 0; i < colors.length; i++) {
+        // @ts-expect-error
+        prefabEnemys.makeYinYangOrb({ game, combat, board, maxHp: 100, color: colors[i], x: -170, y: i * 35 - 220, rotation: 0, parent: null });
+    }
 
     /*for (let i = 0; i < 5; i++) {
         combat.makeLaserBeam({
@@ -249,6 +256,6 @@ import { deg } from "./dist/utils.js";
         if (isDown(Key.KeyO)) {
             debug.godMode.isOn = !debug.godMode.isOn;
         }
-    });
+    }, { order: 0 });
 
 })();

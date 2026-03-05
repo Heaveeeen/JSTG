@@ -77,12 +77,6 @@ export function makeDyedTextures(options: {
  *   {texture, time: 200},
  *   ...
  * ]
- * dyed 的结构像这样：
- * [
- *   {dyedTextures: {red, pink, purple...}, time: 100},
- *   {dyedTextures: {red, pink, purple...}, time: 200},
- *   ...
- * ]
  * 输出这样：
  * {
  *   red: [ {texture, time: 100}, {texture, time: 200}, ... ],
@@ -92,10 +86,18 @@ export function makeDyedTextures(options: {
  * }
  * 换句话说，就是把给定的序列帧染色成几份不同颜色的序列帧，每一种颜色都能单独取出来，取出来的东西类型等同于输入。
  */
-function MakeDyedFrames<T extends pixi.FrameObject[]>(options: {
+function makeDyedFrames<T extends pixi.FrameObject[]>(options: {
     app: pixi.Application, redFrames: T,
 }): DyedTextures<T> {
     const { app, redFrames } = options;
+    /**
+     * dyed 的结构像这样：
+     * [
+     *   {dyedTextures: {red, pink, purple...}, time: 100},
+     *   {dyedTextures: {red, pink, purple...}, time: 200},
+     *   ...
+     * ]
+     */
     const dyed = redFrames.map(({ texture, time }) => ({
         dyedTextures: makeDyedTextures({ app, redTexture: texture }),
         time,
@@ -135,7 +137,7 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
                 smallball: await lsdye(`danmaku/danmaku/smallball.svg`), // 这里断言一下是为了折叠悬停提示
                 ringball: await lsdye(`danmaku/danmaku/ringball.svg`),
                 glowball: await lsdye(`danmaku/danmaku/glowball.svg`),
-                fireball: MakeDyedFrames({ app, redFrames: [
+                fireball: makeDyedFrames({ app, redFrames: [
                     { texture: await lsvg(`danmaku/danmaku/fireball.svg`), time: 100, },
                     // MAY TODO: 炎弹的动画我不会画，喵😇
                 ] as const}),
@@ -149,11 +151,11 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
                 bullet: await lsdye(`danmaku/danmaku/bullet.svg`),
                 drip: await lsdye(`danmaku/danmaku/drip.svg`),
                 card: await lsdye(`danmaku/danmaku/card.svg`),
-                note: MakeDyedFrames({ app, redFrames: [
-                    { texture: await lsvg(`danmaku/danmaku/note2.svg`), time: 150, },
-                    { texture: await lsvg(`danmaku/danmaku/note1.svg`), time: 150, },
-                    { texture: await lsvg(`danmaku/danmaku/note2.svg`), time: 150, },// 此处有两个相同的路径加载了两次，姑且先这么写，以后考虑优化一下。
-                    { texture: await lsvg(`danmaku/danmaku/note3.svg`), time: 150, },
+                note: makeDyedFrames({ app, redFrames: [
+                    { texture: await lsvg(`danmaku/danmaku/note2.svg`), time: 120, },
+                    { texture: await lsvg(`danmaku/danmaku/note1.svg`), time: 120, },
+                    { texture: await lsvg(`danmaku/danmaku/note2.svg`), time: 120, },// 此处有两个相同的路径加载了两次，姑且先这么写，以后考虑优化一下。
+                    { texture: await lsvg(`danmaku/danmaku/note3.svg`), time: 120, },
                 ] as const}),
                 arrow: await lsdye(`danmaku/danmaku/arrow.svg`),
                 butterfly: await lsdye(`danmaku/danmaku/butterfly.svg`),
@@ -205,8 +207,10 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
         },
         enemy: {
             yinYangOrb: {
-                main: await lsdye(`enemy/yinYangOrb/main.svg`) as DyedTextures,
-                ring: await lsdye(`enemy/yinYangOrb/ring.svg`) as DyedTextures,
+                // TODO: 改成类似 makeDyedFrames 的风格，现在是每个贴图里有很多 color ，应该改成每个 color 里都有一组贴图
+                main: await lsdye(`enemy/yinYangOrb/main.svg`),
+                innerRing: await lsdye(`enemy/yinYangOrb/innerRing.svg`),
+                outerRing: await lsdye(`enemy/yinYangOrb/outerRing.svg`),
             },
         }
     }
