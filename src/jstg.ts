@@ -19,7 +19,6 @@ export interface Destroyable {
     destroy(): unknown;
     readonly destroyed: boolean;
 }
-// TODO: 给大部分 Destroyable 都加上 forever 和 coDo
 
 export type CoDoGenerator = Generator<void, void, void>;
 
