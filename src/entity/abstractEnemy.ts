@@ -1,3 +1,5 @@
+import { Board, Combat, Game } from "../jstg.js";
+import { LooperFn, LoopOptions, CoDoGenFn } from "../looper.js";
 import { AbstractEntity } from "./abstractEntity.js";
 
 
@@ -26,4 +28,15 @@ export abstract class AbstractEnemy<T extends AbstractEntity> {
 
     abstract destroy(): void;
     abstract readonly destroyed: boolean;
+
+    forever(fn: LooperFn, options: LoopOptions = {}) {
+        const loop = this.entity.combat.forever(fn, options);
+        loop.addRefs(this);
+        return loop;
+    }
+    coDo(genFn: CoDoGenFn, options: LoopOptions = {}) {
+        const loop = this.entity.combat.coDo(genFn, options);
+        loop.addRefs(this);
+        return loop;
+    }
 }

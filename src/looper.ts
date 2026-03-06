@@ -1,5 +1,4 @@
 import { Destroyable, Game } from "./jstg.js";
-import { makeObjPool } from "./objPool.js";
 import * as utils from "./utils.js"
 
 
@@ -19,11 +18,15 @@ export interface LoopController {
      */
     readonly clock: number,
     then(callback: () => unknown): void,
+    addRefs(...objs: Destroyable[]): void,
+    addKills(...objs: Destroyable[]): void,
+    addOwns(...objs: Destroyable[]): void,
 }
 
 type LoopOrder = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
 export type LooperFn = (loop: LoopController) => unknown;
+export type CoDoGenFn = (loop: LoopController) => CoDoGenerator;
 
 export interface LoopOptions {
     /**
@@ -94,10 +97,12 @@ export const makeLooper = (options: {
         options: LoopOptions = {}
     ) => {
         const thread = threads[options.order ?? 5];
+        // 这个东西仅用来构造 refs 和 kills ，它本身没有实际作用
         const owns = utils.makeElements(options.owns);
 
-        const refs = [...new Set([...utils.makeElements(options.refs), ...owns])];
-        const kills = [...new Set([...utils.makeElements(options.kills), ...owns])];
+        // 注意：可能包含重复项
+        const refs = [...utils.makeElements(options.refs), ...owns];
+        const kills = [...utils.makeElements(options.kills), ...owns];
 
         let clock = 0;
         let destroyed = false;
@@ -106,7 +111,13 @@ export const makeLooper = (options: {
             destroy,
             get destroyed() { return destroyed; },
             get clock() { return clock },
-            then(callback: () => unknown) { callbacks.push(callback); }
+            then: (callback: () => unknown) => { callbacks.push(callback) },
+            addRefs: (...objs) => { refs.push(...objs) },
+            addKills: (...objs) => { kills.push(...objs) },
+            addOwns: (...objs) => {
+                refs.push(...objs);
+                kills.push(...objs);
+            },
         };
         const looperFn = () => {
             if (refs.some(r => r.destroyed)) {
@@ -143,7 +154,7 @@ export const makeLooper = (options: {
          *     return; // return 和 loop.stop() 都能停止该协程
          * }
          */
-        generatorFn: (loop: LoopController) => CoDoGenerator,
+        genFn: CoDoGenFn,
         options: LoopOptions = {}
     ) => {
         const loop = forever(loop => {
@@ -152,7 +163,7 @@ export const makeLooper = (options: {
                 loop.destroy();
             }
         }, options);
-        const generator = generatorFn(loop);
+        const generator = genFn(loop);
         return loop;
     }
 

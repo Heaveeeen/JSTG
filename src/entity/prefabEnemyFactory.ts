@@ -43,10 +43,10 @@ export const prefabEnemyFactory = (()=>{
             maxHp, hurtHitboxRadius: 9.5,
             canBeErase: false,
         });
-        game.forever(loop => {
+        enemy.forever(loop => {
             outerRing.rotation -= 0.07;
             innerRing.rotation += 0.12;
-        }, { refs: enemy, });
+        });
         return enemy;
     };
 

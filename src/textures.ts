@@ -239,10 +239,10 @@ export function makeCommonOrAnimatedSprite(options: {
             weight: frame.time,
             value: frame.texture
         }));
-        game.forever(loop => {
+        combat.forever(loop => {
             sprite.texture = select((1000 * t / game.standardFps) % loopLength, selectTextures);
             t += game.timeScale;
-        }, { refs: [combat, sprite] });
+        }, { refs: sprite });
     }
     return sprite;
 }

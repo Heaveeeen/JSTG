@@ -4,6 +4,7 @@ import { Board, Combat, Game } from "../jstg.js";
 import { alphaTo, deg, clamp, staticAssert } from "../utils.js";
 import { AbstractEntity } from "../entity/abstractEntity.js";
 import { DifferenceBlendFilter } from "../graphics/differenceBlendFilter.js";
+import { CoDoGenFn, LooperFn, LoopOptions } from "../looper.js";
 
 interface PlayerKeyMapOptions {
     /** @default Key.ArrowUp */
@@ -250,11 +251,11 @@ export class Player {
         this.y = this._lastY = 185;
 
         if (options.autoUpdateSelf ?? true) {
-            this.game.forever(() => this.update({}), { order: 0, refs: this });
+            this.forever(() => this.update({}), { order: 0 });
         }
 
         if (options.autoUpdateEntityPool ?? true) {
-            this.game.forever(() => this.combat.entityPool.update(this), { order: 10, owns: this, refs: this.combat });
+            this.forever(() => this.combat.entityPool.update(this), { order: 10, owns: this }); // 这里 owns 是为了在 combat 销毁时让 player 随之销毁
         }
     }
 
@@ -383,7 +384,7 @@ export class Player {
                     this.hpAmount -= 1;
                 }
                 {// 一堆交叉圈的特效
-                    const missFIlterSprites: pixi.Sprite[] = []
+                    const missFilterSprites: pixi.Sprite[] = []
                     const makeMissFilterSprite = (dx: number, dy: number) => {
                         const spr = new pixi.Sprite({
                             parent: this.backParts.parent ?? undefined,
@@ -395,14 +396,14 @@ export class Player {
                             filters: new DifferenceBlendFilter(),
                         });
                         let radius = 0;
-                        this.game.forever(loop => {
+                        this.combat.forever(loop => {
                             radius += (radius * 0.075 + 0.25) * this.game.timeScale;
                             spr.scale = radius * 0.01;
-                        }, { owns: spr, refs: this.combat });
-                        missFIlterSprites.push(spr);
+                        }, { owns: spr });
+                        missFilterSprites.push(spr);
                     }
                     const self = this;
-                    this.game.coDo(function*(loop) {
+                    this.combat.coDo(function*(loop) {
                         makeMissFilterSprite(0, 0);
                         yield* self.game.Sleep(6);
                         makeMissFilterSprite(-40, 0);
@@ -412,21 +413,21 @@ export class Player {
                         yield* self.game.Sleep(24);
                         makeMissFilterSprite(0, 0);
                         yield* self.game.Sleep(70);
-                        missFIlterSprites.forEach(spr => spr.destroy());
-                    }, { refs: this.combat });
+                        missFilterSprites.forEach(spr => spr.destroy());
+                    });
                 }
                 yield* this.game.Sleep(40);
                 {// 消弹
                     const self = this;
                     const { x, y } = this;
-                    this.game.coDo(function*() {
+                    this.combat.coDo(function*() {
                         for (let radius = 0; radius <= 600; radius += 10 * self.game.timeScale) {
                             self.combat.entityPool.eraseByRadius({ x, y, radius });
                             // TODO: damage (circle) r=radius, dmg=10*timescale, dmg to boss = 0.2
                             yield;
                         }
                         self.combat.entityPool.forEachAlive(dan => dan.erase());
-                    }, { refs: this.combat });
+                    });
                 }
                 yield* this.game.Sleep(20);
                 // 重生动画
@@ -502,4 +503,15 @@ export class Player {
         return this.backParts.destroyed;
     }
 
+    forever(fn: LooperFn, options: LoopOptions = {}) {
+        const loop = this.combat.forever(fn, options);
+        loop.addRefs(this);
+        return loop;
+    }
+
+    coDo(genFn: CoDoGenFn, options: LoopOptions = {}) {
+        const loop = this.combat.coDo(genFn, options);
+        loop.addRefs(this);
+        return loop;
+    }
 }

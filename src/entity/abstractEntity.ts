@@ -3,6 +3,7 @@ import { Game, Board, Player, Combat } from "../jstg.js";
 import { DyedTextureColors, DyedTextures } from "../textures.js";
 import { AbstractEnemy } from "./abstractEnemy.js";
 import { staticAssert } from "../utils.js";
+import { LooperFn, LoopOptions, CoDoGenFn } from "../looper.js";
 
 
 export interface NewAbstractEntityOptions {
@@ -142,6 +143,8 @@ export abstract class AbstractEntity {
         }
     }
 
+    // TODO: 加入一种延迟消弹效果，暂时取消弹幕的攻击性，但会照常虚化显示，还会进行攻击判定，一段时间后才会消除。但该状态下的攻击判定不会造成伤害，只会播放音效。有助于让玩家知道放这个B放得到底赚不赚。
+
     /**
      * 更新该实体，每帧都会调用一次这个函数。
      * 会更新与玩家的交互逻辑（即伤害判定），除非 isDamageToPlayer 属性为 false。
@@ -168,6 +171,17 @@ export abstract class AbstractEntity {
      * 例如：一个跟踪弹保留了一个敌人的引用，并且追踪敌人的位置；那么，该跟踪弹应该在每帧都检查目标敌人是否已被摧毁，如果已被摧毁则失去目标，寻找新的目标或者进入游荡状态或者怎么怎么样
      */
     abstract readonly destroyed: boolean;
+    
+    forever(fn: LooperFn, options: LoopOptions = {}) {
+        const loop = this.combat.forever(fn, options);
+        loop.addRefs(this);
+        return loop;
+    }
+    coDo(genFn: CoDoGenFn, options: LoopOptions = {}) {
+        const loop = this.combat.coDo(genFn, options);
+        loop.addRefs(this);
+        return loop;
+    }
 }
 
 /** 此处的数值与弹幕引擎有所不同 */

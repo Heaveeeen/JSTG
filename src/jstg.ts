@@ -10,7 +10,7 @@ import { makeObjPool } from "./objPool.js";
 import { LoadPrefabSounds, LoadPrefabSoundsOptions, LoadSound } from "./sounds.js";
 import { LaserBeam, makePrefabLaserBeam } from "./entity/laserBeam.js";
 import { Player } from "./player/player.js";
-import { LoopController, LoopOptions, makeLooper } from "./looper.js";
+import { CoDoGenFn, LoopController, LooperFn, LoopOptions, makeLooper } from "./looper.js";
 import { AbstractEnemy } from "./entity/abstractEnemy.js";
 
 
@@ -213,7 +213,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 let loop: LoopController | null = null;
                 function updateWithPlayer(player: Player) {
                     loop?.destroy();
-                    loop = game.forever(()=>{
+                    loop = player.forever(()=>{
                         for (let i = 0; i < iconAmount; i++) {
                             if (i < player.maxHpAmount) {
                                 hearts[i].visible = true;
@@ -226,7 +226,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                                 //stars[i].alpha = i < player.hpAmount ? 1 : 0.25;
                             } else { stars[i].visible = false; }
                         }
-                    }, { refs: [combat, player] });
+                    });
                 }
                 return {
                     root: stateBarRoot,
@@ -348,6 +348,17 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 for (const pl of players) { pl.destroy(); }
             },
             get destroyed() { return board.destroyed; },
+
+            forever(fn: LooperFn, options: LoopOptions = {}) {
+                const loop = game.forever(fn, options);
+                loop.addRefs(this);
+                return loop;
+            },
+            coDo(genFn: CoDoGenFn, options: LoopOptions = {}) {
+                const loop = game.coDo(genFn, options);
+                loop.addRefs(this);
+                return loop;
+            },
         };
 
         const prefabPlayers = (()=>{
