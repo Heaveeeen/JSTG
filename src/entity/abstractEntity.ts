@@ -34,6 +34,7 @@ export type EraseEntityOptions = {
      * 如果该实体最终没有被消除（例如因为这个该弹幕无法被消除），则该回调函数不会被调用。
      */
     forEachCorpse?: (corpseInfo: { x: number, y: number }) => unknown;
+    effectType?: "none",
 }
 
 export abstract class AbstractEntity {

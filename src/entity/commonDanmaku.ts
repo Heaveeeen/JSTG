@@ -127,12 +127,12 @@ export class CommonDanmaku extends AbstractEntity {
          * 消弹的特效种类。
          * 若不填写此参数，则会根据 this.type 自动决定。对于一般的弹幕，消弹特效为雾化消失；对于大玉和核弹，缩小虚化至消失。
          */
-        effectType?: "fog" | "reduce",
+        effectType?: "fog" | "reduce" | "none",
     } = {}) {
         if (!this._getIsCanBeEraseByPermissionType(options.permissionType ?? "common")) { return };
         this.enemy?.destroy();
         options.forEachCorpse?.({ x: this.x, y: this.y });
-        if (this.isInBoundary() && this.visible && this.sprite.alpha > 0) {
+        if (options.effectType !== "none" &&this.isInBoundary() && this.visible && this.sprite.alpha > 0) {
             // 如果能看见，则生成消弹特效，之后再删除
             const eraseEffectType: "fog" | "reduce" = options.effectType ?? (this.type === "bubble" || this.type === "nuclear" ? "reduce" : "fog");
             if (eraseEffectType === "fog") {

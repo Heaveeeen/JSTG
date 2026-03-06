@@ -62,13 +62,13 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
         if (this.destroyed) { return; }
         this.entity.erase({
             permissionType: "thisEnemyDie",
-            effectType: undefined, // TODO: "thisEnemyDie"
+            effectType: "none", // TODO: 击破特效
             forEachCorpse: options.forEachCorpse,
         });
         // TODO: 击破音效
     }
 
-    /** 摧毁该敌人，但不会摧毁实体。只是会让这个实体变得无法攻击。 */
+    /** 摧毁该敌人，但不会摧毁实体。只是会让这个实体变得无法受击。 */
     destroy() {
         if (this.destroyed) { return; }
         this.entity.enemy = null;

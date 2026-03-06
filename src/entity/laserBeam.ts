@@ -168,6 +168,8 @@ export class LaserBeam extends AbstractEntity {
          * @default 10
          */
         stepPerCorpse?: number,
+        /** @default "ghost" */
+        effectType?: "ghost" | "none",
     } = {}) {
         // TODO: TEST
         if (!this._getIsCanBeEraseByPermissionType(options.permissionType ?? "common")) { return; }
@@ -181,7 +183,7 @@ export class LaserBeam extends AbstractEntity {
                 });
             }
         }
-        if (this.isInBoundary() && this.visible && this.mainSprite.alpha > 0) {
+        if (options.effectType !== "none" && this.isInBoundary() && this.visible && this.mainSprite.alpha > 0) {
             // 如果能看见，则生成消弹特效，之后再删除
             this.game.coDo(this._EraseEffectBehaviorGhost.bind(this));
         } else {
