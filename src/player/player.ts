@@ -424,6 +424,8 @@ export class Player {
                         for (let radius = 0; radius <= 600; radius += 10 * self.game.timeScale) {
                             self.combat.entityPool.eraseByRadius({ x, y, radius });
                             // TODO: damage (circle) r=radius, dmg=10*timescale, dmg to boss = 0.2
+                            // 这个以后要换成进一步封装的工具函数，另外 dmg to boss 效果还没做
+                            self.combat.enemyPool.forEachByRadius({ x, y, radius, callback: enemy => enemy.getHurt({ num: 10 * self.game.timeScale }) });
                             yield;
                         }
                         self.combat.entityPool.forEachAlive(dan => dan.erase());

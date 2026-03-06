@@ -51,7 +51,6 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
         }
     }
 
-    // TODO: 这些方法要移动到 AbstractEnemy 里，暂时先写在这儿
     /** 
      * 击破这个敌人，并且消除与之对应的实体。  
      * 调用此方法后，该敌人的生死是未知的。它可能会立即被摧毁，或者等下一帧才被摧毁，也有可能不会被摧毁。  

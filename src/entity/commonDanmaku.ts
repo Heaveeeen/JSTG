@@ -122,13 +122,7 @@ export class CommonDanmaku extends AbstractEntity {
     get zIndex() { return this.sprite.zIndex; }
     set zIndex(v: number) { this.sprite.zIndex = v; }
 
-    erase(options: EraseEntityOptions & {
-        /**
-         * 消弹的特效种类。
-         * 若不填写此参数，则会根据 this.type 自动决定。对于一般的弹幕，消弹特效为雾化消失；对于大玉和核弹，缩小虚化至消失。
-         */
-        effectType?: "fog" | "reduce" | "none",
-    } = {}) {
+    erase(options: EraseEntityOptions = {}) {
         if (!this._getIsCanBeEraseByPermissionType(options.permissionType ?? "common")) { return };
         this.enemy?.destroy();
         options.forEachCorpse?.({ x: this.x, y: this.y });

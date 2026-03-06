@@ -168,8 +168,6 @@ export class LaserBeam extends AbstractEntity {
          * @default 10
          */
         stepPerCorpse?: number,
-        /** @default "ghost" */
-        effectType?: "ghost" | "none",
     } = {}) {
         // TODO: TEST
         if (!this._getIsCanBeEraseByPermissionType(options.permissionType ?? "common")) { return; }
@@ -183,8 +181,10 @@ export class LaserBeam extends AbstractEntity {
                 });
             }
         }
+        options.effectType ??= "reduce";
         if (options.effectType !== "none" && this.isInBoundary() && this.visible && this.mainSprite.alpha > 0) {
             // 如果能看见，则生成消弹特效，之后再删除
+            staticAssert<"reduce" | "fog">(options.effectType); // MAY TODO: 激光的雾化消弹效果
             this.game.coDo(this._EraseEffectBehaviorGhost.bind(this));
         } else {
             // 如果看不见，直接删除

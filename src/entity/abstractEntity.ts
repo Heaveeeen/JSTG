@@ -19,7 +19,7 @@ export interface NewAbstractEntityOptions {
     board: Board;
 }
 
-export type EraseEntityOptions = {
+export interface EraseEntityOptions {
     /**
      * 本次消弹的来源种类。决定本次消弹是否能够生效。
      * * "common" - 最低级别的权限，本次消弹会被 canBeErase 拦住。
@@ -34,7 +34,13 @@ export type EraseEntityOptions = {
      * 如果该实体最终没有被消除（例如因为这个该弹幕无法被消除），则该回调函数不会被调用。
      */
     forEachCorpse?: (corpseInfo: { x: number, y: number }) => unknown;
-    effectType?: "none",
+    /**
+     * 消弹的特效种类。  
+     * 对于普通弹幕，若不填写此参数，则根据 this.type 自动决定。一般的弹幕为雾化消失，大玉和核弹为缩小虚化至消失。  
+     * 对于直线激光，默认为 "reduce"。  
+     * 直线激光暂不支持 "fog" ，其效果和 "reduce" 相同。  
+     */
+    effectType?: "fog" | "reduce" | "none",
 }
 
 export abstract class AbstractEntity {

@@ -1,6 +1,5 @@
-import { Board, Combat, Game } from "../jstg.js";
 import { LooperFn, LoopOptions, CoDoGenFn } from "../looper.js";
-import { AbstractEntity } from "./abstractEntity.js";
+import { AbstractEntity, EraseEntityOptions } from "./abstractEntity.js";
 
 
 export interface newAbstractEnemyOptions<T extends AbstractEntity> {
@@ -25,6 +24,16 @@ export abstract class AbstractEnemy<T extends AbstractEntity> {
     set visible(b: boolean) { this.entity.visible = b; }
     get zIndex() { return this.entity.zIndex; }
     set zIndex(n: number) { this.entity.zIndex = n; }
+    
+    abstract getHurt(options: {
+        /** 造成了多少点伤害。原则上，这个值不应当小于0。 */
+        num: number,
+        // TODO: type
+    }): void;
+
+    abstract kill(options?: {
+        forEachCorpse?: EraseEntityOptions["forEachCorpse"],
+    }): void;
 
     abstract destroy(): void;
     abstract readonly destroyed: boolean;

@@ -5,7 +5,7 @@ import { prefabPlayerFactory } from "./player/prefabPlayerFactory.js";
 import { makeRng } from "./random.js";
 import * as utils from './utils.js';
 import { CommonDanmaku, makePrefabDanmaku } from "./entity/commonDanmaku.js";
-import { AbstractEntity, prefabDanmakuHitboxRadius } from "./entity/abstractEntity.js";
+import { AbstractEntity, EraseEntityOptions, prefabDanmakuHitboxRadius } from "./entity/abstractEntity.js";
 import { makeObjPool } from "./objPool.js";
 import { LoadPrefabSounds, LoadPrefabSoundsOptions, LoadSound } from "./sounds.js";
 import { LaserBeam, makePrefabLaserBeam } from "./entity/laserBeam.js";
@@ -247,6 +247,16 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         })();
         //#endregion
 
+        const isEntCrossCircle = (options: { x: number, y: number, radius: number, ent: AbstractEntity }) => {
+            const { x, y, radius, ent } = options;
+            if (ent instanceof CommonDanmaku) {
+                if ((ent.x - x) ** 2 + (ent.y - y) ** 2 <= (ent.hitboxRadius + radius) ** 2) { return true; }
+            } else {// TODO: if (dan instanceof LaserBeam) {
+                if ((ent.x - x) ** 2 + (ent.y - y) ** 2 <= (4 + radius) ** 2) { return true; }
+            }
+            return false;
+        }
+
         //#region entityPool
         const entityPool = (() => {
             const pool = makeObjPool<AbstractEntity>();
@@ -262,16 +272,15 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 player._lastY = player.y;
             };
 
-            const eraseByRadius = (options: { x: number, y: number, radius: number }) => {
-                const { x, y, radius } = options;
-                forEachAlive(dan => {
-                    if (dan instanceof CommonDanmaku) {
-                        if ((dan.x - x) ** 2 + (dan.y - y) ** 2 <= (dan.hitboxRadius + radius) ** 2) { dan.erase(); }
-                    } else {// TODO: if (dan instanceof LaserBeam) {
-                        if ((dan.x - x) ** 2 + (dan.y - y) ** 2 <= (4 + radius) ** 2) { dan.erase(); }
-                    }
+            const forEachByRadius = (options: { x: number, y: number, radius: number, callback: (entity: AbstractEntity) => unknown }) => {
+                const { x, y, radius, callback } = options;
+                forEachAlive(ent => {
+                    if (isEntCrossCircle({ x, y, radius, ent })) { callback(ent); }
                 });
             };
+
+            const eraseByRadius = (options: { x: number, y: number, radius: number, eraseOptions?: EraseEntityOptions }) =>
+                forEachByRadius({...options, callback: ent => ent.erase(options.eraseOptions) });
 
             return {
                 /** @readonly 所有接受判定的实体，⚠️可能含有已经摧毁的无效实体 */
@@ -284,6 +293,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 clean,
                 /** 遍历所有未被摧毁的实体，可以用来消弹 */
                 forEachAlive,
+                /** 遍历一个圆形范围内的所有实体 */
+                forEachByRadius,
                 /** 消除一个圆形范围内的所有实体 */
                 eraseByRadius,
                 /** @readonly @internal 当前场上的实体数量（⚠️包含无效实体） */
@@ -299,6 +310,13 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             const pool = makeObjPool<AbstractEnemy<AbstractEntity>>();
             const { objects, push, clean, forEachAlive, destroy } = pool;
 
+            const forEachByRadius = (options: { x: number, y: number, radius: number, callback: (enemy: AbstractEnemy<AbstractEntity>) => unknown }) => {
+                const { x, y, radius, callback } = options;
+                forEachAlive(enemy => {
+                    if (isEntCrossCircle({ x, y, radius, ent: enemy.entity })) { callback(enemy); }
+                });
+            };
+
             return {
                 /** @readonly 所有接受判定的敌人，⚠️可能含有已经摧毁的无效敌人 */
                 objects,
@@ -308,6 +326,9 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 clean,
                 /** 遍历所有未被摧毁的敌人，可以用来全屏攻击啥的 */
                 forEachAlive,
+                /** 遍历一个圆形范围内的所有敌人 */
+                forEachByRadius,
+                // TODO: damageByRadius, killByRadius
                 /** @readonly @internal 当前场上的敌人数量（⚠️包含无效敌人） */
                 get _validCount() { return pool._validCount; },
                 destroy,
@@ -330,7 +351,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
              * 也可以用这个来遍历所有弹幕。  
              */
             entityPool,
-            /** TODO: DOC enemyPool */
+            /** TODO: DOC enemyPool 理论上讲这里边是所有敌人，包括杂鱼和 boss */
             enemyPool,
             /** @readonly JSTG 预置的自机 */
             prefabPlayers: null as unknown as typeof prefabPlayers, // 奇技淫巧
