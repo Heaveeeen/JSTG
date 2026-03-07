@@ -184,7 +184,7 @@ export class LaserBeam extends AbstractEntity {
         options.effectType ??= "reduce";
         if (options.effectType !== "none" && this.isInBoundary() && this.visible && this.mainSprite.alpha > 0) {
             // 如果能看见，则生成消弹特效，之后再删除
-            staticAssert<"reduce" | "fog">(options.effectType); // MAY TODO: 激光的雾化消弹效果
+            staticAssert<"reduce" | "fog">(options.effectType); // MAYDO: 激光的雾化消弹效果
             this.game.coDo(this._EraseEffectBehaviorGhost.bind(this));
         } else {
             // 如果看不见，直接删除
@@ -269,7 +269,7 @@ export const makePrefabLaserBeam = (options: {
     const parent = options.parent ?? board.commonDanmakuLayer;
     const texture = game.prefabTextures.danmaku.danmaku[type][color];
     const baseHalfWidth = prefabDanmakuHitboxRadius[type];
-    // MAY TODO: PrefabDanmakuLaserWidth 啥的，手写一套高质量数据
+    // MAYDO: PrefabDanmakuLaserWidth 啥的，手写一套高质量数据
     const baseHalfLength = prefabDanmakuHitboxRadius[type] + 2;
     const hitboxHalfWidth = options.halfWidth;
     const hitboxLength = options.length;

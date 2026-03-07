@@ -1,6 +1,6 @@
 import { Destroyable } from "./jstg.js";
 
-// MAY TODO: 把这个玩意封装一下，允许用户自己创建对象池，用来给弹幕分组啥的。（其实小规模的分组直接用数组就行……）
+// MAYDO: 把这个玩意封装一下，允许用户自己创建对象池，用来给弹幕分组啥的。（其实小规模的分组直接用数组就行……）
 /** 一个简单的对象池 */
 export const makeObjPool = <T extends Destroyable>() => {
     const objects: T[] = [];

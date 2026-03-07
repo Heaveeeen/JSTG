@@ -1,5 +1,14 @@
 {
     "todohighlight.keywords": [
-        "ASSERTS:",
+        {
+            "text": "ASSERTS:",
+            "color": "#ffffff",
+            "backgroundColor": "#f06282",
+        },
+        {
+            "text": "MAYDO:",
+            "color": "#2266cc",
+            "backgroundColor": "#ffcd3a"
+        },
     ],
 }

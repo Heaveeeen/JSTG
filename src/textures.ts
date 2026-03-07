@@ -139,7 +139,7 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
                 glowball: await lsdye(`danmaku/danmaku/glowball.svg`),
                 fireball: makeDyedFrames({ app, redFrames: [
                     { texture: await lsvg(`danmaku/danmaku/fireball.svg`), time: 100, },
-                    // MAY TODO: 炎弹的动画我不会画，喵😇
+                    // MAYDO: 炎弹的动画我不会画，喵😇
                 ] as const}),
                 dot: await lsdye(`danmaku/danmaku/dot.svg`),
                 bacteria: await lsdye(`danmaku/danmaku/bacteria.svg`),

@@ -172,7 +172,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 /** 场地高度的一半 */
                 get height() { return height; },
                 // set height(n: number) { height = n; },
-                // MAY TODO: 改变场地尺寸
+                // MAYDO: 改变场地尺寸
                 destroy() {
                     root.destroy();
                     commonDanmakuLayer.destroy();
