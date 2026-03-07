@@ -12,6 +12,7 @@ import { LaserBeam, makePrefabLaserBeam } from "./entity/laserBeam.js";
 import { Player } from "./player/player.js";
 import { CoDoGenFn, LoopController, LooperFn, LoopOptions, makeLooper } from "./looper.js";
 import { AbstractEnemy } from "./entity/abstractEnemy.js";
+import { prefabEnemyFactory } from "./entity/prefabEnemyFactory.js";
 
 
 
@@ -388,12 +389,12 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 return player;
             }
 
-            const makeSimple = async (options: {
+            const makeSimple = (options: {
                 /** @default true */
                 autoUpdateEntityPool?: boolean,
                 /** @default true */
                 autoUpdateSelf?: boolean,
-            } = {}) => makePlayer(await prefabPlayerFactory.makeSimple({
+            } = {}) => makePlayer(prefabPlayerFactory.makeSimple({
                 game, combat, board,
                 autoUpdateEntityPool: options.autoUpdateEntityPool ?? null,
                 autoUpdateSelf: options.autoUpdateSelf ?? null,
@@ -412,7 +413,30 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         combat.prefabPlayers = prefabPlayers;
 
         const prefabEnemys = (()=>{
-            
+            const makeYinYangOrb = (options: {
+                /** @default 100 */
+                maxHp?: number,
+                /** @default "red" */
+                color?: DyedTextureColors,
+                /** @default 0 */
+                x?: number,
+                /** @default 0 */
+                y?: number,
+                /** @default 0 */
+                rotation?: number,
+                /** @default board.commonEnemyLayer */
+                parent?: pixi.Container,
+            } = {}) => prefabEnemyFactory.makeYinYangOrb({
+                game, combat, board,
+                maxHp: options.maxHp ?? 100,
+                color: options.color ?? "red",
+                x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
+                parent: options.parent ?? null, 
+            });
+
+            return {
+                makeYinYangOrb,
+            };
         })();
         combat.prefabEnemys = prefabEnemys;
 

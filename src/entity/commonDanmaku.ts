@@ -236,6 +236,5 @@ export const makePrefabDanmaku = (options: {
         hitboxRadius, sprite,
     });
     danmaku.canBeErase = canBeErase;
-    combat.entityPool.push(danmaku);
     return danmaku;
 }

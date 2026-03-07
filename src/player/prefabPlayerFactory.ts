@@ -3,7 +3,7 @@ import { Board, Combat, Game } from "../jstg.js";
 
 export const prefabPlayerFactory = (()=>{
 
-    const makeSimple = async (options: {
+    const makeSimple = (options: {
         game: Game, combat: Combat, board: Board,
         /** @default true */
         autoUpdateEntityPool: boolean | null,

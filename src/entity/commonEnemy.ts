@@ -35,7 +35,6 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
         this.hurtHitboxRadius = options.hurtHitboxRadius ?? this.entity.hitboxRadius;
         this.maxHp = this._hp = options.maxHp;
         this.entity.canBeErase = options.canBeErase ?? false;
-        this.entity.combat.enemyPool.push(this);
     }
 
     getHurt(options: {
@@ -45,9 +44,9 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
     }) {
         this.hp -= options.num;
         if (this.hp / this.maxHp <= 0.1) {
-            this.entity.game.prefabSounds.thse.damage01.play();
+            this.entity.game.prefabSounds.thse.damage01.play({ volume: 0.7 });
         } else {
-            this.entity.game.prefabSounds.thse.damage00.play();
+            this.entity.game.prefabSounds.thse.damage00.play({ volume: 0.7 });
         }
     }
 
@@ -64,7 +63,7 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
             effectType: "none", // TODO: 击破特效
             forEachCorpse: options.forEachCorpse,
         });
-        // TODO: 击破音效
+        this.entity.game.prefabSounds.thse.enep00.play();
     }
 
     /** 摧毁该敌人，但不会摧毁实体。只是会让这个实体变得无法受击。 */
@@ -74,6 +73,6 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
     }
 
     get destroyed(): boolean {
-        return this.entity.enemy === this;
+        return this.entity.enemy !== this;
     }
 }

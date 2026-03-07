@@ -12,6 +12,8 @@ export abstract class AbstractEnemy<T extends AbstractEntity> {
 
     constructor(options: newAbstractEnemyOptions<T>) {
         this.entity = options.entity;
+        this.entity.enemy = this;
+        this.entity.combat.enemyPool.push(this);
     }
 
     get x() { return this.entity.x; }

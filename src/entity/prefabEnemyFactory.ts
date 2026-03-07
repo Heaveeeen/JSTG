@@ -12,6 +12,7 @@ export const prefabEnemyFactory = (()=>{
         x: number, y: number, rotation: number,
         /** @default board.commonEnemyLayer */
         parent: pixi.Container | null,
+        // TODO: hitboxRadius, isCanHurt, isTouchingDamage, isCanGraze, scale(?)
     }) => {
         const { game, combat, board, maxHp, color, x, y, rotation } = options;
         const rootSprite = new pixi.Sprite({
@@ -33,14 +34,15 @@ export const prefabEnemyFactory = (()=>{
             anchor: 0.5,
             texture: game.prefabTextures.enemy.yinYangOrb.main[color],
         });
+        const entity = new CommonDanmaku({
+            game, combat, board,
+            type: "enemyYinYangOrb",
+            color, hitboxRadius: 6,
+            sprite: rootSprite,
+        });
+        entity.grazeCd = Infinity;
         const enemy = new CommonEnemy({
-            entity: new CommonDanmaku({
-                game, combat, board,
-                type: "enemyYinYangOrb",
-                color, hitboxRadius: 9.5,
-                sprite: rootSprite,
-            }),
-            maxHp, hurtHitboxRadius: 9.5,
+            entity, maxHp, hurtHitboxRadius: 9,
             canBeErase: false,
         });
         enemy.forever(loop => {

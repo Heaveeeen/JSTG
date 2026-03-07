@@ -7,7 +7,6 @@
 import * as jstg from "./dist/jstg.js";
 import * as pixi from "pixi";
 import { deg } from "./dist/utils.js";
-import { prefabEnemys } from "./dist/entity/commonEnemy.js";
 
 
 // 启动游戏
@@ -23,7 +22,7 @@ import { prefabEnemys } from "./dist/entity/commonEnemy.js";
 
     console.log("game:", game);
     console.log("combat:", combat);
-    console.log("danmaku pool:", combat.danmakuPool);
+    console.log("danmaku pool:", combat.entityPool);
     const txt = new pixi.Text({
         parent: board.root,
         text: 
@@ -47,7 +46,7 @@ import { prefabEnemys } from "./dist/entity/commonEnemy.js";
     });
 
     /** 自机 */
-    const pl = await combat.prefabPlayers.makeSimple({
+    const pl = combat.prefabPlayers.makeSimple({
         autoUpdateSelf: false,
     });
     const se = game.prefabSounds.thse;
@@ -201,8 +200,11 @@ import { prefabEnemys } from "./dist/entity/commonEnemy.js";
 
     const colors = ["h0", "h30", "h60", "h90", "h120", "h150", "h180", "h210", "h240", "h270", "h300", "h330", "black", "white"];
     for (let i = 0; i < colors.length; i++) {
-        // @ts-expect-error
-        prefabEnemys.makeYinYangOrb({ game, combat, board, maxHp: 100, color: colors[i], x: -170, y: i * 35 - 220, rotation: 0, parent: null });
+        combat.prefabEnemys.makeYinYangOrb({
+            // @ts-expect-error
+            color: colors[i],
+            x: -170, y: i * 35 - 220, rotation: 0,
+        });
     }
 
     /*for (let i = 0; i < 5; i++) {
