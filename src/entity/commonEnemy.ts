@@ -37,7 +37,7 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
         this.entity.canBeErase = options.canBeErase ?? false;
     }
 
-    getHurt(options: {
+    beHurt(options: {
         /** 造成了多少点伤害。原则上，这个值不应当小于0。 */
         num: number,
         // TODO: type

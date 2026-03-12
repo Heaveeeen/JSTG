@@ -91,7 +91,7 @@ export class CommonDanmaku extends AbstractEntity {
         }
         
         if (isHit) {
-            player.getHurt({ entity: this });
+            player.beHurt({ entity: this });
         } else if (this.isGrazing) {
             // 擦弹
             this.game.prefabSounds.thse.graze.play({ volume: decibel(-6), });

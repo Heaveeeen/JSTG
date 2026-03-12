@@ -6,7 +6,7 @@ import { AbstractEntity } from "../entity/abstractEntity.js";
 import { DifferenceBlendFilter } from "../graphics/differenceBlendFilter.js";
 import { CoDoGenFn, LooperFn, LoopOptions } from "../looper.js";
 
-interface PlayerKeyMapOptions {
+export interface PlayerKeyMapOptions {
     /** @default Key.ArrowUp */
     up?: string | string[],
     /** @default Key.ArrowDown */
@@ -23,7 +23,11 @@ interface PlayerKeyMapOptions {
     bomb?: string | string[],
 }
 
-interface PlayerUpdateOptions {
+export interface PlayerUpdateOptions {
+    /**
+     * 可以传一个 replay 专用 input 啥的
+     * @default game.input
+     */
     input?: Input,
 
     keyMap?: PlayerKeyMapOptions,
@@ -39,16 +43,54 @@ interface PlayerUpdateOptions {
     slowSpeed?: number,
 }
 
-interface PlayerGetHurtOptions {
+export interface PlayerBeHurtOptions {
     entity: AbstractEntity | null,
 }
 
 export type MissGainBombType = "resetToInitAmount" | "increaseByInitAmount" | "none";
 
-const MissInvincibleTime = 180;
+const missInvincibleTime = 180;
 
 /** 玩家处于 Miss 状态或其他非法状态时，尝试给予玩家无敌帧，该如何处理 */
 let _handleApplyInvincibleButBadPlayerStateError: "throw" | "warn" | "ignore" = "warn";
+
+export interface NewPlayerOptions {
+    name: string;
+    game: Game;
+    combat: Combat;
+    board: Board;
+    mainTexture: pixi.Texture;
+    hitboxTexture: pixi.Texture;
+    slowModeRingTexture: pixi.Texture;
+    invincibleRingTexture: pixi.Texture;
+    /** @default 0 */
+    hue1: number | null;
+    /** @default 3 */
+    hitboxRadius: number | null;
+    /** @default 4 */
+    highSpeed: number | null;
+    /** @default 1.6 */
+    slowSpeed: number | null;
+    /** @default 12 */
+    dyingBombTime: number | null;
+    /** @default 2 */
+    initHpAmount: number | null;
+    /** @default 3 */
+    initBombAmount: number | null;
+    /** @default 8 */
+    maxHpAmount: number | null;
+    /** @default 8 */
+    maxBombAmount: number | null;
+    /** @default "resetToInitAmount" */
+    missGainBombType: MissGainBombType | null;
+    /** @default true */
+    autoUpdateEntityPool: boolean | null;
+    /** @default true */
+    autoUpdateSelf: boolean | null;
+    initFn: (self: Player, options: NewPlayerOptions) => unknown;
+    updateFn: (self: Player, options: PlayerUpdateOptions) => unknown;
+    beHurtFn: (self: Player, options: PlayerBeHurtOptions) => unknown;
+}
 
 export class Player {
 
@@ -58,6 +100,7 @@ export class Player {
     readonly board: Board;
 
     hue1: number;
+    colorFilter: pixi.ColorMatrixFilter;
     hitboxRadius: number;
     highSpeed: number;
     slowSpeed: number;
@@ -76,10 +119,10 @@ export class Player {
         type: "miss",
     } = {
         type: "common",
-        invincibleTime: MissInvincibleTime,
+        invincibleTime: missInvincibleTime,
     }
 
-    /** 图层低于弹幕的节点们的父节点，这个节点里有像素绘、低速魔法阵 */
+    /** 图层低于弹幕的节点们的父节点，这个节点里有像素绘、低速魔法阵、子机 */
     backParts: pixi.Sprite;
     /** 图层高于弹幕的节点们的父节点，这个节点里有判定点、无敌特效光环 */
     frontParts: pixi.Sprite;
@@ -145,47 +188,14 @@ export class Player {
         this.backParts.alpha = n;
     }
 
-    constructor(options: {
-        name: string,
-        game: Game,
-        combat: Combat,
-        board: Board,
-        mainTexture: pixi.Texture,
-        hitboxTexture: pixi.Texture,
-        slowModeRingTexture: pixi.Texture,
-        invincibleRingTexture: pixi.Texture,
-        /** @default 0 */
-        hue1: number | null,
-        /** @default 3 */
-        hitboxRadius: number | null,
-        /** @default 4 */
-        highSpeed: number | null,
-        /** @default 1.6 */
-        slowSpeed: number | null,
-        /** @default 12 */
-        dyingBombTime: number | null,
-        /** @default 2 */
-        initHpAmount: number | null,
-        /** @default 3 */
-        initBombAmount: number | null,
-        /** @default 8 */
-        maxHpAmount: number | null,
-        /** @default 8 */
-        maxBombAmount: number | null,
-        /** @default "resetToInitAmount" */
-        missGainBombType: MissGainBombType | null,
-        /** @default true */
-        autoUpdateEntityPool: boolean | null,
-        /** @default true */
-        autoUpdateSelf: boolean | null,
-        updateFn: (self: Player, options: PlayerUpdateOptions) => any,
-        getHurtFn: (self: Player, options: PlayerGetHurtOptions) => any,
-    }) {
+    constructor(options: NewPlayerOptions) {
         this.name = options.name;
         this.game = options.game;
         this.combat = options.combat;
         this.board = options.board;
         this.hue1 = options.hue1 ?? 0;
+        this.colorFilter = new pixi.ColorMatrixFilter({ resolution: "inherit" });
+        this.colorFilter.hue(this.hue1, false);
         this.hitboxRadius = options.hitboxRadius ?? 3;
         this.highSpeed = options.highSpeed ?? 4;
         this.slowSpeed = options.slowSpeed ?? 1.6;
@@ -197,7 +207,7 @@ export class Player {
         this.missGainBombType = options.missGainBombType ?? "resetToInitAmount";
 
         this.update = (opt: PlayerUpdateOptions) => options.updateFn(this, opt);
-        this.getHurt = (opt: PlayerGetHurtOptions) => options.getHurtFn(this, opt);
+        this.beHurt = (opt: PlayerBeHurtOptions) => options.beHurtFn(this, opt);
 
         this.backParts = new pixi.Sprite({
             parent: options.board.root,
@@ -216,16 +226,14 @@ export class Player {
             texture: options.mainTexture,
             anchor: 0.5,
             scale: 1.1,
+            zIndex: 10,
         });
-
-        const plColorFilter = new pixi.ColorMatrixFilter({ resolution: "inherit" });
-        plColorFilter.hue(this.hue1, false);
 
         this.hitboxPoint = new pixi.Sprite({
             parent: this.frontParts,
             texture: options.hitboxTexture,
             scale: 0.24, anchor: 0.5,// 这里的 scale 只是个临时的值，实际上 scale每帧都会更新
-            filters: plColorFilter,
+            filters: this.colorFilter,
             alpha: 0,
         });
 
@@ -233,7 +241,7 @@ export class Player {
             parent: this.frontParts,
             texture: options.invincibleRingTexture,
             scale: 0, anchor: 0.5,
-            filters: plColorFilter,
+            filters: this.colorFilter,
             alpha: 0,
             blendMode: "add",
         });
@@ -242,9 +250,10 @@ export class Player {
             parent: this.backParts,
             texture: options.slowModeRingTexture,
             scale: 1.1, anchor: 0.5,
-            filters: plColorFilter,
+            filters: this.colorFilter,
             alpha: 0,
             rotation: 0,
+            zIndex: 0,
         });
 
         this.x = this._lastX = 0;
@@ -257,6 +266,8 @@ export class Player {
         if (options.autoUpdateEntityPool ?? true) {
             this.forever(() => this.combat.entityPool.update(this), { order: 10, owns: this }); // 这里 owns 是为了在 combat 销毁时让 player 随之销毁
         }
+
+        options.initFn(this, options);
     }
 
     /**
@@ -281,7 +292,7 @@ export class Player {
      */
     update: (options: PlayerUpdateOptions) => unknown;
 
-    getHurt: (options: PlayerGetHurtOptions) => unknown;
+    beHurt: (options: PlayerBeHurtOptions) => unknown;
 
     /** 移动自机 */
     _updateMove(options: PlayerUpdateOptions) {
@@ -425,7 +436,7 @@ export class Player {
                             self.combat.entityPool.eraseByRadius({ x, y, radius });
                             // TODO: damage (circle) r=radius, dmg=10*timescale, dmg to boss = 0.2
                             // 这个以后要换成进一步封装的工具函数，另外 dmg to boss 效果还没做
-                            self.combat.enemyPool.forEachByRadius({ x, y, radius, callback: enemy => enemy.getHurt({ num: 10 * self.game.timeScale }) });
+                            self.combat.enemyPool.forEachByRadius({ x, y, radius, callback: enemy => enemy.beHurt({ num: 10 * self.game.timeScale }) });
                             yield;
                         }
                         self.combat.entityPool.forEachAlive(dan => dan.erase());
@@ -452,13 +463,13 @@ export class Player {
                     yield;
                 }
                 this.y = 185;
-                this.state = { type: "common", invincibleTime: MissInvincibleTime };
+                this.state = { type: "common", invincibleTime: missInvincibleTime };
                 break;
             }
         }
     }}.call(this);
 
-    _defaultGetHurt(options: PlayerGetHurtOptions) {
+    _defaultBeHurt(options: PlayerBeHurtOptions) {
         if (this.state.type === "common") {
             if (this.state.invincibleTime === 0) {
                 const { pldead00 } = this.game.prefabSounds.thse;

@@ -205,6 +205,15 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
             invincibleRing: await lsvg(`player/invincibleRing.svg`),
             slowMode: await lsvg(`player/slowMode.svg`),
             missFilter: await lsvg(`player/missFilter.svg`),
+            drone: {
+                simpleDrone: await lsvg(`player/drone/simpleDrone.svg`),
+            },
+            playerBullet: {
+                hit: await lsvg(`player/playerBullet/hit.svg`),
+                laserAndNova: await lsvg(`player/playerBullet/laserAndNova.svg`),
+                nova: await lsvg(`player/playerBullet/nova.svg`),
+                particle: await lsvg(`player/playerBullet/particle.svg`),
+            },
         },
         enemy: {
             yinYangOrb: {
