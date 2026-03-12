@@ -355,13 +355,13 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             /** TODO: DOC enemyPool 理论上讲这里边是所有敌人，包括杂鱼和 boss */
             enemyPool,
             /** @readonly JSTG 预置的自机 */
-            prefabPlayers: null as unknown as typeof prefabPlayers, // 奇技淫巧
+            prefabPlayers: null as unknown as typeof prefabPlayers, // MAGIC:
             /** @readonly JSTG 预置的敌人 */
-            prefabEnemys: null as unknown as typeof prefabEnemys, // 奇技淫巧
+            prefabEnemys: null as unknown as typeof prefabEnemys, // MAGIC:
             /** 创建一个 JSTG 预置的弹幕 */
-            makeDanmaku: null as unknown as typeof makeDanmaku, // 又是奇技淫巧
+            makeDanmaku: null as unknown as typeof makeDanmaku, // MAGIC:
             /** TODO: DOC makeLaserBeam */
-            makeLaserBeam: null as unknown as typeof makeLaserBeam, // 又是奇技淫巧
+            makeLaserBeam: null as unknown as typeof makeLaserBeam, // MAGIC:
             destroy() {
                 ingameUi.destroy();
                 board.destroy();

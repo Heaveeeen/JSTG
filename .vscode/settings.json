@@ -6,6 +6,11 @@
             "backgroundColor": "#f06282",
         },
         {
+            "text": "MAGIC:",
+            "color": "#ffffff",
+            "backgroundColor": "#f07240",
+        },
+        {
             "text": "MAYDO:",
             "color": "#2266cc",
             "backgroundColor": "#ffcd3a"

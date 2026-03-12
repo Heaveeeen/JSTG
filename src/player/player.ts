@@ -293,7 +293,7 @@ export class Player {
         let dy = 0;
 
         const kh = (keyOrKeys: string | string[]) => typeof keyOrKeys === "string" ? isHold(keyOrKeys) : keyOrKeys.some(key => isHold(key));
-        // @ts-expect-error 隐式转换的奇技淫巧，布尔值隐式转换为 0 和 1 ，可以用于数学运算
+        // @ts-expect-error MAGIC: 布尔值隐式转换为 0 和 1 ，可以用于数学运算
         dx = kh(keyMap.right ?? Key.ArrowRight) - kh(keyMap.left ?? Key.ArrowLeft);
         // @ts-expect-error
         dy = kh(keyMap.down ?? Key.ArrowDown) - kh(keyMap.up ?? Key.ArrowUp);
