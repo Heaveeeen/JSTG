@@ -6,6 +6,7 @@ const enum KeyEventType {
     downAndUp = 3,
 }
 
+// MAYDO: 把这玩意改成字符串，但这玩意我觉得用得应该比较少……我不知道。
 /** 键码表，仅包含 Required 部分，注释为个人简单翻译  
  * 来源：{@link https://w3c.github.io/uievents-code/#code-value-tables}  
  * 此枚举最后更新于：2025/1/6 */

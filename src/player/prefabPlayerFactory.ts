@@ -33,13 +33,12 @@ export const prefabPlayerFactory = (()=>{
             let trans: [[number, number, number], [number, number, number], [number, number, number], [number, number, number]];
             let size: number;
             if (self.isSlow) {
-                trans = [[-24,-15,deg(90)], [-8,-25,deg(90)], [8,-25,deg(90)], [24,-15,deg(90)]];
-                size = 0.8;
+                trans = [[-26,-17,deg(90)], [-9,-27,deg(90)], [9,-27,deg(90)], [26,-17,deg(90)]];
+                size = 0.88;
             } else {
-                trans = [[-36,15,deg(90+10)], [-12,35,deg(90+3)], [12,35,deg(90-3)], [36,15,deg(90-10)]];
-                size = 1;
+                trans = [[-40,17,deg(90+10)], [-13,39,deg(90+3)], [13,39,deg(90-3)], [40,17,deg(90-10)]];
+                size = 1.1;
             }
-            const isShooting = false; // TODO: input.isHold(opt.keyMap.attack)
             for (let i = 0; i < 4; i++) {
                 const drone = drones[i];
                 const spr = drone.sprite;
@@ -49,10 +48,15 @@ export const prefabPlayerFactory = (()=>{
                 spr.scale.x += (size - spr.scale.x) * 0.2 * game.timeScale;
                 spr.scale.y += (size - spr.scale.y) * 0.2 * game.timeScale;
                 drone.rotation += (rotation - drone.rotation) * 0.2 * game.timeScale;
-                if (isShooting) {
+                if (self.isShooting) {
                     // TODO: 攻击
+                    if (self.isSlow) {
+                        spr.alpha = 0.45;
+                    } else {
+                        spr.alpha = 0.65;
+                    }
                 } else {
-                    spr.alpha += (0.27 - spr.alpha) * 0.05 * game.timeScale; // 此处弹幕引擎写的是 ghost 80 & brightness 5 ，我这里直接把 alpha 拉高点代替了
+                    spr.alpha += (0.25 - spr.alpha) * 0.05 * game.timeScale; // 此处弹幕引擎写的是 ghost 80 & brightness 5 ，我这里直接把 alpha 拉高点代替了
                 }
             }
         }

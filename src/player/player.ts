@@ -107,7 +107,7 @@ export class Player {
     dyingBombTime: number;
 
     isSlow: boolean = false;
-    isExist: boolean = true;
+    isShooting: boolean = false;
 
     state: {
         type: "common",
@@ -294,8 +294,8 @@ export class Player {
 
     beHurt: (options: PlayerBeHurtOptions) => unknown;
 
-    /** 移动自机 */
-    _updateMove(options: PlayerUpdateOptions) {
+    /** 移动自机，还有 isShooting */
+    _updateInputAndMove(options: PlayerUpdateOptions) {
         if (!(this.state.type === "common")) { return; }
         const ts = this.game.timeScale;
         const keyMap = options.keyMap ?? {};
@@ -323,10 +323,17 @@ export class Player {
             this.x = clamp(this.x + dx, -w, w);
             this.y = clamp(this.y + dy, -h, h);
         }
+
+        this.isShooting = kh(keyMap.attack ?? Key.KeyZ);
     }
 
     _defaultUpdate(options: PlayerUpdateOptions) {
-        if (this.state.type === "common") { this._updateMove(options) } // 这玩意不写在生成器里，是因为 options 传不进去。。。傻逼 js 没法获得第一次 next 传进去的东西
+        if (this.state.type === "common") {
+            this._updateInputAndMove(options);
+        } else {
+            this.isSlow = false;
+            this.isShooting = false;
+        } // 这玩意不写在生成器里，是因为 options 传不进去。。。傻逼 js 没法获得第一次 next 传进去的东西
         this._updateStateGen.next();
     }
 
