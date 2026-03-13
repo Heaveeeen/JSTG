@@ -77,7 +77,7 @@ export const prefabPlayerFactory = (()=>{
                                 y: self.y + drone.sprite.y,
                                 scale: 1.3,
                                 rotation: drone.rotation,
-                                alpha: drone.sprite.alpha,
+                                alpha: 0.4,
                                 filters: self.colorFilter,
                                 blendMode: "add",
                             });
