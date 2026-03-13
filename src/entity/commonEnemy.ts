@@ -37,6 +37,12 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
         this.entity.canBeErase = options.canBeErase ?? false;
     }
 
+    drawDebugHitbox(): void {
+        this.entity.hitboxGraphics?.circle(
+            0, 0, this.hurtHitboxRadius
+        ).fill("hsla(0, 100%, 60%, 0.30)").stroke("#ffaaaa");
+    }
+
     beHurt(options: {
         /** 造成了多少点伤害。原则上，这个值不应当小于0。 */
         num: number,
@@ -44,9 +50,9 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
     }) {
         this.hp -= options.num;
         if (this.hp / this.maxHp <= 0.1) {
-            this.entity.game.prefabSounds.thse.damage01.play({ volume: 0.7 });
+            this.entity.game.prefabSounds.thse.damage01.play();
         } else {
-            this.entity.game.prefabSounds.thse.damage00.play({ volume: 0.7 });
+            this.entity.game.prefabSounds.thse.damage00.play();
         }
     }
 

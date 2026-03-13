@@ -150,7 +150,7 @@ export class LaserBeam extends AbstractEntity {
             player.beHurt({ entity: this });
         } else if (this.isGrazing) {
             // 擦弹
-            this.game.prefabSounds.thse.graze.play({ volume: decibel(-6), });
+            this.game.prefabSounds.thse.graze.play({ volume: decibel(-3), });
             this.grazeCd = 4;
         }
 

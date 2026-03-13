@@ -7,7 +7,7 @@ export interface newAbstractEnemyOptions<T extends AbstractEntity> {
 }
 
 /** Enemy 就是一个能被攻击的东西，必须依附于 Entity */
-export abstract class AbstractEnemy<T extends AbstractEntity> {
+export abstract class AbstractEnemy<T extends AbstractEntity = AbstractEntity> {
     entity: T;
 
     constructor(options: newAbstractEnemyOptions<T>) {
@@ -26,6 +26,8 @@ export abstract class AbstractEnemy<T extends AbstractEntity> {
     set visible(b: boolean) { this.entity.visible = b; }
     get zIndex() { return this.entity.zIndex; }
     set zIndex(n: number) { this.entity.zIndex = n; }
+
+    abstract drawDebugHitbox(): void;
     
     abstract beHurt(options: {
         /** 造成了多少点伤害。原则上，这个值不应当小于0。 */

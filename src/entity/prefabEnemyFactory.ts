@@ -42,7 +42,7 @@ export const prefabEnemyFactory = (()=>{
         });
         entity.grazeCd = Infinity;
         const enemy = new CommonEnemy({
-            entity, maxHp, hurtHitboxRadius: 9,
+            entity, maxHp, hurtHitboxRadius: 13,
             canBeErase: false,
         });
         enemy.forever(loop => {

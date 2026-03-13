@@ -26,14 +26,9 @@ export const makeObjPool = <T extends Destroyable>() => {
         lastValidCount = Math.max(validCount, 60);
     }
 
-    const forEachAlive = (callback: (obj: T) => unknown) => {
-        const copy = objects;
-        for (const obj of copy) {
-            if (!obj.destroyed) {
-                callback(obj);
-            }
-        }
-    };
+    const getAlives = () => objects.filter(obj => !obj.destroyed);
+
+    const forEachAlive = (callback: (obj: T) => unknown) => getAlives().forEach(callback);
 
     let destroyed = false;
     const destroy = () => {
@@ -46,6 +41,7 @@ export const makeObjPool = <T extends Destroyable>() => {
         objects,
         push,
         clean,
+        getAlives,
         forEachAlive,
         get _validCount() { return validCount; },
         destroy,

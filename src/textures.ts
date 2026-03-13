@@ -212,7 +212,10 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
                 hit: await lsvg(`player/playerBullet/hit.svg`),
                 laserAndNova: await lsvg(`player/playerBullet/laserAndNova.svg`),
                 nova: await lsvg(`player/playerBullet/nova.svg`),
-                particle: await lsvg(`player/playerBullet/particle.svg`),
+                simpleBullet: {
+                    head: await lsvg(`player/playerBullet/simpleBullet/head.svg`),
+                    trail: await lsvg(`player/playerBullet/simpleBullet/trail.svg`),
+                }
             },
         },
         enemy: {

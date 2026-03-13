@@ -52,6 +52,7 @@ export class CommonDanmaku extends AbstractEntity {
                     x: this.x,
                     y: this.y,
                 });
+                this.enemy?.drawDebugHitbox();
                 this.hitboxGraphics.circle(
                     0, 0, this.hitboxRadius + player.hitboxRadius
                 ).fill("hsla(180, 100%, 60%, 0.50)").stroke("#ffffff");
@@ -94,7 +95,7 @@ export class CommonDanmaku extends AbstractEntity {
             player.beHurt({ entity: this });
         } else if (this.isGrazing) {
             // 擦弹
-            this.game.prefabSounds.thse.graze.play({ volume: decibel(-6), });
+            this.game.prefabSounds.thse.graze.play({ volume: decibel(-3), });
             this.grazeCd = 200;
         }
 

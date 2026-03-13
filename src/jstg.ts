@@ -148,9 +148,14 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 zIndex: -5,
             });
 
-            const danmakuEraseLayer = new pixi.Sprite({
+            const playerBulletLayer = new pixi.Sprite({
                 parent: root,
                 zIndex: -10,
+            });
+
+            const danmakuEraseLayer = new pixi.Sprite({
+                parent: root,
+                zIndex: -20,
             });
 
             // 弹幕引擎的场地尺寸是 150 * 180，这里放大到了 4/3 倍
@@ -164,6 +169,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 commonDanmakuLayer,
                 /** 装着所有常规敌人的根节点 */
                 commonEnemyLayer,
+                /** 装着自机发射出的所有子弹的根节点 */
+                playerBulletLayer,
                 /** 装有所有消弹特效的根节点 */
                 danmakuEraseLayer,
                 /** 场地宽度的一半 */
@@ -258,10 +265,11 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             return false;
         }
 
+        // MAYDO: 把池子移到 board 里
         //#region entityPool
         const entityPool = (() => {
             const pool = makeObjPool<AbstractEntity>();
-            const { objects, push, clean, forEachAlive, destroy } = pool;
+            const { objects, push, clean, forEachAlive, getAlives, destroy } = pool;
 
             const update = (player: Player) => {
                 if (player.state.type === "common") {
@@ -294,6 +302,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 clean,
                 /** 遍历所有未被摧毁的实体，可以用来消弹 */
                 forEachAlive,
+                /** 获取所有未被摧毁的实体 */
+                getAlives,
                 /** 遍历一个圆形范围内的所有实体 */
                 forEachByRadius,
                 /** 消除一个圆形范围内的所有实体 */
@@ -309,7 +319,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         //#region enemyPool
         const enemyPool = (() => {
             const pool = makeObjPool<AbstractEnemy<AbstractEntity>>();
-            const { objects, push, clean, forEachAlive, destroy } = pool;
+            const { objects, push, clean, forEachAlive, getAlives, destroy } = pool;
 
             const forEachByRadius = (options: { x: number, y: number, radius: number, callback: (enemy: AbstractEnemy<AbstractEntity>) => unknown }) => {
                 const { x, y, radius, callback } = options;
@@ -327,6 +337,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 clean,
                 /** 遍历所有未被摧毁的敌人，可以用来全屏攻击啥的 */
                 forEachAlive,
+                /** 获取所有未被摧毁的实体 */
+                getAlives,
                 /** 遍历一个圆形范围内的所有敌人 */
                 forEachByRadius,
                 // TODO: damageByRadius, killByRadius
@@ -414,7 +426,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
         const prefabEnemys = (()=>{
             const makeYinYangOrb = (options: {
-                /** @default 100 */
+                /** @default 40 */
                 maxHp?: number,
                 /** @default "red" */
                 color?: DyedTextureColors,
@@ -428,7 +440,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 parent?: pixi.Container,
             } = {}) => prefabEnemyFactory.makeYinYangOrb({
                 game, combat, board,
-                maxHp: options.maxHp ?? 100,
+                maxHp: options.maxHp ?? 40,
                 color: options.color ?? "red",
                 x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
                 parent: options.parent ?? null, 

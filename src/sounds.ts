@@ -13,10 +13,10 @@ export interface PlaySoundOptions {
 
 export const globalMusicGain = ctx.createGain();
 globalMusicGain.connect(ctx.destination);
-globalMusicGain.gain.value = utils.decibel(-2);
+globalMusicGain.gain.value = utils.decibel(-4);
 export const globalSfxGain = ctx.createGain();
 globalSfxGain.connect(ctx.destination);
-globalSfxGain.gain.value = utils.decibel(-3);
+globalSfxGain.gain.value = utils.decibel(-6);
 
 interface PlaySoundPoolItem {
     controller: PlaySoundController | null,

@@ -1,6 +1,6 @@
 import * as pixi from "pixi";
 import { Input, Key } from "../Input.js";
-import { Board, Combat, Game } from "../jstg.js";
+import { Board, Combat, Game, utils } from "../jstg.js";
 import { alphaTo, deg, clamp, staticAssert } from "../utils.js";
 import { AbstractEntity } from "../entity/abstractEntity.js";
 import { DifferenceBlendFilter } from "../graphics/differenceBlendFilter.js";
@@ -480,7 +480,7 @@ export class Player {
         if (this.state.type === "common") {
             if (this.state.invincibleTime === 0) {
                 const { pldead00 } = this.game.prefabSounds.thse;
-                pldead00.play();
+                pldead00.play({ volume: utils.decibel(3) });
                 if (this.game.debug.godMode.isOn) {
                     this.game.debug.godMode.dieCount += 1;
                     this.applyInvincible(20);
