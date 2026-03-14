@@ -122,6 +122,7 @@ export interface LoadPrefabTexturesOptions {
     resolutionScale?: number;
 }
 
+// MAYDO: 懒加载，有静态和动态两种办法。静态的是把贴图劈成几半，用上哪一半就构造哪一半；动态的则是所有贴图全部动态加载，随地大小便阻断控制流，或者说加载完毕之前用一个棍母贴图顶着啥的……
 /**
  * @async 加载 JSTG 预置的各种贴图（主要来源于 Simple 的弹幕引擎250724）
  */

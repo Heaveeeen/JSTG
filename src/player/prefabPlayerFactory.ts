@@ -59,7 +59,7 @@ export const prefabPlayerFactory = (()=>{
                         spr.alpha = 0.65;
                     }
                 } else {
-                    spr.alpha += (0.25 - spr.alpha) * 0.05 * game.timeScale; // 此处弹幕引擎写的是 ghost 80 & brightness 5 ，我这里直接把 alpha 拉高点代替了
+                    spr.alpha += (0.24 - spr.alpha) * 0.05 * game.timeScale; // 此处弹幕引擎写的是 ghost 80 & brightness 5 ，我这里直接把 alpha 拉高点代替了
                 }
             }
             if (self.isShooting) {
@@ -135,7 +135,7 @@ export const prefabPlayerFactory = (()=>{
                                         target = null;
                                     } else {
                                         const { cost, angle } = getCost(target);
-                                        if (cost <= 600 && angle <= deg(120)) {
+                                        if (cost <= 600 && angle <= deg(135)) {
                                             targetAngle = angle;
                                         } else {
                                             target = null; // 成本太高了，尝试换一个目标追
@@ -160,7 +160,7 @@ export const prefabPlayerFactory = (()=>{
                                     bullet.rotation += targetAngle;
                                 }
                                 alphaTo(bullet, 1, 0.05 * game.timeScale);
-                                trail.scale.x = Math.min(1, trail.scale.x + 0.1 * game.timeScale);
+                                trail.scale.x = Math.min(1, trail.scale.x + 0.2 * game.timeScale);
                                 omega -= deg(0.1) * game.timeScale;
                                 omega = Math.max(omega, 0);
                             }, { owns: bullet });
