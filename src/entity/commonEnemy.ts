@@ -16,6 +16,9 @@ interface NewCommonEnemyOptions extends newAbstractEnemyOptions<CommonDanmaku> {
     canBeErase: boolean | null,
 }
 
+let lastPlayDamageSoundClock = -1;
+
+// TODO: 一个比较偷懒的设计…… boss 身上的保护罩是一个 CommonEnemy ，打爆这个罩子就会打通一张符
 export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
     hurtHitboxRadius: number;
     maxHp: number;
@@ -49,10 +52,13 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
         // TODO: type
     }) {
         this.hp -= options.num;
-        if (this.hp / this.maxHp <= 0.1) {
-            this.entity.game.prefabSounds.thse.damage01.play();
-        } else {
-            this.entity.game.prefabSounds.thse.damage00.play();
+        if (this.entity.game.clock >= lastPlayDamageSoundClock + 3) {
+            lastPlayDamageSoundClock = this.entity.game.clock;
+            if (this.hp / this.maxHp <= 0.1) {
+                this.entity.game.prefabSounds.thse.damage01.play();
+            } else {
+                this.entity.game.prefabSounds.thse.damage00.play();
+            }
         }
     }
 

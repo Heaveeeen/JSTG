@@ -143,12 +143,12 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 zIndex: 0, // 在 -100 到 100 中间
             });
 
-            const commonEnemyLayer = new pixi.Sprite({
+            const playerBulletLayer = new pixi.Sprite({
                 parent: root,
                 zIndex: -5,
             });
 
-            const playerBulletLayer = new pixi.Sprite({
+            const commonEnemyLayer = new pixi.Sprite({
                 parent: root,
                 zIndex: -10,
             });

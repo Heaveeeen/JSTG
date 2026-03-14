@@ -42,7 +42,7 @@ export const prefabEnemyFactory = (()=>{
         });
         entity.grazeCd = Infinity;
         const enemy = new CommonEnemy({
-            entity, maxHp, hurtHitboxRadius: 13, // MAYDO: 想办法查查原版判定数据……？我不知道原版阴阳玉判定多大，我瞎填的……
+            entity, maxHp, hurtHitboxRadius: 14, // MAYDO: 想办法查查原版判定数据……？我不知道原版阴阳玉判定多大，我瞎填的……
             canBeErase: false,
         });
         enemy.forever(loop => {

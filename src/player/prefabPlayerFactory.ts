@@ -61,7 +61,7 @@ export const prefabPlayerFactory = (()=>{
             let trans: [[number, number, number], [number, number, number], [number, number, number], [number, number, number]];
             let size: number;
             if (player.isSlow) {
-                trans = [[-26,-17,deg(-90)], [-9,-27,deg(-90)], [9,-27,deg(-90)], [26,-17,deg(-90)]];
+                trans = [[-27,-17,deg(-90)], [-9,-27,deg(-90)], [9,-27,deg(-90)], [27,-17,deg(-90)]];
                 size = 0.88;
             } else {
                 trans = [[-40,17,deg(-90-10)], [-13,39,deg(-90-3)], [13,39,deg(-90+3)], [40,17,deg(-90+10)]];
@@ -89,8 +89,8 @@ export const prefabPlayerFactory = (()=>{
             if (player.isShooting) {
                 if (player.isSlow) {
                     shootTimer = 0;
-                    for (const drone of drones) { // simple laser
-                        drone.laser.sprite.destroy(); // 这句正常应该是不需要的，但保险起见。。。
+                    for (const drone of drones) { // 穿透激光
+                        if (!drone.laser.destroyed) { continue; }
                         drone.laser.sprite = new pixi.Sprite({
                             parent: board.playerBulletLayer,
                             texture: game.prefabTextures.player.playerBullet.laserAndNova,
@@ -100,10 +100,67 @@ export const prefabPlayerFactory = (()=>{
                         });
                         player.forever(loop => {
                             if (!player.isShooting || !player.isSlow) { return loop.destroy(); }
-                            drone.laser.sprite.x = player.x + drone.sprite.x;
-                            drone.laser.sprite.y = player.y + drone.sprite.y;
-                            drone.laser.sprite.rotation = drone.rotation;
-                        }, { owns: drone.laser, order: 10 });
+                            const { laser } = drone;
+                            laser.sprite.x = player.x + drone.sprite.x;
+                            laser.sprite.y = player.y + drone.sprite.y;
+                            laser.sprite.rotation = drone.rotation;
+                            for (const enemy of laser.hitEffects.keys()) {
+                                const eff = laser.hitEffects.get(enemy);
+                                if (eff === undefined) { continue; }
+                                if (enemy.destroyed) {
+                                    eff.destroy();
+                                    laser.hitEffects.delete(enemy);
+                                }
+                            }
+                            // 新一轮命中判定。对于没命中但有特效的，移除其命中特效；对于命中但没特效的，创建其命中特效。
+                            for (const enemy of combat.enemyPool.getAlives()) {
+                                if (enemy instanceof CommonEnemy) {
+                                    const { x: rx, y: ry } = rotateVec({ x: enemy.x - laser.sprite.x, y: enemy.y - laser.sprite.y }, laser.sprite.rotation);
+                                    let eff = laser.hitEffects.get(enemy);
+                                    const laserHurtRadius = enemy.hurtHitboxRadius + 2;
+                                    const { isHit, hitDist } = (()=>{
+                                        const d2 = laserHurtRadius ** 2 - ry ** 2;
+                                        if ((rx >= 0) && (Math.abs(ry) <= laserHurtRadius)) {
+                                            return { isHit: true, hitDist: Math.max(rx - Math.sqrt(d2), 0) };
+                                        } else if (rx ** 2 <= d2) { // rx ** 2 + ry ** 2 <= laserHurtRadius ** 2
+                                            return { isHit: true, hitDist: 0 };
+                                        } else {
+                                            return { isHit: false, hitDist: 0 };
+                                        }
+                                    })();
+                                    if (isHit) {
+                                        // 激光命中
+                                        if (eff === undefined) {
+                                            eff = new pixi.Sprite({
+                                                parent: laser.sprite.parent ?? undefined,
+                                                texture: game.prefabTextures.player.playerBullet.nova,
+                                                anchor: 0.5,
+                                            });
+                                            laser.hitEffects.set(enemy, eff);
+                                        }
+                                        eff.x = laser.sprite.x + hitDist * Math.cos(laser.sprite.rotation);
+                                        eff.y = laser.sprite.y + hitDist * Math.sin(laser.sprite.rotation);
+                                        eff.rotation = laser.sprite.rotation;
+                                        enemy.beHurt({ num: 1.25 * game.timeScale }); // MAYDO: 让这个激光闪烁起来
+                                    } else {
+                                        // 没有命中这个敌人
+                                        if (eff !== undefined) {
+                                            eff.destroy();
+                                            laser.hitEffects.delete(enemy);
+                                        }
+                                    }
+                                } // MAYDO: 激光如何与其他类型的敌人进行判定……
+                            }
+                            if (laser.hitEffects.size === 0) {
+                                laser.sprite.filters = player.colorFilter;
+                                drone.sprite.filters = player.colorFilter;
+                            } else {
+                                laser.sprite.filters = null;
+                                drone.sprite.filters = null;
+                            }
+                        }, { owns: drone.laser, order: 10 }).then(() => {
+                            drone.sprite.filters = player.colorFilter;
+                        });
                     }
                 } else {
                     if (shootTimer >= 6) { // 跟踪粒子导弹
@@ -142,7 +199,7 @@ export const prefabPlayerFactory = (()=>{
                                 for (const enemy of combat.enemyPool.getAlives()) { // 攻击判定
                                     if (enemy instanceof CommonEnemy) {
                                         const { x: rx, y: ry } = rotateVec({ x: enemy.x - bullet.x, y: enemy.y - bullet.y }, bullet.rotation);
-                                        if ((rx >= 0) && (rx <= currentSpeed) && (Math.abs(ry) <= 4)) {
+                                        if ((rx >= -enemy.hurtHitboxRadius) && (rx <= currentSpeed + enemy.hurtHitboxRadius) && (Math.abs(ry) <= 4 + enemy.hurtHitboxRadius)) {
                                             // 命中
                                             enemy.beHurt({ num: 5 });
                                             bullet.x += currentSpeed * Math.cos(bullet.rotation);
@@ -170,7 +227,7 @@ export const prefabPlayerFactory = (()=>{
                                             }
                                             return bullet.destroy();
                                         }
-                                    }
+                                    } // MAYDO: 子弹如何与其他类型的敌人判定……
                                 }
                                 // 移动
                                 bullet.x += currentSpeed * Math.cos(bullet.rotation);

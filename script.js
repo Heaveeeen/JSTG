@@ -204,6 +204,7 @@ import { deg } from "./dist/utils.js";
             // @ts-expect-error
             color: colors[Math.floor(Math.random() * colors.length)],
             x: (i * 45) % 340 - 170, y: i * 6 - 220 + Math.random() * 10, rotation: 0,
+            maxHp: 300,
         });
     }
 
