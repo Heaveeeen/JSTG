@@ -90,6 +90,7 @@ export interface NewPlayerOptions {
     initFn: (self: Player, options: NewPlayerOptions) => unknown;
     updateFn: (self: Player, options: PlayerUpdateOptions) => unknown;
     beHurtFn: (self: Player, options: PlayerBeHurtOptions) => unknown;
+    destroyFn: (self: Player) => unknown;
 }
 
 export class Player {
@@ -208,6 +209,7 @@ export class Player {
 
         this.update = (opt: PlayerUpdateOptions) => options.updateFn(this, opt);
         this.beHurt = (opt: PlayerBeHurtOptions) => options.beHurtFn(this, opt);
+        this.destroyFn = () => options.destroyFn(this);
 
         this.backParts = new pixi.Sprite({
             parent: options.board.root,
@@ -293,6 +295,8 @@ export class Player {
     update: (options: PlayerUpdateOptions) => unknown;
 
     beHurt: (options: PlayerBeHurtOptions) => unknown;
+
+    destroyFn: () => unknown;
 
     /** 移动自机，还有 isShooting */
     _updateInputAndMove(options: PlayerUpdateOptions) {
@@ -513,6 +517,7 @@ export class Player {
         if (this.destroyed) { return };
         this.backParts.destroy();
         this.frontParts.destroy();
+        this.destroyFn();
     }
 
     /**

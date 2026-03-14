@@ -1,6 +1,6 @@
 import * as pixi from "pixi";
 import { NewPlayerOptions, Player, PlayerBeHurtOptions, PlayerUpdateOptions } from "./player.js";
-import { Board, Combat, Game } from "../jstg.js";
+import { Board, Combat, Destroyable, Game } from "../jstg.js";
 import { alphaTo, decibel, deg, rotateVec, Vec2 } from "../utils.js";
 import { AbstractEnemy } from "../entity/abstractEnemy.js";
 import { AbstractEntity } from "../entity/abstractEntity.js";
@@ -17,26 +17,50 @@ export const prefabPlayerFactory = (()=>{
     }) => {
         const { game, combat, board, autoUpdateEntityPool, autoUpdateSelf } = options;
         const { prefabTextures } = game;
-        type Drone = { sprite: pixi.Sprite, rotation: number };
+        type Drone = { sprite: pixi.Sprite, rotation: number, laser: {
+            sprite: pixi.Sprite,
+            hitEffects: Map<AbstractEnemy, pixi.Sprite>,
+        } & Destroyable, } & Destroyable;
         let drones: [Drone, Drone, Drone, Drone];
-        const initFn = (self: Player, opt: NewPlayerOptions) => {
-            const makeDrone = () => ({ sprite: new pixi.Sprite({
-                parent: self.backParts,
-                texture: prefabTextures.player.drone.simpleDrone,
-                anchor: 0.5,
-                filters: self.colorFilter,
-                alpha: 0,
-                zIndex: -10,
-            }), rotation: deg(90), });
+        const initFn = (player: Player, opt: NewPlayerOptions) => {
+            function makeDrone(): Drone { return {
+                sprite: new pixi.Sprite({
+                    parent: player.backParts,
+                    texture: prefabTextures.player.drone.simpleDrone,
+                    anchor: 0.5,
+                    filters: player.colorFilter,
+                    alpha: 0,
+                    zIndex: -10,
+                }),
+                rotation: deg(90),
+                laser: {
+                    sprite: { destroy() {}, destroyed: true } as any, // MAGIC: 拿这么个玩意，伪装成一个摧毁后的激光，相当于空值
+                    hitEffects: new Map(),
+                    destroy() {
+                        if (this.destroyed) { return; }
+                        this.sprite.destroy();
+                        this.hitEffects.forEach(eff => eff.destroy());
+                        this.hitEffects.clear();
+                    },
+                    get destroyed() { return this.sprite.destroyed; }
+                },
+                destroy() {
+                    if (this.destroyed) { return; }
+                    this.sprite.destroy();
+                    this.laser.destroy();
+                },
+                get destroyed() { return this.sprite.destroyed; },
+            }; }
             drones = [makeDrone(), makeDrone(), makeDrone(), makeDrone()];
         };
         let shootTimer = 0;
-        const updateFn = (self: Player, opt: PlayerUpdateOptions) => {
+        const lasers = new Map<Drone, pixi.Sprite | null>();
+        const updateFn = (player: Player, opt: PlayerUpdateOptions) => {
             const input = opt.input ?? game.input;
-            self._defaultUpdate(opt);
+            player._defaultUpdate(opt);
             let trans: [[number, number, number], [number, number, number], [number, number, number], [number, number, number]];
             let size: number;
-            if (self.isSlow) {
+            if (player.isSlow) {
                 trans = [[-26,-17,deg(-90)], [-9,-27,deg(-90)], [9,-27,deg(-90)], [26,-17,deg(-90)]];
                 size = 0.88;
             } else {
@@ -52,8 +76,8 @@ export const prefabPlayerFactory = (()=>{
                 spr.scale.x += (size - spr.scale.x) * 0.2 * game.timeScale;
                 spr.scale.y += (size - spr.scale.y) * 0.2 * game.timeScale;
                 drone.rotation += (rotation - drone.rotation) * 0.2 * game.timeScale;
-                if (self.isShooting) {
-                    if (self.isSlow) {
+                if (player.isShooting) {
+                    if (player.isSlow) {
                         spr.alpha = 0.45;
                     } else {
                         spr.alpha = 0.65;
@@ -62,23 +86,38 @@ export const prefabPlayerFactory = (()=>{
                     spr.alpha += (0.24 - spr.alpha) * 0.05 * game.timeScale; // 此处弹幕引擎写的是 ghost 80 & brightness 5 ，我这里直接把 alpha 拉高点代替了
                 }
             }
-            if (self.isShooting) {
-                if (self.isSlow) {
+            if (player.isShooting) {
+                if (player.isSlow) {
                     shootTimer = 0;
-                    // TODO: simple laser
+                    for (const drone of drones) { // simple laser
+                        drone.laser.sprite.destroy(); // 这句正常应该是不需要的，但保险起见。。。
+                        drone.laser.sprite = new pixi.Sprite({
+                            parent: board.playerBulletLayer,
+                            texture: game.prefabTextures.player.playerBullet.laserAndNova,
+                            anchor: 0.5,
+                            alpha: 0.4,
+                            blendMode: "add",
+                        });
+                        player.forever(loop => {
+                            if (!player.isShooting || !player.isSlow) { return loop.destroy(); }
+                            drone.laser.sprite.x = player.x + drone.sprite.x;
+                            drone.laser.sprite.y = player.y + drone.sprite.y;
+                            drone.laser.sprite.rotation = drone.rotation;
+                        }, { owns: drone.laser, order: 10 });
+                    }
                 } else {
-                    if (shootTimer >= 6) {
+                    if (shootTimer >= 6) { // 跟踪粒子导弹
                         shootTimer = 0;
                         game.prefabSounds.thse.plst00.play({ volume: decibel(-6) });
                         for (const drone of drones) { // 发射诱导弹
                             const bullet = new pixi.Sprite({ 
                                 parent: board.playerBulletLayer,
-                                x: self.x + drone.sprite.x,
-                                y: self.y + drone.sprite.y,
+                                x: player.x + drone.sprite.x,
+                                y: player.y + drone.sprite.y,
                                 scale: 1.3,
                                 rotation: drone.rotation,
                                 alpha: 0.4,
-                                filters: self.colorFilter,
+                                filters: player.colorFilter,
                                 blendMode: "add",
                             });
                             const head = new pixi.Sprite({
@@ -185,14 +224,19 @@ export const prefabPlayerFactory = (()=>{
                                 trail.scale.x = Math.min(1, trail.scale.x + 0.2 * game.timeScale);
                                 omega -= deg(0.1) * game.timeScale;
                                 omega = Math.max(omega, 0);
-                            }, { owns: bullet });
+                            }, { owns: bullet, order: 10 });
                         }
                     }
                 }
             }
             shootTimer += game.timeScale;
         }
-        const beHurtFn = (self: Player, opt: PlayerBeHurtOptions) => self._defaultBeHurt(opt);
+        const beHurtFn = (player: Player, opt: PlayerBeHurtOptions) => player._defaultBeHurt(opt);
+        const destroyFn = (player: Player) => {
+            for (const drone of drones) {
+                drone.destroy();
+            }
+        }
         const player = new Player({
             name: "Simple", ...options,
             mainTexture: prefabTextures.player.Simple,
@@ -203,7 +247,7 @@ export const prefabPlayerFactory = (()=>{
             hitboxRadius: 1, highSpeed: 4, slowSpeed: 1.6,
             dyingBombTime: null, initHpAmount: null, initBombAmount: null, missGainBombType: null,
             maxHpAmount: null, maxBombAmount: null,
-            initFn, updateFn, beHurtFn,
+            initFn, updateFn, beHurtFn, destroyFn,
         });
         return player;
     };
