@@ -426,7 +426,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
         const prefabEnemys = (()=>{
             const makeYinYangOrb = (options: {
-                /** @default 40 */
+                /** @default 30 */
                 maxHp?: number,
                 /** @default "red" */
                 color?: DyedTextureColors,
@@ -440,7 +440,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 parent?: pixi.Container,
             } = {}) => prefabEnemyFactory.makeYinYangOrb({
                 game, combat, board,
-                maxHp: options.maxHp ?? 40,
+                maxHp: options.maxHp ?? 30,
                 color: options.color ?? "red",
                 x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
                 parent: options.parent ?? null, 
@@ -677,7 +677,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         /** JSTG 预置的一些音效，部分音效解包自东方原作 */
         prefabSounds,
         /**
-         * 一个随机数发生器，你可以用它来生成随机数
+         * 一个随机数发生器，你可以用它来生成随机数。
          * @example
          * game.rand.int(0, 10); // 生成一个 [0, 10) 之间的随机整数
          * game.rand.float(5, 8); // 生成一个 [5, 8) 之间的随机浮点数

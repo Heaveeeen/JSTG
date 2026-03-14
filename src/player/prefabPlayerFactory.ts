@@ -104,9 +104,31 @@ export const prefabPlayerFactory = (()=>{
                                     if (enemy instanceof CommonEnemy) {
                                         const { x: rx, y: ry } = rotateVec({ x: enemy.x - bullet.x, y: enemy.y - bullet.y }, bullet.rotation);
                                         if ((rx >= 0) && (rx <= currentSpeed) && (Math.abs(ry) <= 4)) {
+                                            // 命中
                                             enemy.beHurt({ num: 5 });
                                             bullet.x += currentSpeed * Math.cos(bullet.rotation);
                                             bullet.y += currentSpeed * Math.sin(bullet.rotation);
+                                            { // 命中特效
+                                                const hitEffect = new pixi.Sprite({
+                                                    parent: bullet.parent ?? undefined,
+                                                    texture: game.prefabTextures.player.playerBullet.hit,
+                                                    anchor: 0.5,
+                                                    x: bullet.x, y: bullet.y,
+                                                    scale: bullet.scale,
+                                                    // RAND: 命中特效随机旋转
+                                                    rotation: bullet.rotation + deg((Math.random() * 60) - 30),
+                                                    filters: bullet.filters,
+                                                    blendMode: "add",
+                                                });
+                                                combat.forever(loop => {
+                                                    hitEffect.scale.x -= 0.05 * game.timeScale;
+                                                    hitEffect.scale.y -= 0.05 * game.timeScale;
+                                                    alphaTo(hitEffect, 0, 0.075 * game.timeScale);
+                                                    if (hitEffect.alpha <= 0) {
+                                                        hitEffect.destroy();
+                                                    }
+                                                }, { owns: hitEffect });
+                                            }
                                             return bullet.destroy();
                                         }
                                     }

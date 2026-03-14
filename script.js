@@ -199,11 +199,11 @@ import { deg } from "./dist/utils.js";
     //makeFooMuseum();
 
     const colors = ["h0", "h30", "h60", "h90", "h120", "h150", "h180", "h210", "h240", "h270", "h300", "h330", "black", "white"];
-    for (let i = 0; i < colors.length; i++) {
+    for (let i = 0; i < 30; i++) {
         combat.prefabEnemys.makeYinYangOrb({
             // @ts-expect-error
-            color: colors[i],
-            x: -170, y: i * 35 - 220, rotation: 0,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            x: (i * 45) % 340 - 170, y: i * 6 - 220 + Math.random() * 10, rotation: 0,
         });
     }
 
