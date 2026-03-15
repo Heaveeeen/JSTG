@@ -12,7 +12,7 @@ export const prefabEnemyFactory = (()=>{
         x: number, y: number, rotation: number,
         /** @default board.commonEnemyLayer */
         parent: pixi.Container | null,
-        // TODO: hitboxRadius, isCanHurt, isTouchingDamage, isCanGraze, scale(?), animRotation(?)
+        // TODO: hitboxRadius, isCanHurt, isTouchingDamage, isCanGraze, scale(?), animRotation(?), birthProtectDuration
     }) => {
         const { game, combat, board, maxHp, color, x, y, rotation } = options;
         const rootSprite = new pixi.Sprite({
@@ -46,6 +46,7 @@ export const prefabEnemyFactory = (()=>{
         const enemy = new CommonEnemy({
             entity, maxHp, hurtHitboxRadius: 14, // MAYDO: 想办法查查原版判定数据……？我不知道原版阴阳玉判定多大，我瞎填的……
             canBeErase: false,
+            birthProtectDuration: 30,
         });
         enemy.forever(loop => {
             outerRing.rotation -= 0.07;
