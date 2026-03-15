@@ -189,7 +189,7 @@ export class CommonDanmaku extends AbstractEntity {
 
     isInBoundary() {
         const r = this.hitboxRadius * 1.5 + 5;
-        return (Math.abs(this.x) - r <= this.board.width) && (Math.abs(this.y) - r <= this.board.height);
+        return (Math.abs(this.x) - r <= this.board.halfWidth) && (Math.abs(this.y) - r <= this.board.halfHeight);
     }
 
     destroy() {

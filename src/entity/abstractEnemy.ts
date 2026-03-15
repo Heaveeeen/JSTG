@@ -32,7 +32,7 @@ export abstract class AbstractEnemy<T extends AbstractEntity = AbstractEntity> {
     constructor(options: newAbstractEnemyOptions<T>) {
         this.entity = options.entity;
         this.entity.enemy = this;
-        this.entity.combat.enemyPool.push(this);
+        this.entity.board.enemyPool.push(this);
         this._birthClockTS = this.entity.game.clock;
         this._birthProtectDuration = options.birthProtectDuration;
     }

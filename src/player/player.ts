@@ -264,7 +264,7 @@ export class Player {
         }
 
         if (options.autoUpdateEntityPool ?? true) {
-            this.forever(() => this.combat.entityPool.update(this), { order: 10, owns: this }); // 这里 owns 是为了在 combat 销毁时让 player 随之销毁
+            this.forever(() => this.board.entityPool.update(this), { order: 10, owns: this }); // 这里 owns 是为了在 combat 销毁时让 player 随之销毁
         }
 
         options.initFn(this, options);
@@ -320,8 +320,8 @@ export class Player {
             dx *= m;
             dy *= m;
 
-            let w = this.board.width - 16;
-            let h = this.board.height - 16;
+            let w = this.board.halfWidth - 16;
+            let h = this.board.halfHeight - 16;
             this.x = clamp(this.x + dx, -w, w);
             this.y = clamp(this.y + dy, -h, h);
         }
@@ -442,13 +442,13 @@ export class Player {
                     const { x, y } = this;
                     this.combat.coDo(function*() {
                         for (let radius = 0; radius <= 600; radius += 10 * self.game.timeScale) {
-                            self.combat.entityPool.eraseByRadius({ x, y, radius });
+                            self.board.entityPool.eraseByRadius({ x, y, radius });
                             // TODO: damage (circle) r=radius, dmg=10*timescale, dmg to boss = 0.2
                             // 这个以后要换成进一步封装的工具函数，另外 dmg to boss 效果还没做
-                            self.combat.enemyPool.forEachByRadius({ x, y, radius, callback: enemy => enemy.beHurt({ num: 10 * self.game.timeScale }) });
+                            self.board.enemyPool.forEachByRadius({ x, y, radius, callback: enemy => enemy.beHurt({ num: 10 * self.game.timeScale }) });
                             yield;
                         }
-                        self.combat.entityPool.forEachAlive(dan => dan.erase());
+                        self.board.entityPool.forEachAlive(dan => dan.erase());
                     });
                 }
                 yield* this.game.Sleep(20);

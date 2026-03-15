@@ -233,8 +233,8 @@ export class LaserBeam extends AbstractEntity {
         const l = this.hitboxLength * 1.5 + 5;
         const boxW = 2 * w * sinR + l * cosR;
         const boxH = 2 * w * cosR + l * sinR;
-        return (Math.abs(boxCX) - 0.5 * boxW <= this.board.width) &&
-               (Math.abs(boxCY) - 0.5 * boxH <= this.board.height);
+        return (Math.abs(boxCX) - 0.5 * boxW <= this.board.halfWidth) &&
+               (Math.abs(boxCY) - 0.5 * boxH <= this.board.halfHeight);
     }
 
     destroy() {

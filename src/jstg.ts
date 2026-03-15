@@ -160,9 +160,93 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 zIndex: -20,
             });
 
+            //#region entityPool
+            const entityPool = (() => {
+                const pool = makeObjPool<AbstractEntity>();
+                const { objects, push, clean, forEachAlive, getAlives, destroy } = pool;
+
+                const update = (player: Player) => {
+                    if (player.state.type === "common") {
+                        for (let i = 0; i < objects.length; i++) {
+                            if (!objects[i].destroyed) { objects[i].update(player); }
+                        }
+                    }
+                    player._lastX = player.x;
+                    player._lastY = player.y;
+                };
+
+                const forEachByRadius = (options: { x: number, y: number, radius: number, callback: (entity: AbstractEntity) => unknown }) => {
+                    const { x, y, radius, callback } = options;
+                    forEachAlive(ent => {
+                        if (isEntCrossCircle({ x, y, radius, ent })) { callback(ent); }
+                    });
+                };
+
+                const eraseByRadius = (options: { x: number, y: number, radius: number, eraseOptions?: EraseEntityOptions }) =>
+                    forEachByRadius({...options, callback: ent => ent.erase(options.eraseOptions) });
+
+                return {
+                    /** @readonly 所有接受判定的实体，⚠️可能含有已经摧毁的无效实体 */
+                    objects,
+                    /** 推入并开始更新一个实体，此函数会在合适的时机自动触发清理 */
+                    push,
+                    /** 更新所有实体的攻击逻辑 */
+                    update,
+                    /** 立即清理实体列表，一般不用管这个东西 */
+                    clean,
+                    /** 遍历所有未被摧毁的实体，可以用来消弹 */
+                    forEachAlive,
+                    /** 获取所有未被摧毁的实体 */
+                    getAlives,
+                    /** 遍历一个圆形范围内的所有实体 */
+                    forEachByRadius,
+                    /** 消除一个圆形范围内的所有实体 */
+                    eraseByRadius,
+                    /** @readonly @internal 当前场上的实体数量（⚠️包含无效实体） */
+                    get _validCount() { return pool._validCount; },
+                    destroy,
+                    get destroyed() { return pool.destroyed; },
+                };
+            })();
+            //#endregion entityPool
+
+            //#region enemyPool
+            const enemyPool = (() => {
+                const pool = makeObjPool<AbstractEnemy<AbstractEntity>>();
+                const { objects, push, clean, forEachAlive, getAlives, destroy } = pool;
+
+                const forEachByRadius = (options: { x: number, y: number, radius: number, callback: (enemy: AbstractEnemy<AbstractEntity>) => unknown }) => {
+                    const { x, y, radius, callback } = options;
+                    forEachAlive(enemy => {
+                        if (isEntCrossCircle({ x, y, radius, ent: enemy.entity })) { callback(enemy); }
+                    });
+                };
+
+                return {
+                    /** @readonly 所有接受判定的敌人，⚠️可能含有已经摧毁的无效敌人 */
+                    objects,
+                    /** 推入并开始更新一个敌人，此函数会在合适的时机自动触发清理 */
+                    push,
+                    /** 立即清理敌人列表，一般不用管这个东西 */
+                    clean,
+                    /** 遍历所有未被摧毁的敌人，可以用来全屏攻击啥的 */
+                    forEachAlive,
+                    /** 获取所有未被摧毁的实体 */
+                    getAlives,
+                    /** 遍历一个圆形范围内的所有敌人 */
+                    forEachByRadius,
+                    // TODO: damageByRadius, killByRadius
+                    /** @readonly @internal 当前场上的敌人数量（⚠️包含无效敌人） */
+                    get _validCount() { return pool._validCount; },
+                    destroy,
+                    get destroyed() { return pool.destroyed; },
+                };
+            })();
+            //#endregion enemyPool
+
             // 弹幕引擎的场地尺寸是 150 * 180，这里放大到了 4/3 倍
-            let width = 200;
-            let height = 240;
+            let halfWidth = 200;
+            let halfHeight = 240;
 
             return {
                 /** 根节点 */
@@ -175,17 +259,31 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 playerBulletLayer,
                 /** 装有所有消弹特效的根节点 */
                 danmakuEraseLayer,
+                /**
+                 * @readonly
+                 * 实体池，可以利用这个东西来每帧更新所有实体（主要是弹幕），这样弹幕才能攻击玩家。  
+                 * 正常情况下不用管这个东西，因为自机会自动帮你调用它的 update 方法。  
+                 * 也可以用这个来遍历所有弹幕。  
+                 */
+                entityPool,
+                /** TODOC: enemyPool 理论上讲这里边是所有敌人，包括杂鱼和 boss */
+                enemyPool,
                 /** 场地宽度的一半 */
-                get width() { return width; },
+                get halfWidth() { return halfWidth; },
                 // set width(n: number) { width = n; },
                 /** 场地高度的一半 */
-                get height() { return height; },
+                get halfHeight() { return halfHeight; },
                 // set height(n: number) { height = n; },
                 // MAYDO: 改变场地尺寸
                 destroy() {
+                    if (this.destroyed) { return; }
                     root.destroy();
                     commonDanmakuLayer.destroy();
+                    commonEnemyLayer.destroy();
+                    playerBulletLayer.destroy();
                     danmakuEraseLayer.destroy();
+                    entityPool.destroy();
+                    enemyPool.destroy();
                 },
                 get destroyed() { return root.destroyed },
             };
@@ -267,91 +365,6 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             return false;
         }
 
-        // MAYDO: 把池子移到 board 里
-        //#region entityPool
-        const entityPool = (() => {
-            const pool = makeObjPool<AbstractEntity>();
-            const { objects, push, clean, forEachAlive, getAlives, destroy } = pool;
-
-            const update = (player: Player) => {
-                if (player.state.type === "common") {
-                    for (let i = 0; i < objects.length; i++) {
-                        if (!objects[i].destroyed) { objects[i].update(player); }
-                    }
-                }
-                player._lastX = player.x;
-                player._lastY = player.y;
-            };
-
-            const forEachByRadius = (options: { x: number, y: number, radius: number, callback: (entity: AbstractEntity) => unknown }) => {
-                const { x, y, radius, callback } = options;
-                forEachAlive(ent => {
-                    if (isEntCrossCircle({ x, y, radius, ent })) { callback(ent); }
-                });
-            };
-
-            const eraseByRadius = (options: { x: number, y: number, radius: number, eraseOptions?: EraseEntityOptions }) =>
-                forEachByRadius({...options, callback: ent => ent.erase(options.eraseOptions) });
-
-            return {
-                /** @readonly 所有接受判定的实体，⚠️可能含有已经摧毁的无效实体 */
-                objects,
-                /** 推入并开始更新一个实体，此函数会在合适的时机自动触发清理 */
-                push,
-                /** 更新所有实体的攻击逻辑 */
-                update,
-                /** 立即清理实体列表，一般不用管这个东西 */
-                clean,
-                /** 遍历所有未被摧毁的实体，可以用来消弹 */
-                forEachAlive,
-                /** 获取所有未被摧毁的实体 */
-                getAlives,
-                /** 遍历一个圆形范围内的所有实体 */
-                forEachByRadius,
-                /** 消除一个圆形范围内的所有实体 */
-                eraseByRadius,
-                /** @readonly @internal 当前场上的实体数量（⚠️包含无效实体） */
-                get _validCount() { return pool._validCount; },
-                destroy,
-                get destroyed() { return pool.destroyed; },
-            };
-        })();
-        //#endregion entityPool
-
-        //#region enemyPool
-        const enemyPool = (() => {
-            const pool = makeObjPool<AbstractEnemy<AbstractEntity>>();
-            const { objects, push, clean, forEachAlive, getAlives, destroy } = pool;
-
-            const forEachByRadius = (options: { x: number, y: number, radius: number, callback: (enemy: AbstractEnemy<AbstractEntity>) => unknown }) => {
-                const { x, y, radius, callback } = options;
-                forEachAlive(enemy => {
-                    if (isEntCrossCircle({ x, y, radius, ent: enemy.entity })) { callback(enemy); }
-                });
-            };
-
-            return {
-                /** @readonly 所有接受判定的敌人，⚠️可能含有已经摧毁的无效敌人 */
-                objects,
-                /** 推入并开始更新一个敌人，此函数会在合适的时机自动触发清理 */
-                push,
-                /** 立即清理敌人列表，一般不用管这个东西 */
-                clean,
-                /** 遍历所有未被摧毁的敌人，可以用来全屏攻击啥的 */
-                forEachAlive,
-                /** 获取所有未被摧毁的实体 */
-                getAlives,
-                /** 遍历一个圆形范围内的所有敌人 */
-                forEachByRadius,
-                // TODO: damageByRadius, killByRadius
-                /** @readonly @internal 当前场上的敌人数量（⚠️包含无效敌人） */
-                get _validCount() { return pool._validCount; },
-                destroy,
-                get destroyed() { return pool.destroyed; },
-            };
-        })();
-        //#endregion enemyPool
-
         const players: Player[] = [];
 
         const combat = {
@@ -359,15 +372,6 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             ingameUi,
             /** @readonly 版面，就是自机和弹幕所处的那个主要场地 */
             board,
-            /**
-             * @readonly
-             * 实体池，可以利用这个东西来每帧更新所有实体（主要是弹幕），这样弹幕才能攻击玩家。  
-             * 正常情况下不用管这个东西，因为自机会自动帮你调用它的 update 方法。  
-             * 也可以用这个来遍历所有弹幕。  
-             */
-            entityPool,
-            /** TODOC: enemyPool 理论上讲这里边是所有敌人，包括杂鱼和 boss */
-            enemyPool,
             /** @readonly JSTG 预置的自机 */
             prefabPlayers: null as unknown as typeof prefabPlayers, // MAGIC:
             /** @readonly JSTG 预置的敌人 */
@@ -377,12 +381,12 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             /** TODOC: makeLaserBeam */
             makeLaserBeam: null as unknown as typeof makeLaserBeam, // MAGIC:
             destroy() {
+                if (this.destroyed) { return; }
                 ingameUi.destroy();
                 board.destroy();
-                entityPool.destroy();
                 for (const pl of players) { pl.destroy(); }
             },
-            get destroyed() { return board.destroyed; },
+            get destroyed() { return ingameUi.destroyed; },
 
             forever(fn: LooperFn, options: LoopOptions = {}) {
                 const loop = game.forever(fn, options);
@@ -505,19 +509,17 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             /** @default game.commonDanmakuLayer */
             parent?: pixi.Container,
             /** @default 2 */
-            width?: number,
+            halfWidth?: number,
             /** @default 400 */
             length?: number,
             /**
-             * 如果不填写此参数，则激光没有起始端点。
-             * 若填写 startPoint: {} ，则默认为：
-             * @default{ type: "nova", pos: 0 }
+             * 如果不填写此参数，则激光没有起始端点。  
+             * 若填写`startPoint: {}`，则默认为`{ type: "nova", pos: 0 }`
              */
             startPoint?: { type?: PrefabDanmakuNames, pos?: number, },
             /**
-             * 如果不填写此参数，则激光没有末尾端点。
-             * 若填写 endPoint: {} ，则默认为：
-             * @default{ type: "nova", pos: 1 }
+             * 如果不填写此参数，则激光没有末尾端点。  
+             * 若填写`endPoint: {}`，则默认为`{ type: "nova", pos: 1 }`
              */
             endPoint?: { type?: PrefabDanmakuNames, pos?: number, },
             /** 图层顺序。若不填此参数，则自动根据弹幕尺寸排序，大的在底层、小的在顶层。 */
@@ -537,7 +539,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 type: options.type ?? "laserseg", color: options.color ?? "red",
                 x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
                 parent: options.parent ?? null,
-                halfWidth: options.width ?? 2, length: options.length ?? 400,
+                halfWidth: options.halfWidth ?? 2, length: options.length ?? 400,
                 startPoint: options.startPoint ?? null, endPoint: options.endPoint ?? null,
                 zIndex: options.zIndex ?? null,
                 canBeErase: options.canBeErase ?? null,
@@ -577,7 +579,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             fps = Math.round(1000000 / (now - (timeRecords.shift() as number))) / 100;
         }
         fpsMonitor.text = `FPS:${fps}`;
-    }, { order: 0 });
+    }, { order: 0, pauseController: "none" });
 
     app.ticker.add(() => {
         looper.stepThreads();
@@ -606,11 +608,12 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
     })();
 
     const game = {
-        /**
-         * @readonly
-         * pixi.Application 实例
-         */
+        /** @readonly pixi.Application 实例 */
         app,
+        /** @readonly */
+        stageWidth,
+        /** @readonly */
+        stageHeight,
         /** TODOC: StartCombat */
         StartCombat,
         /** fps 指示器 */

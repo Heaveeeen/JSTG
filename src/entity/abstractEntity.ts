@@ -68,7 +68,7 @@ export abstract class AbstractEntity {
         this.game = options.game;
         this.combat = options.combat;
         this.board = options.board;
-        options.combat.entityPool.push(this);
+        options.board.entityPool.push(this);
     }
 
     abstract x: number;

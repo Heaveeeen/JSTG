@@ -20,9 +20,6 @@ import { deg } from "./dist/utils.js";
     const combat = await game.StartCombat()
     const { board, makeDanmaku, makeLaserBeam } = combat;
 
-    console.log("game:", game);
-    console.log("combat:", combat);
-    console.log("danmaku pool:", combat.entityPool);
     const txt = new pixi.Text({
         parent: board.root,
         text: 
@@ -262,8 +259,10 @@ import { deg } from "./dist/utils.js";
         }
     }, { order: 0 });
 
+    let lastPauseClockTS = -999;
     forever(loop => {
-        if (isDown(Key.Escape)) {
+        if (game.clock >= lastPauseClockTS + 30 && isDown(Key.Escape)) {
+            lastPauseClockTS = game.clock;
             game.defaultPauseController.isRun = !game.defaultPauseController.isRun;
             game.prefabSounds.thse.pause.play();
         }
