@@ -129,7 +129,6 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
     //#region combat
 
-    /** ⚠️不要使用此函数的返回值 */
     async function StartCombat() {
 
         //#region board
