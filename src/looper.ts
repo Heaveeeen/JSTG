@@ -135,7 +135,7 @@ export const makeLooper = (makeLooperOptions: {
             } else if (pauseControllers.every(ctrlr => ctrlr.isRun)) {
                 fn(loop);
                 if (clock % getTimescale() > 0) {
-                    clock = Math.floor(clock / getTimescale())
+                    clock = Math.floor(clock / getTimescale());
                 }
                 clock += getTimescale();
             }
