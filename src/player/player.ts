@@ -51,9 +51,6 @@ export type MissGainBombType = "resetToInitAmount" | "increaseByInitAmount" | "n
 
 const missInvincibleTime = 180;
 
-/** 玩家处于 Miss 状态或其他非法状态时，尝试给予玩家无敌帧，该如何处理 */
-let _handleApplyInvincibleButBadPlayerStateError: "throw" | "warn" | "ignore" = "warn";
-
 export interface NewPlayerOptions {
     name: string;
     game: Game;
@@ -118,6 +115,7 @@ export class Player {
         timeSinceDying: number,
     } | {
         type: "miss",
+        rebirthInvincibleTime?: number,
     } = {
         type: "common",
         invincibleTime: missInvincibleTime,
@@ -474,7 +472,8 @@ export class Player {
                     yield;
                 }
                 this.y = 185;
-                this.state = { type: "common", invincibleTime: missInvincibleTime };
+                this.state = { type: "common", invincibleTime: this.state.rebirthInvincibleTime ?? 0 };
+                this.applyInvincible(missInvincibleTime);
                 break;
             }
         }
@@ -497,19 +496,15 @@ export class Player {
         }
     }
 
-    /** 给予玩家无敌效果，如果玩家处于 Miss 状态则不会生效，且会报错。 */
+    /** 给予玩家无敌效果。如果玩家处于 Miss 状态，则这些无敌时间会拖到玩家复活后再开始生效。 */
     applyInvincible(time: number) {
         if (this.state.type === "common") {
-            if (this.state.invincibleTime < time) { this.state.invincibleTime = time; }
+            // 新旧无敌时间的叠加方式，不是加算，也不是取最大值，而是两者折中。（用牢zun的话说，很狡猾的机制。）
+            this.state.invincibleTime = Math.max(this.state.invincibleTime, time) + Math.min(this.state.invincibleTime, time) / 2;
         } else if (this.state.type === "dying") { // 决死
             this.state = { type: "common", invincibleTime: time };
         } else {
-            if (_handleApplyInvincibleButBadPlayerStateError === "ignore") {
-            } else if (_handleApplyInvincibleButBadPlayerStateError === "warn") {
-                console.warn(new Error(`警告：尝试给予玩家无敌效果时，玩家正处于 ${this.state.type} 状态，无敌效果未生效。`));
-            } else {
-                throw new Error(`错误：尝试给予玩家无敌效果时，玩家正处于 ${this.state.type} 状态。`);
-            }
+            // 在 Miss 状态下给予无敌时间，忽略
         }
     }
 
