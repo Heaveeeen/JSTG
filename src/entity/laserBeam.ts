@@ -138,12 +138,12 @@ export class LaserBeam extends AbstractEntity {
         this.updateDebugHitbox(player);
         this.isGrazing = false;
 
-        const { x: dx, y: dy } = rotateVec({ x: player.x - this.x, y: player.y - this.y }, this.rotation);
+        const { x: rx, y: ry } = rotateVec({ x: player.x - this.x, y: player.y - this.y }, this.rotation);
         
         const radius = this.hitboxHalfWidth + player.hitboxRadius;
-        const isHit = (dx >= 0) && (dx <= this.hitboxLength) && (Math.abs(dy) <= radius);
+        const isHit = (rx >= 0) && (rx <= this.hitboxLength) && (Math.abs(ry) <= radius);
         if (this.grazeCd <= 0) {
-            this.isGrazing = (dx >= -24) && (dx <= this.hitboxLength + 24) && (Math.abs(dy) <= radius + 24);
+            this.isGrazing = (rx >= -24) && (rx <= this.hitboxLength + 24) && (Math.abs(ry) <= radius + 24);
         }
 
         if (isHit) {
@@ -237,6 +237,12 @@ export class LaserBeam extends AbstractEntity {
                (Math.abs(boxCY) - 0.5 * boxH <= this.board.halfHeight);
     }
 
+    getIsCrossCircle(circle: { x: number; y: number; radius: number; }) {
+        const { x: rx, y: ry } = rotateVec({ x: circle.x - this.x, y: circle.y - this.y }, this.rotation);
+        const radius = this.hitboxHalfWidth + circle.radius;
+        return (rx >= 0) && (rx <= this.hitboxLength) && (Math.abs(ry) <= radius);
+    }
+
     destroy() {
         if (this.destroyed) { return };
         this.hitboxGraphics?.destroy();
@@ -287,7 +293,7 @@ export const makePrefabLaserBeam = (options: {
             const scale = point.scale ?? (1 * hitboxHalfWidth / pointBaseRadius) + 0.3;// 这里可以考虑加个sqrt，防止端点大的太大、小的太小；另外，这个尺寸应当能够随激光尺寸的变化而变化0
             return {
                 sprite: makeCommonOrAnimatedSprite({
-                    game, combat, texture,
+                    game, combat, board, texture,
                     sprite: new pixi.Sprite({
                         parent,
                         anchor: 0.5,
@@ -309,7 +315,7 @@ export const makePrefabLaserBeam = (options: {
         anchor = { x: 0.5 - (baseHalfLength / texture[0].texture.width), y: 0.5 };
     }
     let mainSprite = makeCommonOrAnimatedSprite({
-        game, combat, texture,
+        game, combat, board, texture,
         sprite: new pixi.Sprite({
             parent, x, y, rotation,
             anchor,

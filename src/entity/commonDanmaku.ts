@@ -192,6 +192,10 @@ export class CommonDanmaku extends AbstractEntity {
         return (Math.abs(this.x) - r <= this.board.halfWidth) && (Math.abs(this.y) - r <= this.board.halfHeight);
     }
 
+    getIsCrossCircle(circle: { x: number; y: number; radius: number; }) {
+        return (this.x - circle.x) ** 2 + (this.y - circle.y) ** 2 <= (this.hitboxRadius + circle.radius) ** 2;
+    }
+
     destroy() {
         if (this.destroyed) { return };
         this.hitboxGraphics?.destroy();

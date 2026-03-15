@@ -166,12 +166,14 @@ export abstract class AbstractEntity {
      */
     abstract isInBoundary(): boolean;
 
-    /** 如果该弹幕超出版面边界，摧毁该弹幕 */
+    /** 如果该实体超出版面边界，摧毁该实体 */
     boundaryDelete() {
         if (!this.isInBoundary()) {
             this.destroy();
         }
     }
+
+    abstract getIsCrossCircle(circle: { x: number, y: number, radius: number }): boolean;
 
     abstract destroy(): void;
     /**

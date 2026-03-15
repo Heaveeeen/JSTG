@@ -177,7 +177,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 const forEachByRadius = (options: { x: number, y: number, radius: number, callback: (entity: AbstractEntity) => unknown }) => {
                     const { x, y, radius, callback } = options;
                     forEachAlive(ent => {
-                        if (isEntCrossCircle({ x, y, radius, ent })) { callback(ent); }
+                        if (ent.getIsCrossCircle({ x, y, radius })) { callback(ent); }
                     });
                 };
 
@@ -217,7 +217,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 const forEachByRadius = (options: { x: number, y: number, radius: number, callback: (enemy: AbstractEnemy<AbstractEntity>) => unknown }) => {
                     const { x, y, radius, callback } = options;
                     forEachAlive(enemy => {
-                        if (isEntCrossCircle({ x, y, radius, ent: enemy.entity })) { callback(enemy); }
+                        if (enemy.entity.getIsCrossCircle({ x, y, radius })) { callback(enemy); }
                     });
                 };
 
@@ -365,8 +365,9 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             board.prefabEnemys = prefabEnemys;
 
             type MakeDanmakuOptions = {
-                type: PrefabDanmakuNames,
-                /** @default red */
+                /** @default "smallball" */
+                type?: PrefabDanmakuNames,
+                /** @default "red" */
                 color?: DyedTextureColors,
                 /** @default game.commonDanmakuLayer */
                 parent?: pixi.Container,
@@ -384,15 +385,15 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 canBeErase?: boolean,
             };
 
-            function makeDanmaku(type: PrefabDanmakuNames, /** @default "red" */color?: DyedTextureColors): CommonDanmaku;
+            function makeDanmaku(/** @default "smallball" */type?: PrefabDanmakuNames, /** @default "red" */color?: DyedTextureColors): CommonDanmaku;
             function makeDanmaku(options: MakeDanmakuOptions): CommonDanmaku;
-            function makeDanmaku(options: PrefabDanmakuNames | MakeDanmakuOptions, color?: DyedTextureColors) {
-                if (typeof options === "string") {
+            function makeDanmaku(options?: PrefabDanmakuNames | MakeDanmakuOptions, color?: DyedTextureColors) {
+                if (options === undefined || typeof options === "string") {
                     options = { type: options, color };
                 };
                 return makePrefabDanmaku({
                     game, combat, board,
-                    type: options.type, color: options.color ?? "red", parent: options.parent ?? null,
+                    type: options.type ?? "smallball", color: options.color ?? "red", parent: options.parent ?? null,
                     x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
                     radius: options.radius ?? null,
                     zIndex: options.zIndex ?? null,
@@ -434,7 +435,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 canBeErase?: boolean,
             };
 
-            function makeLaserBeam(type?: PrefabDanmakuNames, /** @default "red" */color?: DyedTextureColors): LaserBeam;
+            function makeLaserBeam(/** @default "laserseg" */type?: PrefabDanmakuNames, /** @default "red" */color?: DyedTextureColors): LaserBeam;
             function makeLaserBeam(options: MakeLaserBeamOptions): LaserBeam;
             function makeLaserBeam(options?: PrefabDanmakuNames | MakeLaserBeamOptions, color?: DyedTextureColors) {
                 if (options === undefined || typeof options === "string") {
@@ -521,16 +522,6 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             }
         })();
         //#endregion
-
-        const isEntCrossCircle = (options: { x: number, y: number, radius: number, ent: AbstractEntity }) => {
-            const { x, y, radius, ent } = options;
-            if (ent instanceof CommonDanmaku) {
-                if ((ent.x - x) ** 2 + (ent.y - y) ** 2 <= (ent.hitboxRadius + radius) ** 2) { return true; }
-            } else {// TODO: if (dan instanceof LaserBeam) {
-                if ((ent.x - x) ** 2 + (ent.y - y) ** 2 <= (4 + radius) ** 2) { return true; }
-            }
-            return false;
-        }
 
         const players: Player[] = [];
 
