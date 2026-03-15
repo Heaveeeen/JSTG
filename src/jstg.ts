@@ -1,5 +1,5 @@
 import * as pixi from "pixi";
-import { DyedTextures, LoadPixiAsset, LoadPrefabTextures, LoadPrefabTexturesOptions, LoadSvg, PrefabDanmakuNames, DyedTextureColors } from "./textures.js";
+import { DyedTextures, LoadPixiAsset, LoadPrefabTextures, LoadPrefabTexturesOptions, LoadSvg, PrefabDanmakuNames, DyedTextureColors, makeDyedTextures, makeDyedFrames } from "./textures.js";
 import { Key, makeInput } from "./Input.js";
 import { prefabPlayerFactory } from "./player/prefabPlayerFactory.js";
 import { makeRng } from "./random.js";
@@ -717,10 +717,16 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
 };
 
-export {
+const Assets = {
     LoadPixiAsset,
     LoadSvg,
+    makeDyedTextures,
+    makeDyedFrames,
     LoadSound,
+};
+
+export {
+    Assets,
     Key,
     Player,
     makeRng,

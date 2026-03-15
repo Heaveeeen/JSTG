@@ -86,7 +86,7 @@ export function makeDyedTextures(options: {
  * }
  * 换句话说，就是把给定的序列帧染色成几份不同颜色的序列帧，每一种颜色都能单独取出来，取出来的东西类型等同于输入。
  */
-function makeDyedFrames<T extends pixi.FrameObject[]>(options: {
+export function makeDyedFrames<T extends pixi.FrameObject[]>(options: {
     app: pixi.Application, redFrames: T,
 }): DyedTextures<T> {
     const { app, redFrames } = options;
