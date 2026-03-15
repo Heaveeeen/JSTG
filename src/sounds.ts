@@ -105,7 +105,7 @@ export async function LoadPrefabSounds(options: LoadPrefabSoundsOptions = {}) {
     const poolSizeScale = options.poolSizeScale ?? 1;
     const lsfx = (url: string, poolSize: number = 1) => LoadSound({ src: base + url, poolSize: poolSize * poolSizeScale, globalGainType: "sfx", })
     return {
-        // TODO: DOC thse
+        // TODOC: thse
         /** 东方原作中的音效 */
         thse: {
             big: await lsfx(`thse/big.wav`),

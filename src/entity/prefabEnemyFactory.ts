@@ -12,7 +12,7 @@ export const prefabEnemyFactory = (()=>{
         x: number, y: number, rotation: number,
         /** @default board.commonEnemyLayer */
         parent: pixi.Container | null,
-        // TODO: hitboxRadius, isCanHurt, isTouchingDamage, isCanGraze, scale(?)
+        // TODO: hitboxRadius, isCanHurt, isTouchingDamage, isCanGraze, scale(?), animRotation(?)
     }) => {
         const { game, combat, board, maxHp, color, x, y, rotation } = options;
         const rootSprite = new pixi.Sprite({
@@ -23,11 +23,13 @@ export const prefabEnemyFactory = (()=>{
             parent: rootSprite,
             anchor: 0.5,
             texture: game.prefabTextures.enemy.yinYangOrb.innerRing[color],
+            rotation: Math.random() * Math.PI * 2, // RAND: 阴阳玉动画初始相位
         });
         const outerRing = new pixi.Sprite({
             parent: rootSprite,
             anchor: 0.5,
             texture: game.prefabTextures.enemy.yinYangOrb.outerRing[color],
+            rotation: Math.random() * Math.PI * 2, // RAND: 阴阳玉动画初始相位
         });
         const mainOrb = new pixi.Sprite({
             parent: rootSprite,

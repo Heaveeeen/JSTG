@@ -28,7 +28,8 @@ import { deg } from "./dist/utils.js";
         text: 
 `Hello, JSTG!
 按 P 显示判定范围。
-按 O 开启上帝模式。`,
+按 O 开启上帝模式。
+按 ESC 暂停。`,
         x: 0,
         y: 0,
         anchor: 0.5,
@@ -260,5 +261,12 @@ import { deg } from "./dist/utils.js";
             debug.godMode.isOn = !debug.godMode.isOn;
         }
     }, { order: 0 });
+
+    forever(loop => {
+        if (isDown(Key.Escape)) {
+            game.defaultPauseController.isRun = !game.defaultPauseController.isRun;
+            game.prefabSounds.thse.pause.play();
+        }
+    }, { order: 0, pauseController: "none" });
 
 })();

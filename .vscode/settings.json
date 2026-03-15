@@ -20,5 +20,10 @@
             "color": "#2266cc",
             "backgroundColor": "#ffcd3a"
         },
+        {
+            "text": "TODOC:",
+            "color": "#11aa22",
+            "backgroundColor": "#ffcd3a"
+        },
     ],
 }

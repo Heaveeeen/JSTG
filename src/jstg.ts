@@ -10,7 +10,7 @@ import { makeObjPool } from "./objPool.js";
 import { LoadPrefabSounds, LoadPrefabSoundsOptions, LoadSound } from "./sounds.js";
 import { LaserBeam, makePrefabLaserBeam } from "./entity/laserBeam.js";
 import { Player } from "./player/player.js";
-import { CoDoGenFn, LoopController, LooperFn, LoopOptions, makeLooper } from "./looper.js";
+import { CoDoGenFn, LoopController, LooperFn, LoopOptions, makeLooper, makePauseController } from "./looper.js";
 import { AbstractEnemy } from "./entity/abstractEnemy.js";
 import { prefabEnemyFactory } from "./entity/prefabEnemyFactory.js";
 
@@ -108,7 +108,9 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
     let timeScale: number = 1;
 
-    const looper = makeLooper({ getTimescale: () => timeScale });
+    const defaultPauseController = makePauseController();
+
+    const looper = makeLooper({ getTimescale: () => timeScale, defaultPauseController });
 
     const { forever, coDo } = looper;
 
@@ -123,7 +125,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
     }
 
     const input = makeInput();
-    if (gameOptions.autoUpdateInput ?? true) { forever(() => input._update(), { order: 0 }); }
+    if (gameOptions.autoUpdateInput ?? true) { forever(() => input._update(), { order: 0, pauseController: "none" }); }
 
     //#region combat
 
@@ -364,7 +366,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
              * 也可以用这个来遍历所有弹幕。  
              */
             entityPool,
-            /** TODO: DOC enemyPool 理论上讲这里边是所有敌人，包括杂鱼和 boss */
+            /** TODOC: enemyPool 理论上讲这里边是所有敌人，包括杂鱼和 boss */
             enemyPool,
             /** @readonly JSTG 预置的自机 */
             prefabPlayers: null as unknown as typeof prefabPlayers, // MAGIC:
@@ -372,7 +374,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             prefabEnemys: null as unknown as typeof prefabEnemys, // MAGIC:
             /** 创建一个 JSTG 预置的弹幕 */
             makeDanmaku: null as unknown as typeof makeDanmaku, // MAGIC:
-            /** TODO: DOC makeLaserBeam */
+            /** TODOC: makeLaserBeam */
             makeLaserBeam: null as unknown as typeof makeLaserBeam, // MAGIC:
             destroy() {
                 ingameUi.destroy();
@@ -609,7 +611,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
          * pixi.Application 实例
          */
         app,
-        /** TODO: DOC StartCombat */
+        /** TODOC: StartCombat */
         StartCombat,
         /** fps 指示器 */
         fpsMonitor,
@@ -699,6 +701,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         get clock() {
             return fpsCounterLoop.clock;
         },
+        /** TODOC: defaultPauseController */
+        defaultPauseController,
     };
 
     //#endregion game
@@ -715,5 +719,6 @@ export {
     Player,
     makeRng,
     utils,
-    prefabDanmakuHitboxRadius
+    prefabDanmakuHitboxRadius,
+    makePauseController,
 }

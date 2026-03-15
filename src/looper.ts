@@ -2,6 +2,9 @@ import { Destroyable, Game } from "./jstg.js";
 import * as utils from "./utils.js"
 
 
+export const makePauseController = () => ({ isRun: true });
+type PauseController = ReturnType<typeof makePauseController>;
+
 /**
  * 循环的控制器对象，用于控制该循环
  * @example
@@ -21,6 +24,7 @@ export interface LoopController {
     addRefs(...objs: Destroyable[]): void,
     addKills(...objs: Destroyable[]): void,
     addOwns(...objs: Destroyable[]): void,
+    addPauseController(...controllers: PauseController[]): void,
 }
 
 type LoopOrder = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
@@ -47,15 +51,18 @@ export interface LoopOptions {
      * 该脚本停止时，自动摧毁这些对象。
      */
     owns?: Destroyable | Destroyable[],
+    /** TODOC: LoopOptions.pauseController */
+    pauseController?: PauseController | PauseController[] | "none",
 }
 
 export type CoDoGenerator = Generator<unknown, unknown, void>;
 
-export const makeLooper = (options: {
+export const makeLooper = (makeLooperOptions: {
     getTimescale: () => number,
+    defaultPauseController: PauseController,
 }) => {
 
-    const { getTimescale } = options;
+    const { getTimescale, defaultPauseController } = makeLooperOptions;
 
     type Thread = ((() => unknown) | null)[];
 
@@ -104,6 +111,8 @@ export const makeLooper = (options: {
         const refs = [...utils.makeElements(options.refs), ...owns];
         const kills = [...utils.makeElements(options.kills), ...owns];
 
+        const pauseControllers = options.pauseController === "none" ? [] : utils.makeElements(options.pauseController ?? defaultPauseController);
+
         let clock = 0;
         let destroyed = false;
         const callbacks: (() => unknown)[] = [];
@@ -118,11 +127,12 @@ export const makeLooper = (options: {
                 refs.push(...objs);
                 kills.push(...objs);
             },
+            addPauseController: (...controllers) => { pauseControllers.push(...controllers); },
         };
         const looperFn = () => {
             if (refs.some(r => r.destroyed)) {
                 destroy();
-            } else {
+            } else if (pauseControllers.every(ctrlr => ctrlr.isRun)) {
                 fn(loop);
                 if (clock % getTimescale() > 0) {
                     clock = Math.floor(clock / getTimescale())
