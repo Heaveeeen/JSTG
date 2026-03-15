@@ -49,7 +49,7 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
     beHurt(options: {
         /** 造成了多少点伤害。原则上，这个值不应当小于0。 */
         num: number,
-        // TODO: type
+        // TODO: damageType
     }) {
         this.hp -= options.num;
         if (this.entity.game.clock >= lastPlayDamageSoundClock + 3) {

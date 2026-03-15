@@ -32,7 +32,7 @@ export abstract class AbstractEnemy<T extends AbstractEntity = AbstractEntity> {
     abstract beHurt(options: {
         /** 造成了多少点伤害。原则上，这个值不应当小于0。 */
         num: number,
-        // TODO: type
+        // TODO: damageType
     }): void;
 
     abstract kill(options?: {
