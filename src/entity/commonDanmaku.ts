@@ -224,7 +224,7 @@ export const makePrefabDanmaku = (options: {
     const zIndex = options.zIndex ?? -hitboxRadius;
     const canBeErase = options.canBeErase ?? true;
     const sprite = makeCommonOrAnimatedSprite({
-        game, combat, texture,
+        game, combat, board, texture,
         sprite: new pixi.Sprite({
             parent, x, y, rotation,
             anchor: 0.5,

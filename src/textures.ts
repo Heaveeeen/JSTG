@@ -1,6 +1,6 @@
 import * as pixi from "pixi";
 import { cast, select } from "./utils.js";
-import { Combat, Game } from "./jstg.js";
+import { Board, Combat, Game } from "./jstg.js";
 
 /** @async 加载一个素材（如图像）。加载 svg 时请使用 {@linkcode LoadSvg} */
 export function LoadPixiAsset<T = pixi.Texture>(url: string, options?: pixi.LoadOptions): Promise<T> {
@@ -244,11 +244,11 @@ export type PrefabTextures = ExtractPromiseType<ReturnType<typeof LoadPrefabText
 export type PrefabDanmakuNames = keyof ExtractPromiseType<ReturnType<typeof LoadPrefabTextures>>["danmaku"]["danmaku"];
 
 export function makeCommonOrAnimatedSprite(options: {
-    game: Game, combat: Combat,
+    game: Game, combat: Combat, board: Board,
     sprite: pixi.Sprite,
     texture: pixi.Texture | pixi.FrameObject[],
 }) {
-    const { game, combat, sprite, texture } = options;
+    const { game, combat, board, sprite, texture } = options;
     if (texture instanceof pixi.Texture) {
         sprite.texture = texture;
     } else {
@@ -260,7 +260,7 @@ export function makeCommonOrAnimatedSprite(options: {
             weight: frame.time,
             value: frame.texture
         }));
-        combat.forever(loop => {
+        board.forever(loop => {
             sprite.texture = select((1000 * t / game.standardFps) % loopLength, selectTextures);
             t += game.timeScale;
         }, { refs: sprite });

@@ -64,12 +64,12 @@ export abstract class AbstractEnemy<T extends AbstractEntity = AbstractEntity> {
     abstract readonly destroyed: boolean;
 
     forever(fn: LooperFn, options: LoopOptions = {}) {
-        const loop = this.entity.combat.forever(fn, options);
+        const loop = this.entity.board.forever(fn, options);
         loop.addRefs(this);
         return loop;
     }
     coDo(genFn: CoDoGenFn, options: LoopOptions = {}) {
-        const loop = this.entity.combat.coDo(genFn, options);
+        const loop = this.entity.board.coDo(genFn, options);
         loop.addRefs(this);
         return loop;
     }

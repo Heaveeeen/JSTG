@@ -247,7 +247,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             let halfWidth = 200;
             let halfHeight = 240;
 
-            return {
+            const board = {
                 /** 根节点 */
                 root,
                 /** 装有所有普通弹幕节点的根节点 */
@@ -274,6 +274,14 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 get halfHeight() { return halfHeight; },
                 // set height(n: number) { height = n; },
                 // MAYDO: 改变场地尺寸
+                /** @readonly JSTG 预置的自机 */
+                prefabPlayers: null as unknown as typeof prefabPlayers, // MAGIC:
+                /** @readonly JSTG 预置的敌人 */
+                prefabEnemys: null as unknown as typeof prefabEnemys, // MAGIC:
+                /** 创建一个 JSTG 预置的弹幕 */
+                makeDanmaku: null as unknown as typeof makeDanmaku, // MAGIC:
+                /** TODOC: makeLaserBeam */
+                makeLaserBeam: null as unknown as typeof makeLaserBeam, // MAGIC:
                 destroy() {
                     if (this.destroyed) { return; }
                     root.destroy();
@@ -285,7 +293,167 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     enemyPool.destroy();
                 },
                 get destroyed() { return root.destroyed },
+
+                forever(fn: LooperFn, options: LoopOptions = {}) {
+                    const loop = combat.forever(fn, options);
+                    loop.addRefs(this);
+                    return loop;
+                },
+                coDo(genFn: CoDoGenFn, options: LoopOptions = {}) {
+                    const loop = combat.coDo(genFn, options);
+                    loop.addRefs(this);
+                    return loop;
+                },
             };
+
+            const prefabPlayers = (()=>{
+                const makePlayer = (player: Player) => {
+                    players.push(player);
+                    ingameUi.playerStateBar.updateWithPlayer(player);
+                    return player;
+                }
+
+                const makeSimple = (options: {
+                    /** @default true */
+                    autoUpdateEntityPool?: boolean,
+                    /** @default true */
+                    autoUpdateSelf?: boolean,
+                } = {}) => makePlayer(prefabPlayerFactory.makeSimple({
+                    game, combat, board,
+                    autoUpdateEntityPool: options.autoUpdateEntityPool ?? null,
+                    autoUpdateSelf: options.autoUpdateSelf ?? null,
+                }));
+
+                /* TODO: simple.homingOnly ...
+                * maple, icu
+                * reimu, marisa, sanae
+                * 类似锦上京的拼好机
+                */
+                return {
+                    /** 创建预置自机：Simple */
+                    makeSimple,
+                }
+            })();
+            board.prefabPlayers = prefabPlayers;
+
+            const prefabEnemys = (()=>{
+                const makeYinYangOrb = (options: {
+                    /** @default 30 */
+                    maxHp?: number,
+                    /** @default "red" */
+                    color?: DyedTextureColors,
+                    /** @default 0 */
+                    x?: number,
+                    /** @default 0 */
+                    y?: number,
+                    /** @default 0 */
+                    rotation?: number,
+                    /** @default board.commonEnemyLayer */
+                    parent?: pixi.Container,
+                } = {}) => prefabEnemyFactory.makeYinYangOrb({
+                    game, combat, board,
+                    maxHp: options.maxHp ?? 30,
+                    color: options.color ?? "red",
+                    x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
+                    parent: options.parent ?? null, 
+                });
+
+                return {
+                    makeYinYangOrb,
+                };
+            })();
+            board.prefabEnemys = prefabEnemys;
+
+            type MakeDanmakuOptions = {
+                type: PrefabDanmakuNames,
+                /** @default red */
+                color?: DyedTextureColors,
+                /** @default game.commonDanmakuLayer */
+                parent?: pixi.Container,
+                /** @default 0 */
+                x?: number,
+                /** @default 0 */
+                y?: number,
+                /** @default 0 */
+                rotation?: number,
+                /** 该弹幕的判定半径，默认值请参考 prefabDanmakuHitboxRadius 。 */
+                radius?: number,
+                /** 图层顺序。若不填此参数，则自动根据弹幕尺寸排序，大的在底层、小的在顶层。 */
+                zIndex?: number,
+                /** @default true */
+                canBeErase?: boolean,
+            };
+
+            function makeDanmaku(type: PrefabDanmakuNames, /** @default "red" */color?: DyedTextureColors): CommonDanmaku;
+            function makeDanmaku(options: MakeDanmakuOptions): CommonDanmaku;
+            function makeDanmaku(options: PrefabDanmakuNames | MakeDanmakuOptions, color?: DyedTextureColors) {
+                if (typeof options === "string") {
+                    options = { type: options, color };
+                };
+                return makePrefabDanmaku({
+                    game, combat, board,
+                    type: options.type, color: options.color ?? "red", parent: options.parent ?? null,
+                    x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
+                    radius: options.radius ?? null,
+                    zIndex: options.zIndex ?? null,
+                    canBeErase: options.canBeErase ?? null
+                });
+            }
+            board.makeDanmaku = makeDanmaku;
+
+            type MakeLaserBeamOptions = {
+                /** @default "laserseg" */
+                type?: PrefabDanmakuNames,
+                /** @default red */
+                color?: DyedTextureColors,
+                /** @default 0 */
+                x?: number, 
+                /** @default 0 */
+                y?: number, 
+                /** @default 0 */
+                rotation?: number
+                /** @default game.commonDanmakuLayer */
+                parent?: pixi.Container,
+                /** @default 2 */
+                halfWidth?: number,
+                /** @default 400 */
+                length?: number,
+                /**
+                 * 如果不填写此参数，则激光没有起始端点。  
+                 * 若填写`startPoint: {}`，则默认为`{ type: "nova", pos: 0 }`
+                 */
+                startPoint?: { type?: PrefabDanmakuNames, pos?: number, },
+                /**
+                 * 如果不填写此参数，则激光没有末尾端点。  
+                 * 若填写`endPoint: {}`，则默认为`{ type: "nova", pos: 1 }`
+                 */
+                endPoint?: { type?: PrefabDanmakuNames, pos?: number, },
+                /** 图层顺序。若不填此参数，则自动根据弹幕尺寸排序，大的在底层、小的在顶层。 */
+                zIndex?: number,
+                /** @default true */
+                canBeErase?: boolean,
+            };
+
+            function makeLaserBeam(type?: PrefabDanmakuNames, /** @default "red" */color?: DyedTextureColors): LaserBeam;
+            function makeLaserBeam(options: MakeLaserBeamOptions): LaserBeam;
+            function makeLaserBeam(options?: PrefabDanmakuNames | MakeLaserBeamOptions, color?: DyedTextureColors) {
+                if (options === undefined || typeof options === "string") {
+                    options = { type: options, color };
+                };
+                return makePrefabLaserBeam({
+                    game, combat, board,
+                    type: options.type ?? "laserseg", color: options.color ?? "red",
+                    x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
+                    parent: options.parent ?? null,
+                    halfWidth: options.halfWidth ?? 2, length: options.length ?? 400,
+                    startPoint: options.startPoint ?? null, endPoint: options.endPoint ?? null,
+                    zIndex: options.zIndex ?? null,
+                    canBeErase: options.canBeErase ?? null,
+                });
+            }
+            board.makeLaserBeam = makeLaserBeam;
+
+            return board;
         })();
         //#endregion board
 
@@ -371,14 +539,6 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             ingameUi,
             /** @readonly 版面，就是自机和弹幕所处的那个主要场地 */
             board,
-            /** @readonly JSTG 预置的自机 */
-            prefabPlayers: null as unknown as typeof prefabPlayers, // MAGIC:
-            /** @readonly JSTG 预置的敌人 */
-            prefabEnemys: null as unknown as typeof prefabEnemys, // MAGIC:
-            /** 创建一个 JSTG 预置的弹幕 */
-            makeDanmaku: null as unknown as typeof makeDanmaku, // MAGIC:
-            /** TODOC: makeLaserBeam */
-            makeLaserBeam: null as unknown as typeof makeLaserBeam, // MAGIC:
             destroy() {
                 if (this.destroyed) { return; }
                 ingameUi.destroy();
@@ -398,153 +558,6 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 return loop;
             },
         };
-
-        const prefabPlayers = (()=>{
-            const makePlayer = (player: Player) => {
-                players.push(player);
-                ingameUi.playerStateBar.updateWithPlayer(player);
-                return player;
-            }
-
-            const makeSimple = (options: {
-                /** @default true */
-                autoUpdateEntityPool?: boolean,
-                /** @default true */
-                autoUpdateSelf?: boolean,
-            } = {}) => makePlayer(prefabPlayerFactory.makeSimple({
-                game, combat, board,
-                autoUpdateEntityPool: options.autoUpdateEntityPool ?? null,
-                autoUpdateSelf: options.autoUpdateSelf ?? null,
-            }));
-
-            /* TODO: simple.homingOnly ...
-             * maple, icu
-             * reimu, marisa, sanae
-             * 类似锦上京的拼好机
-             */
-            return {
-                /** 创建预置自机：Simple */
-                makeSimple,
-            }
-        })();
-        combat.prefabPlayers = prefabPlayers;
-
-        const prefabEnemys = (()=>{
-            const makeYinYangOrb = (options: {
-                /** @default 30 */
-                maxHp?: number,
-                /** @default "red" */
-                color?: DyedTextureColors,
-                /** @default 0 */
-                x?: number,
-                /** @default 0 */
-                y?: number,
-                /** @default 0 */
-                rotation?: number,
-                /** @default board.commonEnemyLayer */
-                parent?: pixi.Container,
-            } = {}) => prefabEnemyFactory.makeYinYangOrb({
-                game, combat, board,
-                maxHp: options.maxHp ?? 30,
-                color: options.color ?? "red",
-                x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
-                parent: options.parent ?? null, 
-            });
-
-            return {
-                makeYinYangOrb,
-            };
-        })();
-        combat.prefabEnemys = prefabEnemys;
-
-        type MakeDanmakuOptions = {
-            type: PrefabDanmakuNames,
-            /** @default red */
-            color?: DyedTextureColors,
-            /** @default game.commonDanmakuLayer */
-            parent?: pixi.Container,
-            /** @default 0 */
-            x?: number,
-            /** @default 0 */
-            y?: number,
-            /** @default 0 */
-            rotation?: number,
-            /** 该弹幕的判定半径，默认值请参考 prefabDanmakuHitboxRadius 。 */
-            radius?: number,
-            /** 图层顺序。若不填此参数，则自动根据弹幕尺寸排序，大的在底层、小的在顶层。 */
-            zIndex?: number,
-            /** @default true */
-            canBeErase?: boolean,
-        };
-
-        function makeDanmaku(type: PrefabDanmakuNames, /** @default "red" */color?: DyedTextureColors): CommonDanmaku;
-        function makeDanmaku(options: MakeDanmakuOptions): CommonDanmaku;
-        function makeDanmaku(options: PrefabDanmakuNames | MakeDanmakuOptions, color?: DyedTextureColors) {
-            if (typeof options === "string") {
-                options = { type: options, color };
-            };
-            return makePrefabDanmaku({
-                game, combat, board,
-                type: options.type, color: options.color ?? "red", parent: options.parent ?? null,
-                x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
-                radius: options.radius ?? null,
-                zIndex: options.zIndex ?? null,
-                canBeErase: options.canBeErase ?? null
-            });
-        }
-        combat.makeDanmaku = makeDanmaku;
-
-        type MakeLaserBeamOptions = {
-            /** @default "laserseg" */
-            type?: PrefabDanmakuNames,
-            /** @default red */
-            color?: DyedTextureColors,
-            /** @default 0 */
-            x?: number, 
-            /** @default 0 */
-            y?: number, 
-            /** @default 0 */
-            rotation?: number
-            /** @default game.commonDanmakuLayer */
-            parent?: pixi.Container,
-            /** @default 2 */
-            halfWidth?: number,
-            /** @default 400 */
-            length?: number,
-            /**
-             * 如果不填写此参数，则激光没有起始端点。  
-             * 若填写`startPoint: {}`，则默认为`{ type: "nova", pos: 0 }`
-             */
-            startPoint?: { type?: PrefabDanmakuNames, pos?: number, },
-            /**
-             * 如果不填写此参数，则激光没有末尾端点。  
-             * 若填写`endPoint: {}`，则默认为`{ type: "nova", pos: 1 }`
-             */
-            endPoint?: { type?: PrefabDanmakuNames, pos?: number, },
-            /** 图层顺序。若不填此参数，则自动根据弹幕尺寸排序，大的在底层、小的在顶层。 */
-            zIndex?: number,
-            /** @default true */
-            canBeErase?: boolean,
-        };
-
-        function makeLaserBeam(type?: PrefabDanmakuNames, /** @default "red" */color?: DyedTextureColors): LaserBeam;
-        function makeLaserBeam(options: MakeLaserBeamOptions): LaserBeam;
-        function makeLaserBeam(options?: PrefabDanmakuNames | MakeLaserBeamOptions, color?: DyedTextureColors) {
-            if (options === undefined || typeof options === "string") {
-                options = { type: options, color };
-            };
-            return makePrefabLaserBeam({
-                game, combat, board,
-                type: options.type ?? "laserseg", color: options.color ?? "red",
-                x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
-                parent: options.parent ?? null,
-                halfWidth: options.halfWidth ?? 2, length: options.length ?? 400,
-                startPoint: options.startPoint ?? null, endPoint: options.endPoint ?? null,
-                zIndex: options.zIndex ?? null,
-                canBeErase: options.canBeErase ?? null,
-            });
-        }
-        combat.makeLaserBeam = makeLaserBeam;
 
         return combat;
     }

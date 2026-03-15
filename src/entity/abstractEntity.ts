@@ -181,12 +181,12 @@ export abstract class AbstractEntity {
     abstract readonly destroyed: boolean;
     
     forever(fn: LooperFn, options: LoopOptions = {}) {
-        const loop = this.combat.forever(fn, options);
+        const loop = this.board.forever(fn, options);
         loop.addRefs(this);
         return loop;
     }
     coDo(genFn: CoDoGenFn, options: LoopOptions = {}) {
-        const loop = this.combat.coDo(genFn, options);
+        const loop = this.board.coDo(genFn, options);
         loop.addRefs(this);
         return loop;
     }

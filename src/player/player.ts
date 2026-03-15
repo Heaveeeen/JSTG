@@ -416,14 +416,14 @@ export class Player {
                             filters: new DifferenceBlendFilter(),
                         });
                         let radius = 0;
-                        this.combat.forever(loop => {
+                        this.board.forever(loop => {
                             radius += (radius * 0.075 + 0.25) * this.game.timeScale;
                             spr.scale = radius * 0.01;
                         }, { owns: spr });
                         missFilterSprites.push(spr);
                     }
                     const self = this;
-                    this.combat.coDo(function*(loop) {
+                    this.board.coDo(function*(loop) {
                         makeMissFilterSprite(0, 0);
                         yield* self.game.Sleep(6);
                         makeMissFilterSprite(-40, 0);
@@ -440,7 +440,7 @@ export class Player {
                 {// 消弹
                     const self = this;
                     const { x, y } = this;
-                    this.combat.coDo(function*() {
+                    this.board.coDo(function*() {
                         for (let radius = 0; radius <= 600; radius += 10 * self.game.timeScale) {
                             self.board.entityPool.eraseByRadius({ x, y, radius });
                             // TODO: damage (circle) r=radius, dmg=10*timescale, dmg to boss = 0.2
@@ -524,13 +524,13 @@ export class Player {
     }
 
     forever(fn: LooperFn, options: LoopOptions = {}) {
-        const loop = this.combat.forever(fn, options);
+        const loop = this.board.forever(fn, options);
         loop.addRefs(this);
         return loop;
     }
 
     coDo(genFn: CoDoGenFn, options: LoopOptions = {}) {
-        const loop = this.combat.coDo(genFn, options);
+        const loop = this.board.coDo(genFn, options);
         loop.addRefs(this);
         return loop;
     }

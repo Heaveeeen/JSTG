@@ -18,7 +18,8 @@ import { deg } from "./dist/utils.js";
     const { asAny } = jstg.utils;
 
     const combat = await game.StartCombat()
-    const { board, makeDanmaku, makeLaserBeam } = combat;
+    const { board } = combat;
+    const { makeDanmaku, makeLaserBeam, prefabPlayers, prefabEnemys } = board;
 
     const txt = new pixi.Text({
         parent: board.root,
@@ -44,7 +45,7 @@ import { deg } from "./dist/utils.js";
     });
 
     /** 自机 */
-    const pl = combat.prefabPlayers.makeSimple({
+    const pl = prefabPlayers.makeSimple({
         autoUpdateSelf: false,
     });
     const se = game.prefabSounds.thse;
@@ -188,17 +189,17 @@ import { deg } from "./dist/utils.js";
         }
         makeFooExsibits(-165, ()=>65, ()=>0, ["bigyinyang"], ["h0", "h60", "h120", "h180", "h240", "h300"]);
         makeDanmaku({ type: "nuclear", x: 115, y: -10 }).canBeErase = false;
-        makeLaserBeam({ type: "laserseg", color: "h0", x: 60, y: 50, width: 1, length: 120, startPoint: {}, endPoint: {} }).canBeErase = false;
-        makeLaserBeam({ type: "laserseg", color: "h60", x: 70, y: 70, width: 3, length: 100, startPoint: {}, endPoint: {} }).canBeErase = false;
-        makeLaserBeam({ type: "laserseg", color: "h120", x: 80, y: 110, width: 5, length: 80, startPoint: {}, endPoint: {} }).canBeErase = false;
-        makeLaserBeam({ type: "smallball", color: "h180", x: 40, y: 150, width: 3, length: 140, startPoint: {}, endPoint: {} }).canBeErase = false;
-        makeLaserBeam({ type: "scale", color: "h240", x: 60, y: 180, width: 3, length: 120 }).canBeErase = false;
+        makeLaserBeam({ type: "laserseg", color: "h0", x: 60, y: 50, halfWidth: 1, length: 120, startPoint: {}, endPoint: {} }).canBeErase = false;
+        makeLaserBeam({ type: "laserseg", color: "h60", x: 70, y: 70, halfWidth: 3, length: 100, startPoint: {}, endPoint: {} }).canBeErase = false;
+        makeLaserBeam({ type: "laserseg", color: "h120", x: 80, y: 110, halfWidth: 5, length: 80, startPoint: {}, endPoint: {} }).canBeErase = false;
+        makeLaserBeam({ type: "smallball", color: "h180", x: 40, y: 150, halfWidth: 3, length: 140, startPoint: {}, endPoint: {} }).canBeErase = false;
+        makeLaserBeam({ type: "scale", color: "h240", x: 60, y: 180, halfWidth: 3, length: 120 }).canBeErase = false;
     }
     //makeFooMuseum();
 
     const colors = ["h0", "h30", "h60", "h90", "h120", "h150", "h180", "h210", "h240", "h270", "h300", "h330", "black", "white"];
     for (let i = 0; i < 30; i++) {
-        combat.prefabEnemys.makeYinYangOrb({
+        prefabEnemys.makeYinYangOrb({
             // @ts-expect-error
             color: colors[Math.floor(Math.random() * colors.length)],
             x: (i * 45) % 340 - 170, y: i * 6 - 220 + Math.random() * 10, rotation: 0,

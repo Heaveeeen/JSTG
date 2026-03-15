@@ -10,6 +10,7 @@
         "noImplicitOverride": true,
         "incremental": true,
         "declaration": true,
+        "sourceMap": true,
         "paths": {
             "pixi": ["./lib/pixi/pixi"],
         }

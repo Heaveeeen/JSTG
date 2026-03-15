@@ -193,7 +193,7 @@ export const prefabPlayerFactory = (()=>{
                             let speed = 20;
                             let omega = deg(8);
                             let target: AbstractEnemy | null = null;
-                            combat.forever(loop => {
+                            board.forever(loop => {
                                 const currentSpeed = speed * game.timeScale;
                                 const currentOmega = omega * game.timeScale;
                                 for (const enemy of board.enemyPool.getAlives()) { // 攻击判定
@@ -216,7 +216,7 @@ export const prefabPlayerFactory = (()=>{
                                                     filters: bullet.filters,
                                                     blendMode: "add",
                                                 });
-                                                combat.forever(loop => {
+                                                board.forever(loop => {
                                                     hitEffect.scale.x -= 0.05 * game.timeScale;
                                                     hitEffect.scale.y -= 0.05 * game.timeScale;
                                                     alphaTo(hitEffect, 0, 0.075 * game.timeScale);
