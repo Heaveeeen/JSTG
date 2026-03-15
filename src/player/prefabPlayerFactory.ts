@@ -296,7 +296,7 @@ export const prefabPlayerFactory = (()=>{
         }
         const player = new Player({
             name: "Simple", ...options,
-            mainTexture: prefabTextures.player.Simple,
+            mainTexture: prefabTextures.avatar.simple,
             hitboxTexture: prefabTextures.player.hitbox,
             slowModeRingTexture: prefabTextures.player.slowMode,
             invincibleRingTexture: prefabTextures.player.invincibleRing,

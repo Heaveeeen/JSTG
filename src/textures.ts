@@ -201,7 +201,6 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
             }
         },
         player: {
-            Simple: await lsvg(`player/Simple.svg`),
             hitbox: await lsvg(`player/hitbox.svg`),
             invincibleRing: await lsvg(`player/invincibleRing.svg`),
             slowMode: await lsvg(`player/slowMode.svg`),
@@ -218,6 +217,14 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
                     trail: await lsvg(`player/playerBullet/simpleBullet/trail.svg`),
                 }
             },
+        },
+        avatar: {
+            simple: await lsvg(`avatar/simple.svg`),
+            maple: await lsvg(`avatar/maple.svg`),
+            icu: await lsvg(`avatar/icu.svg`),
+            ran: await lsvg(`avatar/ran.svg`),
+            wriggle: await lsvg(`avatar/wriggle.svg`),
+            unknown: await lsvg(`avatar/unknown.svg`),
         },
         enemy: {
             yinYangOrb: {
