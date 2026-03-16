@@ -25,5 +25,15 @@
             "color": "#11aa22",
             "backgroundColor": "#ffcd3a"
         },
+        {
+            "text": "coDo",
+            "color": "#af77ff",
+            "backgroundColor": "#0000"
+        },
+        {
+            "text": "forever",
+            "color": "#7aafff",
+            "backgroundColor": "#0000"
+        },
     ],
 }
