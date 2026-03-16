@@ -1,5 +1,5 @@
 import * as pixi from "pixi";
-import { AbstractEntity, EraseEntityOptions, NewAbstractEntityOptions, prefabDanmakuHitboxRadius } from "./abstractEntity.js";
+import { AbstractDanmaku, EraseDanmakuOptions, NewAbstractDanmakuOptions, prefabDanmakuHitboxRadius } from "./abstractDanmaku.js";
 import { Game, Board, Player, Combat } from "../jstg.js";
 import { alphaTo, cast, decibel, getPointToSegmentDist2, rotateVec, staticAssert } from "../utils.js";
 import { DyedTextures, PrefabDanmakuNames, DyedTextureColors, makeCommonOrAnimatedSprite } from "../textures.js";
@@ -12,7 +12,7 @@ interface LaserPoint {
     pos: number;
 }
 
-export interface NewLaserBeamOptions extends NewAbstractEntityOptions {
+export interface NewLaserBeamOptions extends NewAbstractDanmakuOptions {
     /** 激光的判定宽度的一半 */
     hitboxHalfWidth: number;
     /** 激光的判定长度 */
@@ -31,7 +31,7 @@ export interface NewLaserBeamOptions extends NewAbstractEntityOptions {
  * 这种直线激光不像车万原作那样能够被截断。
  * 这种直线激光的判定是个矩形。
  */
-export class LaserBeam extends AbstractEntity {
+export class LaserBeam extends AbstractDanmaku {
 
     private _hitboxHalfWidth: number;
     /* 激光的判定宽度的一半 */
@@ -147,7 +147,7 @@ export class LaserBeam extends AbstractEntity {
         }
 
         if (isHit) {
-            player.beHurt({ entity: this });
+            player.beHurt({ danmaku: this });
         } else if (this.isGrazing) {
             // 擦弹
             this.game.prefabSounds.thse.graze.play({ volume: decibel(-3), });
@@ -159,7 +159,7 @@ export class LaserBeam extends AbstractEntity {
         }
     }
 
-    erase(options: EraseEntityOptions & {
+    erase(options: EraseDanmakuOptions & {
         /**
          * 每隔多长的距离算作一个“体节”并调用一次消弹回调函数。  
          * 例如：长度为70的激光，每隔20的距离就算作一个体节并调用一次回调函数，最终会产生3个“尸体”；  

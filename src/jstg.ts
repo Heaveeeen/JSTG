@@ -5,7 +5,7 @@ import { prefabPlayerFactory } from "./player/prefabPlayerFactory.js";
 import { makeRng } from "./random.js";
 import * as utils from './utils.js';
 import { CommonDanmaku, makePrefabDanmaku } from "./entity/commonDanmaku.js";
-import { AbstractEntity, EraseEntityOptions, prefabDanmakuHitboxRadius } from "./entity/abstractEntity.js";
+import { AbstractDanmaku, EraseDanmakuOptions, prefabDanmakuHitboxRadius } from "./entity/abstractDanmaku.js";
 import { makeObjPool } from "./objPool.js";
 import { LoadPrefabSounds, LoadPrefabSoundsOptions, LoadSound } from "./sounds.js";
 import { LaserBeam, makePrefabLaserBeam } from "./entity/laserBeam.js";
@@ -161,7 +161,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
             //#region entityPool
             const entityPool = (() => {
-                const pool = makeObjPool<AbstractEntity>();
+                const pool = makeObjPool<AbstractDanmaku>();
                 const { objects, push, clean, forEachAlive, getAlives, destroy } = pool;
 
                 const update = (player: Player) => {
@@ -174,34 +174,34 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     player._lastY = player.y;
                 };
 
-                const forEachByRadius = (options: { x: number, y: number, radius: number, callback: (entity: AbstractEntity) => unknown }) => {
+                const forEachByRadius = (options: { x: number, y: number, radius: number, callback: (entity: AbstractDanmaku) => unknown }) => {
                     const { x, y, radius, callback } = options;
                     forEachAlive(ent => {
                         if (ent.getIsCrossCircle({ x, y, radius })) { callback(ent); }
                     });
                 };
 
-                const eraseByRadius = (options: { x: number, y: number, radius: number, eraseOptions?: EraseEntityOptions }) =>
+                const eraseByRadius = (options: { x: number, y: number, radius: number, eraseOptions?: EraseDanmakuOptions }) =>
                     forEachByRadius({...options, callback: ent => ent.erase(options.eraseOptions) });
 
                 return {
-                    /** @readonly 所有接受判定的实体，⚠️可能含有已经摧毁的无效实体 */
+                    /** @readonly 所有接受判定的弹幕，⚠️可能含有已经摧毁的无效弹幕 */
                     objects,
-                    /** 推入并开始更新一个实体，此函数会在合适的时机自动触发清理 */
+                    /** 推入并开始更新一个弹幕，此函数会在合适的时机自动触发清理 */
                     push,
-                    /** 更新所有实体的攻击逻辑 */
+                    /** 更新所有弹幕的攻击逻辑 */
                     update,
-                    /** 立即清理实体列表，一般不用管这个东西 */
+                    /** 立即清理弹幕列表，一般不用管这个东西 */
                     clean,
-                    /** 遍历所有未被摧毁的实体，可以用来消弹 */
+                    /** 遍历所有未被摧毁的弹幕，可以用来消弹 */
                     forEachAlive,
-                    /** 获取所有未被摧毁的实体 */
+                    /** 获取所有未被摧毁的弹幕 */
                     getAlives,
-                    /** 遍历一个圆形范围内的所有实体 */
+                    /** 遍历一个圆形范围内的所有弹幕 */
                     forEachByRadius,
-                    /** 消除一个圆形范围内的所有实体 */
+                    /** 消除一个圆形范围内的所有弹幕 */
                     eraseByRadius,
-                    /** @readonly @internal 当前场上的实体数量（⚠️包含无效实体） */
+                    /** @readonly @internal 当前场上的弹幕数量（⚠️包含无效弹幕） */
                     get _validCount() { return pool._validCount; },
                     destroy,
                     get destroyed() { return pool.destroyed; },
@@ -211,13 +211,13 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
             //#region enemyPool
             const enemyPool = (() => {
-                const pool = makeObjPool<AbstractEnemy<AbstractEntity>>();
+                const pool = makeObjPool<AbstractEnemy<AbstractDanmaku>>();
                 const { objects, push, clean, forEachAlive, getAlives, destroy } = pool;
 
-                const forEachByRadius = (options: { x: number, y: number, radius: number, callback: (enemy: AbstractEnemy<AbstractEntity>) => unknown }) => {
+                const forEachByRadius = (options: { x: number, y: number, radius: number, callback: (enemy: AbstractEnemy<AbstractDanmaku>) => unknown }) => {
                     const { x, y, radius, callback } = options;
                     forEachAlive(enemy => {
-                        if (enemy.entity.getIsCrossCircle({ x, y, radius })) { callback(enemy); }
+                        if (enemy.danmaku.getIsCrossCircle({ x, y, radius })) { callback(enemy); }
                     });
                 };
 
@@ -228,9 +228,9 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     push,
                     /** 立即清理敌人列表，一般不用管这个东西 */
                     clean,
-                    /** 遍历所有未被摧毁的敌人，可以用来全屏攻击啥的 */
+                    /** 遍历所有活着的敌人，可以用来全屏攻击啥的 */
                     forEachAlive,
-                    /** 获取所有未被摧毁的实体 */
+                    /** 获取所有活着的敌人 */
                     getAlives,
                     /** 遍历一个圆形范围内的所有敌人 */
                     forEachByRadius,
@@ -260,11 +260,11 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 danmakuEraseLayer,
                 /**
                  * @readonly
-                 * 实体池，可以利用这个东西来每帧更新所有实体（主要是弹幕），这样弹幕才能攻击玩家。  
+                 * 弹幕池，可以利用这个东西来每帧更新所有弹幕，这样弹幕才能攻击玩家。  
                  * 正常情况下不用管这个东西，因为自机会自动帮你调用它的 update 方法。  
                  * 也可以用这个来遍历所有弹幕。  
                  */
-                entityPool,
+                danmakuPool: entityPool,
                 /** TODOC: enemyPool 理论上讲这里边是所有敌人，包括杂鱼和 boss */
                 enemyPool,
                 /** 场地宽度的一半 */
@@ -320,7 +320,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     autoUpdateSelf?: boolean,
                 } = {}) => makePlayer(prefabPlayerFactory.makeSimple({
                     game, combat, board,
-                    autoUpdateEntityPool: options.autoUpdateEntityPool ?? null,
+                    autoUpdateDanmakuPool: options.autoUpdateEntityPool ?? null,
                     autoUpdateSelf: options.autoUpdateSelf ?? null,
                 }));
 

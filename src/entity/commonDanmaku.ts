@@ -3,18 +3,18 @@ import { Board, Combat, Game } from "../jstg.js";
 import { Player } from "../player/player.js";
 import { alphaTo, decibel, getPointToSegmentDist2, select, SelectItem, staticAssert, Vec2 } from "../utils.js";
 import { DyedTextureColors, DyedTextures, makeCommonOrAnimatedSprite, PrefabDanmakuNames } from "../textures.js";
-import { AbstractEntity, EraseEntityOptions, NewAbstractEntityOptions, prefabDanmakuHitboxRadius } from "./abstractEntity.js";
+import { AbstractDanmaku, EraseDanmakuOptions, NewAbstractDanmakuOptions, prefabDanmakuHitboxRadius } from "./abstractDanmaku.js";
 
 
 
-export interface NewCommonDanmakuOptions extends NewAbstractEntityOptions {
+export interface NewCommonDanmakuOptions extends NewAbstractDanmakuOptions {
     /** 弹幕判定圆的半径 */
     hitboxRadius: number;
     /** 弹幕所对应的 Sprite */
     sprite: pixi.Sprite;
 }
 
-export class CommonDanmaku extends AbstractEntity {
+export class CommonDanmaku extends AbstractDanmaku {
     private _hitboxRadius: number;
     /* 弹幕判定圆的半径 */
     get hitboxRadius() { return this._hitboxRadius; }
@@ -92,7 +92,7 @@ export class CommonDanmaku extends AbstractEntity {
         }
         
         if (isHit) {
-            player.beHurt({ entity: this });
+            player.beHurt({ danmaku: this });
         } else if (this.isGrazing) {
             // 擦弹
             this.game.prefabSounds.thse.graze.play({ volume: decibel(-3), });
@@ -123,7 +123,7 @@ export class CommonDanmaku extends AbstractEntity {
     get zIndex() { return this.sprite.zIndex; }
     set zIndex(v: number) { this.sprite.zIndex = v; }
 
-    erase(options: EraseEntityOptions = {}) {
+    erase(options: EraseDanmakuOptions = {}) {
         if (!this._getIsCanBeEraseByPermissionType(options.permissionType ?? "common")) { return };
         this.enemy?.destroy();
         options.forEachCorpse?.({ x: this.x, y: this.y });

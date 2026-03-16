@@ -4,12 +4,12 @@ import { DyedTextureColors } from "../textures.js";
 import { AbstractEnemy, newAbstractEnemyOptions } from "./abstractEnemy.js";
 import { CommonDanmaku } from "./commonDanmaku.js";
 import * as utils from "../utils.js";
-import { EraseEntityOptions } from "./abstractEntity.js";
+import { EraseDanmakuOptions } from "./abstractDanmaku.js";
 
 
 
 interface NewCommonEnemyOptions extends newAbstractEnemyOptions<CommonDanmaku> {
-    /** @default entity.hitboxRadius */
+    /** @default danmaku.hitboxRadius */
     hurtHitboxRadius: number | null,
     maxHp: number,
     /** @default false */
@@ -36,13 +36,13 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
 
     constructor(options: NewCommonEnemyOptions) {
         super(options);
-        this.hurtHitboxRadius = options.hurtHitboxRadius ?? this.entity.hitboxRadius;
+        this.hurtHitboxRadius = options.hurtHitboxRadius ?? this.danmaku.hitboxRadius;
         this.maxHp = this._hp = options.maxHp;
-        this.entity.canBeErase = options.canBeErase ?? false;
+        this.danmaku.canBeErase = options.canBeErase ?? false;
     }
 
     drawDebugHitbox(): void {
-        this.entity.hitboxGraphics?.circle(
+        this.danmaku.hitboxGraphics?.circle(
             0, 0, this.hurtHitboxRadius
         ).fill("hsla(0, 100%, 60%, 0.30)").stroke("#ffaaaa");
     }
@@ -53,39 +53,39 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
         // TODO: damageType
     }) {
         this.hp -= options.num * this._birthProtectCoef;
-        if (this.entity.game.clock >= lastPlayDamageSoundClockTS + 3) {
-            lastPlayDamageSoundClockTS = this.entity.game.clock;
+        if (this.danmaku.game.clock >= lastPlayDamageSoundClockTS + 3) {
+            lastPlayDamageSoundClockTS = this.danmaku.game.clock;
             if (this.hp / this.maxHp <= 0.1) {
-                this.entity.game.prefabSounds.thse.damage01.play();
+                this.danmaku.game.prefabSounds.thse.damage01.play();
             } else {
-                this.entity.game.prefabSounds.thse.damage00.play();
+                this.danmaku.game.prefabSounds.thse.damage00.play();
             }
         }
     }
 
     /** 
-     * 击破这个敌人，并且消除与之对应的实体。  
+     * 击破这个敌人，并且消除与之对应的弹幕。  
      * 调用此方法后，该敌人的生死是未知的。它可能会立即被摧毁，或者等下一帧才被摧毁，也有可能不会被摧毁。  
      */
     kill(options: {
-        forEachCorpse?: EraseEntityOptions["forEachCorpse"],
+        forEachCorpse?: EraseDanmakuOptions["forEachCorpse"],
     } = {}) {
         if (this.destroyed) { return; }
-        this.entity.erase({
+        this.danmaku.erase({
             permissionType: "thisEnemyDie",
             effectType: "none", // TODO: 击破特效
             forEachCorpse: options.forEachCorpse,
         });
-        this.entity.game.prefabSounds.thse.enep00.play();
+        this.danmaku.game.prefabSounds.thse.enep00.play();
     }
 
-    /** 摧毁该敌人，但不会摧毁实体。只是会让这个实体变得无法受击。 */
+    /** 摧毁该敌人，但不会摧毁弹幕。只是会让这个弹幕变得无法受击。 */
     destroy() {
         if (this.destroyed) { return; }
-        this.entity.enemy = null;
+        this.danmaku.enemy = null;
     }
 
     get destroyed(): boolean {
-        return this.entity.enemy !== this;
+        return this.danmaku.enemy !== this;
     }
 }

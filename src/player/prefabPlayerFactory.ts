@@ -3,7 +3,7 @@ import { NewPlayerOptions, Player, PlayerBeHurtOptions, PlayerUpdateOptions } fr
 import { Board, Combat, Destroyable, Game } from "../jstg.js";
 import { alphaTo, decibel, deg, rotateVec, Vec2 } from "../utils.js";
 import { AbstractEnemy } from "../entity/abstractEnemy.js";
-import { AbstractEntity } from "../entity/abstractEntity.js";
+import { AbstractDanmaku } from "../entity/abstractDanmaku.js";
 import { CommonEnemy } from "../entity/commonEnemy.js";
 
 export const prefabPlayerFactory = (()=>{
@@ -11,11 +11,11 @@ export const prefabPlayerFactory = (()=>{
     const makeSimple = (options: {
         game: Game, combat: Combat, board: Board,
         /** @default true */
-        autoUpdateEntityPool: boolean | null,
+        autoUpdateDanmakuPool: boolean | null,
         /** @default true */
         autoUpdateSelf: boolean | null,
     }) => {
-        const { game, combat, board, autoUpdateEntityPool, autoUpdateSelf } = options;
+        const { game, combat, board, autoUpdateDanmakuPool, autoUpdateSelf } = options;
         const { prefabTextures } = game;
         type Drone = { sprite: pixi.Sprite, rotation: number, laser: {
             sprite: pixi.Sprite,

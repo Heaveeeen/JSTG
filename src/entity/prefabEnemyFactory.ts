@@ -36,15 +36,15 @@ export const prefabEnemyFactory = (()=>{
             anchor: 0.5,
             texture: game.prefabTextures.enemy.yinYangOrb.main[color],
         });
-        const entity = new CommonDanmaku({
+        const danmaku = new CommonDanmaku({
             game, combat, board,
             type: "enemyYinYangOrb",
             color, hitboxRadius: 6,
             sprite: rootSprite,
         });
-        entity.grazeCd = Infinity;
+        danmaku.grazeCd = Infinity;
         const enemy = new CommonEnemy({
-            entity, maxHp, hurtHitboxRadius: 14, // MAYDO: 想办法查查原版判定数据……？我不知道原版阴阳玉判定多大，我瞎填的……
+            danmaku: danmaku, maxHp, hurtHitboxRadius: 14, // MAYDO: 想办法查查原版判定数据……？我不知道原版阴阳玉判定多大，我瞎填的……
             canBeErase: false,
             birthProtectDuration: 30,
         });

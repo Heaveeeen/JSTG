@@ -2,7 +2,7 @@ import * as pixi from "pixi";
 import { Input, Key } from "../Input.js";
 import { Board, Combat, Game, utils } from "../jstg.js";
 import { alphaTo, deg, clamp, staticAssert } from "../utils.js";
-import { AbstractEntity } from "../entity/abstractEntity.js";
+import { AbstractDanmaku } from "../entity/abstractDanmaku.js";
 import { DifferenceBlendFilter } from "../graphics/differenceBlendFilter.js";
 import { CoDoGenFn, LooperFn, LoopOptions } from "../looper.js";
 
@@ -44,7 +44,7 @@ export interface PlayerUpdateOptions {
 }
 
 export interface PlayerBeHurtOptions {
-    entity: AbstractEntity | null,
+    danmaku: AbstractDanmaku | null,
 }
 
 export type MissGainBombType = "resetToInitAmount" | "increaseByInitAmount" | "none";
@@ -81,7 +81,7 @@ export interface NewPlayerOptions {
     /** @default "resetToInitAmount" */
     missGainBombType: MissGainBombType | null;
     /** @default true */
-    autoUpdateEntityPool: boolean | null;
+    autoUpdateDanmakuPool: boolean | null;
     /** @default true */
     autoUpdateSelf: boolean | null;
     initFn: (self: Player, options: NewPlayerOptions) => unknown;
@@ -263,8 +263,8 @@ export class Player {
             this.forever(() => this.update({}), { order: 0 });
         }
 
-        if (options.autoUpdateEntityPool ?? true) {
-            this.forever(() => this.board.entityPool.update(this), { order: 10, owns: this }); // 这里 owns 是为了在 combat 销毁时让 player 随之销毁
+        if (options.autoUpdateDanmakuPool ?? true) {
+            this.forever(() => this.board.danmakuPool.update(this), { order: 10, owns: this }); // 这里 owns 是为了在 combat 销毁时让 player 随之销毁
         }
 
         options.initFn(this, options);
@@ -442,13 +442,13 @@ export class Player {
                     const { x, y } = this;
                     this.board.coDo(function*() {
                         for (let radius = 0; radius <= 600; radius += 10 * self.game.timeScale) {
-                            self.board.entityPool.eraseByRadius({ x, y, radius });
+                            self.board.danmakuPool.eraseByRadius({ x, y, radius });
                             // TODO: damage (circle) r=radius, dmg=10*timescale, dmg to boss = 0.2
                             // 这个以后要换成进一步封装的工具函数，另外 dmg to boss 效果还没做
                             self.board.enemyPool.forEachByRadius({ x, y, radius, callback: enemy => enemy.beHurt({ num: 10 * self.game.timeScale }) });
                             yield;
                         }
-                        self.board.entityPool.forEachAlive(dan => dan.erase());
+                        self.board.danmakuPool.forEachAlive(dan => dan.erase());
                     });
                 }
                 yield* this.game.Sleep(20);
@@ -492,7 +492,7 @@ export class Player {
                     this.state = { type: "dying", timeSinceDying: 0 };
                 }
             }
-            if (this._isNeedEraseHitDanmaku) { options.entity?.erase(); }
+            if (this._isNeedEraseHitDanmaku) { options.danmaku?.erase(); }
         }
     }
 
