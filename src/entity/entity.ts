@@ -21,10 +21,10 @@ export abstract class Entity {
     abstract zIndex: number;
     speed = 0;
 
-    /** 向着 this.rotation 的方向前进 d 步，若 d 留空则为 this.speed * game.timeScale */
-    move(/** @default this.speed * game.timeScale */ d: number = this.speed * this.game.timeScale) {
-        this.x += Math.cos(this.rotation) * d;
-        this.y += Math.sin(this.rotation) * d;
+    /** 向着 this.rotation 的方向前进 step 步，若 step 留空则为 this.speed * game.timeScale */
+    move(/** @default this.speed * game.timeScale */ step: number = this.speed * this.game.timeScale) {
+        this.x += Math.cos(this.rotation) * step;
+        this.y += Math.sin(this.rotation) * step;
     }
 
     /** 匀变速至目标速度 */

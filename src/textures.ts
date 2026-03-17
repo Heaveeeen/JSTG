@@ -183,21 +183,17 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
                 fog: await lsdye(`danmaku/particle/fog.svg`),
             },
         },
-        ingameUi: {
-            window: await lsvg(`ingameUi/window.svg`),
-            enemyScBarIcon: {
-                nonSpellcard: await lsvg(`ingameUi/enemyScBarIcon/nonSpellcard.svg`),
-                spellcard: await lsvg(`ingameUi/enemyScBarIcon/spellcard.svg`),
-            },
+        boardFrameUi: {
+            window: await lsvg(`boardFrameUi/window.svg`),
             plStateBarIcon: {
-                bombFull: await lsvg(`ingameUi/plStateBarIcon/bombFull.svg`, 3),
-                bombEmpty: await lsvg(`ingameUi/plStateBarIcon/bombEmpty.svg`, 3),
-                hpFull: await lsvg(`ingameUi/plStateBarIcon/hpFull.svg`, 3),
-                hpEmpty: await lsvg(`ingameUi/plStateBarIcon/hpEmpty.svg`, 3),
+                bombFull: await lsvg(`boardFrameUi/plStateBarIcon/bombFull.svg`, 3),
+                bombEmpty: await lsvg(`boardFrameUi/plStateBarIcon/bombEmpty.svg`, 3),
+                hpFull: await lsvg(`boardFrameUi/plStateBarIcon/hpFull.svg`, 3),
+                hpEmpty: await lsvg(`boardFrameUi/plStateBarIcon/hpEmpty.svg`, 3),
             },
             plStateBarFrame: {
-                spdeCommon: await lsvg(`ingameUi/plStateBarFrame/spdeCommon.svg`, 3),
-                spdeWideScreen: await lsvg(`ingameUi/plStateBarFrame/spdeWideScreen.svg`),
+                spdeCommon: await lsvg(`boardFrameUi/plStateBarFrame/spdeCommon.svg`, 3),
+                spdeWideScreen: await lsvg(`boardFrameUi/plStateBarFrame/spdeWideScreen.svg`),
             }
         },
         player: {
@@ -226,12 +222,30 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
             wriggle: await lsvg(`avatar/wriggle.svg`),
             unknown: await lsvg(`avatar/unknown.svg`),
         },
+        charFigure: {
+            simple: {
+                spellcard: await lsvg(`charFigure/simple/spellcard.svg`),
+            },
+            maple: {
+                spellcard: await lsvg(`charFigure/maple/spellcard.svg`),
+            },
+            unknown: await lsvg(`charFigure/unknown.svg`),
+        },
         enemy: {
             yinYangOrb: {
                 // TODO: 改成类似 makeDyedFrames 的风格，现在是每个贴图里有很多 color ，应该改成每个 color 里都有一组贴图
                 main: await lsdye(`enemy/yinYangOrb/main.svg`),
                 innerRing: await lsdye(`enemy/yinYangOrb/innerRing.svg`),
                 outerRing: await lsdye(`enemy/yinYangOrb/outerRing.svg`),
+            },
+        },
+        spellcardUi: {
+            targetPointer: await lsvg(`spellcardUi/targetPointer.svg`),
+            spellcardTitleLine: await lsvg(`spellcardUi/spellcardTitleLine.svg`),
+            bossNameLine: await lsvg(`spellcardUi/bossNameLine.svg`),
+            scCounterIcon: {
+                nonSpellcard: await lsvg(`spellcardUi/ScCounterIcon/nonSpellcard.svg`),
+                spellcard: await lsvg(`spellcardUi/ScCounterIcon/spellcard.svg`),
             },
         }
     }

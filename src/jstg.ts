@@ -13,11 +13,12 @@ import { Player } from "./player/player.js";
 import { CoDoGenFn, LoopController, LooperFn, LoopOptions, makeLooper, makePauseController } from "./looper.js";
 import { AbstractEnemy } from "./entity/abstractEnemy.js";
 import { prefabEnemyFactory } from "./entity/prefabEnemyFactory.js";
+import { Spellcard, startSpellcard } from "./boss/spellcard.js";
 
 
 
 export interface Destroyable {
-    destroy(): unknown;
+    destroy(): void;
     readonly destroyed: boolean;
 }
 
@@ -29,7 +30,7 @@ export type Game = ExtractPromiseType<ReturnType<typeof LaunchGame>>;
 export type Combat = ExtractPromiseType<ReturnType<Game["StartCombat"]>>;
 
 export type Board = Combat["board"];
-export type IngameUi = Combat["ingameUi"];
+export type boardFrameUi = Combat["boardFrameUi"];
 
 /** @async 启动 JSTG 游戏 */
 export async function LaunchGame(/** 不建议填参数，因为我处理得不太完备。想干啥建议直接改源码。 */gameOptions: {
@@ -108,9 +109,9 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
     let timeScale: number = 1;
 
-    const defaultPauseController = makePauseController();
+    const mainPauseController = makePauseController();
 
-    const looper = makeLooper({ getTimescale: () => timeScale, defaultPauseController });
+    const looper = makeLooper({ getTimescale: () => timeScale, mainPauseController });
 
     const { forever, coDo } = looper;
 
@@ -132,36 +133,16 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
     async function StartCombat() {
 
         //#region board
-        const board = await (async () => {
-            const root = new pixi.Sprite({
+        const board = (() => {
+            const boardRoot = new pixi.Sprite({
                 parent: app.stage,
                 x: (240 - 70) * stageWidth / 480, // (sc舞台半宽 - CameraX) * jstg相比sc的放大倍数
                 y: stageHeight / 2,
             });
 
-            const commonDanmakuLayer = new pixi.Sprite({
-                parent: root,
-                zIndex: 0, // 在 -100 到 100 中间
-            });
-
-            const playerBulletLayer = new pixi.Sprite({
-                parent: root,
-                zIndex: -5,
-            });
-
-            const commonEnemyLayer = new pixi.Sprite({
-                parent: root,
-                zIndex: -10,
-            });
-
-            const danmakuEraseLayer = new pixi.Sprite({
-                parent: root,
-                zIndex: -20,
-            });
-
-            //#region entityPool
-            const entityPool = (() => {
-                const pool = makeObjPool<AbstractDanmaku>();
+            //#region danmakuPool
+            const danmakuPool = (() => {
+                const pool = makeObjPool<AbstractDanmaku>({ game });
                 const { objects, push, clean, forEachAlive, getAlives, destroy } = pool;
 
                 const update = (player: Player) => {
@@ -174,7 +155,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     player._lastY = player.y;
                 };
 
-                const forEachByRadius = (options: { x: number, y: number, radius: number, callback: (entity: AbstractDanmaku) => unknown }) => {
+                const forEachByRadius = (options: { x: number, y: number, radius: number, callback: (danmaku: AbstractDanmaku) => void }) => {
                     const { x, y, radius, callback } = options;
                     forEachAlive(ent => {
                         if (ent.getIsCrossCircle({ x, y, radius })) { callback(ent); }
@@ -207,14 +188,14 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     get destroyed() { return pool.destroyed; },
                 };
             })();
-            //#endregion entityPool
+            //#endregion danmakuPool
 
             //#region enemyPool
             const enemyPool = (() => {
-                const pool = makeObjPool<AbstractEnemy<AbstractDanmaku>>();
+                const pool = makeObjPool<AbstractEnemy<AbstractDanmaku>>({ game });
                 const { objects, push, clean, forEachAlive, getAlives, destroy } = pool;
 
-                const forEachByRadius = (options: { x: number, y: number, radius: number, callback: (enemy: AbstractEnemy<AbstractDanmaku>) => unknown }) => {
+                const forEachByRadius = (options: { x: number, y: number, radius: number, callback: (enemy: AbstractEnemy<AbstractDanmaku>) => void }) => {
                     const { x, y, radius, callback } = options;
                     forEachAlive(enemy => {
                         if (enemy.danmaku.getIsCrossCircle({ x, y, radius })) { callback(enemy); }
@@ -243,30 +224,46 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             })();
             //#endregion enemyPool
 
+            const _playerPool = makeObjPool<Player>({ game });
+            const _spellcardPool = makeObjPool<Spellcard>({ game });
+
             // 弹幕引擎的场地尺寸是 150 * 180，这里放大到了 4/3 倍
             let halfWidth = 200;
             let halfHeight = 240;
 
+            const makeBoardLayer = (zIndex?: number) => new pixi.Sprite({ parent: boardRoot, zIndex });
             const board = {
                 /** 根节点 */
-                root,
-                /** 装有所有普通弹幕节点的根节点 */
-                commonDanmakuLayer,
-                /** 装着所有常规敌人的根节点 */
-                commonEnemyLayer,
-                /** 装着自机发射出的所有子弹的根节点 */
-                playerBulletLayer,
-                /** 装有所有消弹特效的根节点 */
-                danmakuEraseLayer,
+                root: boardRoot,
+                /** 自机前半部分所属的图层。 */
+                playerFrontLayer: makeBoardLayer(100),
+                /** 符卡 UI 的根节点，包括符卡名称、计时器等等。 */
+                spellcardUiLayer: makeBoardLayer(20),
+                /** 所有普通弹幕节点的根节点 */
+                commonDanmakuLayer: makeBoardLayer(0),
+                /** 自机发射出的所有子弹的根节点 */
+                playerBulletLayer: makeBoardLayer(-5),
+                /** 所有常规敌人的根节点 */
+                commonEnemyLayer: makeBoardLayer(-10),
+                /** 所有消弹特效的根节点 */
+                danmakuEraseLayer: makeBoardLayer(-20),
+                /** 自机后半部分所属的图层。 */
+                playerBackLayer: makeBoardLayer(-100),
+                /** 符卡 UI 的根节点，包括符卡名称、计时器等等。 */
+                spellcardFigureLayer: makeBoardLayer(-120),
                 /**
                  * @readonly
                  * 弹幕池，可以利用这个东西来每帧更新所有弹幕，这样弹幕才能攻击玩家。  
                  * 正常情况下不用管这个东西，因为自机会自动帮你调用它的 update 方法。  
                  * 也可以用这个来遍历所有弹幕。  
                  */
-                danmakuPool: entityPool,
+                danmakuPool,
                 /** TODOC: enemyPool 理论上讲这里边是所有敌人，包括杂鱼和 boss */
                 enemyPool,
+                /** @internal */
+                _playerPool,
+                /** @internal */
+                _spellcardPool,
                 /** 场地宽度的一半 */
                 get halfWidth() { return halfWidth; },
                 // set width(n: number) { width = n; },
@@ -282,17 +279,15 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 makeDanmaku: null as unknown as typeof makeDanmaku, // MAGIC:
                 /** TODOC: makeLaserBeam */
                 makeLaserBeam: null as unknown as typeof makeLaserBeam, // MAGIC:
+                startSpellcard,
                 destroy() {
                     if (this.destroyed) { return; }
-                    root.destroy();
-                    commonDanmakuLayer.destroy();
-                    commonEnemyLayer.destroy();
-                    playerBulletLayer.destroy();
-                    danmakuEraseLayer.destroy();
-                    entityPool.destroy();
+                    boardRoot.destroy();
+                    danmakuPool.destroy();
                     enemyPool.destroy();
+                    for (const pl of _playerPool.getAlives()) { pl.destroy(); }
                 },
-                get destroyed() { return root.destroyed },
+                get destroyed() { return boardRoot.destroyed },
 
                 forever(fn: LooperFn, options: LoopOptions = {}) {
                     const loop = combat.forever(fn, options);
@@ -308,19 +303,19 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
             const prefabPlayers = (()=>{
                 const makePlayer = (player: Player) => {
-                    players.push(player);
-                    ingameUi.playerStateBar.updateWithPlayer(player);
+                    _playerPool.push(player);
+                    boardFrameUi.playerStateBar.updateWithPlayer(player);
                     return player;
                 }
 
                 const makeSimple = (options: {
                     /** @default true */
-                    autoUpdateEntityPool?: boolean,
+                    autoUpdateDanmakuPool?: boolean,
                     /** @default true */
                     autoUpdateSelf?: boolean,
                 } = {}) => makePlayer(prefabPlayerFactory.makeSimple({
                     game, combat, board,
-                    autoUpdateDanmakuPool: options.autoUpdateEntityPool ?? null,
+                    autoUpdateDanmakuPool: options.autoUpdateDanmakuPool ?? null,
                     autoUpdateSelf: options.autoUpdateSelf ?? null,
                 }));
 
@@ -458,20 +453,20 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         })();
         //#endregion board
 
-        //#region ingameUi
-        const ingameUi = (() => {
-            const ingameUiRoot = new pixi.Sprite({
+        //#region boardFrameUi
+        const boardFrameUi = (() => {
+            const boardFrameUiRoot = new pixi.Sprite({
                 parent: app.stage,
                 zIndex: 0,
             });
             const windowFrame = new pixi.Sprite({
-                parent: ingameUiRoot, texture: prefabTextures.ingameUi.window,
+                parent: boardFrameUiRoot, texture: prefabTextures.boardFrameUi.window,
             });
 
             const playerStateBar = (()=>{
-                const { hpFull: hpFull, hpEmpty: hpEmpty, bombFull: bombFull, bombEmpty: bombEmpty } = prefabTextures.ingameUi.plStateBarIcon;
+                const { hpFull: hpFull, hpEmpty: hpEmpty, bombFull: bombFull, bombEmpty: bombEmpty } = prefabTextures.boardFrameUi.plStateBarIcon;
                 const stateBarRoot = new pixi.Sprite({
-                    parent: ingameUiRoot, texture: prefabTextures.ingameUi.plStateBarFrame.spdeCommon,
+                    parent: boardFrameUiRoot, texture: prefabTextures.boardFrameUi.plStateBarFrame.spdeCommon,
                     anchor: 0.5,
                     scale: 4/3,
                     x: stageWidth / 2 + 160 * 4/3, y: stageHeight / 2 - 70 * 4/3,
@@ -512,31 +507,28 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
             return {
                 /** 根节点 */
-                root: ingameUiRoot,
+                root: boardFrameUiRoot,
                 /** 游戏内 UI 的那个像窗口框架的大背景 */
                 windowFrame,
                 /** 显示残机和 Bomb 数量的那个状态栏 */
                 playerStateBar,
-                destroy() { ingameUiRoot.destroy(); },
-                get destroyed() { return ingameUiRoot.destroyed; },
+                destroy() { boardFrameUiRoot.destroy(); },
+                get destroyed() { return boardFrameUiRoot.destroyed; },
             }
         })();
         //#endregion
 
-        const players: Player[] = [];
-
         const combat = {
             /** @readonly  游戏内 UI ，版面上盖着的那一层 UI ，包括血条啥的以及那个像窗口框架的东西 */
-            ingameUi,
+            boardFrameUi,
             /** @readonly 版面，就是自机和弹幕所处的那个主要场地 */
             board,
             destroy() {
                 if (this.destroyed) { return; }
-                ingameUi.destroy();
+                boardFrameUi.destroy();
                 board.destroy();
-                for (const pl of players) { pl.destroy(); }
             },
-            get destroyed() { return ingameUi.destroyed; },
+            get destroyed() { return boardFrameUi.destroyed; },
 
             forever(fn: LooperFn, options: LoopOptions = {}) {
                 const loop = game.forever(fn, options);
@@ -707,8 +699,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         get clock() {
             return fpsCounterLoop.clock;
         },
-        /** TODOC: defaultPauseController */
-        defaultPauseController,
+        /** TODOC: mainPauseController */
+        mainPauseController,
     };
 
     //#endregion game

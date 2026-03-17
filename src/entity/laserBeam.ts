@@ -171,6 +171,7 @@ export class LaserBeam extends AbstractDanmaku {
     } = {}) {
         // TODO: TEST
         if (!this._getIsCanBeEraseByPermissionType(options.permissionType ?? "common")) { return; }
+        this._erased = true;
         this.enemy?.destroy();
         if (options.forEachCorpse !== undefined) {
             const stepPerCorpse = options.stepPerCorpse ?? 10;
@@ -194,7 +195,7 @@ export class LaserBeam extends AbstractDanmaku {
     
     /** @internal @generator 虚化至消失 */
     *_EraseEffectBehaviorGhost() {
-        if (this.destroyed) { return; }
+        if (this.mainSprite.destroyed) { return; }
         const makeEff = (spr: pixi.Sprite) => new pixi.Sprite({
             parent: this.board.danmakuEraseLayer,
             texture: spr.texture,
@@ -244,7 +245,7 @@ export class LaserBeam extends AbstractDanmaku {
     }
 
     destroy() {
-        if (this.destroyed) { return };
+        if (this.mainSprite.destroyed) { return };
         this.hitboxGraphics?.destroy();
         this.startPoint?.sprite.destroy();
         this.endPoint?.sprite.destroy();
@@ -253,7 +254,7 @@ export class LaserBeam extends AbstractDanmaku {
     }
 
     get destroyed() {
-        return this.mainSprite.destroyed;
+        return this.mainSprite.destroyed || this._erased;
     }
 }
 

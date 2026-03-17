@@ -20,16 +20,20 @@ export interface LoopController {
      * 会考虑 timeScale，并且尽可能根据 timeScale 向下取整。（取整机制与弹幕引擎略有不同，我感觉我写的这个应该稍微好点）
      */
     readonly clock: number,
-    then(callback: () => unknown): void,
+    /**
+     * 该循环结束时，调用回调函数。
+     * 该方法只是执行一个回调函数而已，如果在回调函数里开启了一个新的 loop ，then 不会返回这个新的 loop 。
+     */
+    then(callback: () => void): this,
     addRefs(...objs: Destroyable[]): void,
-    addKills(...objs: Destroyable[]): void,
+    addDestroys(...objs: Destroyable[]): void,
     addOwns(...objs: Destroyable[]): void,
     addPauseController(...controllers: PauseController[]): void,
 }
 
 type LoopOrder = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
-export type LooperFn = (loop: LoopController) => unknown;
+export type LooperFn = (loop: LoopController) => void;
 export type CoDoGenFn = (loop: LoopController) => CoDoGenerator;
 
 export interface LoopOptions {
@@ -44,27 +48,27 @@ export interface LoopOptions {
     /** 借用，或者说依赖的对象，这些对象只要死了任意一个，该脚本就会停止。 */
     refs?: Destroyable | Destroyable[],
     /** 该脚本停止时，自动摧毁这些对象。 */
-    kills?: Destroyable | Destroyable[],
+    destroys?: Destroyable | Destroyable[],
     /**
      * 绑定所有权的对象。  
      * 这些对象只要死了任意一个，该脚本就会停止；  
-     * 该脚本停止时，自动摧毁这些对象。
+     * 该脚本停止时，自动摧毁这些对象。  
      */
     owns?: Destroyable | Destroyable[],
     /** TODOC: LoopOptions.pauseController */
     pauseController?: PauseController | PauseController[] | "none",
 }
 
-export type CoDoGenerator = Generator<unknown, unknown, void>;
+export type CoDoGenerator = Generator<void, void, void>;
 
 export const makeLooper = (makeLooperOptions: {
     getTimescale: () => number,
-    defaultPauseController: PauseController,
+    mainPauseController: PauseController,
 }) => {
 
-    const { getTimescale, defaultPauseController } = makeLooperOptions;
+    const { getTimescale, mainPauseController } = makeLooperOptions;
 
-    type Thread = ((() => unknown) | null)[];
+    type Thread = ((() => void) | null)[];
 
     const threads: [
         Thread, Thread, Thread, Thread, Thread,
@@ -104,28 +108,31 @@ export const makeLooper = (makeLooperOptions: {
         options: LoopOptions = {}
     ) => {
         const thread = threads[options.order ?? 5];
-        // 这个东西仅用来构造 refs 和 kills ，它本身没有实际作用
+        // 这个东西仅用来构造 refs 和 destroys ，它本身没有实际作用
         const owns = utils.makeElements(options.owns);
 
         // 注意：可能包含重复项
         const refs = [...utils.makeElements(options.refs), ...owns];
-        const kills = [...utils.makeElements(options.kills), ...owns];
+        const destroys = [...utils.makeElements(options.destroys), ...owns];
 
-        const pauseControllers = options.pauseController === "none" ? [] : utils.makeElements(options.pauseController ?? defaultPauseController);
+        const pauseControllers = options.pauseController === "none" ? [] : utils.makeElements(options.pauseController ?? mainPauseController);
 
         let clock = 0;
         let destroyed = false;
-        const callbacks: (() => unknown)[] = [];
+        const callbacks: (() => void)[] = [];
         const loop: LoopController = {
             destroy,
-            get destroyed() { return destroyed; },
+            get destroyed() { return destroyed || refs.some(r => r.destroyed); },
             get clock() { return clock },
-            then: (callback: () => unknown) => { callbacks.push(callback) },
+            then: (callback: () => void) => {
+                callbacks.push(callback);
+                return loop;
+            },
             addRefs: (...objs) => { refs.push(...objs) },
-            addKills: (...objs) => { kills.push(...objs) },
+            addDestroys: (...objs) => { destroys.push(...objs) },
             addOwns: (...objs) => {
                 refs.push(...objs);
-                kills.push(...objs);
+                destroys.push(...objs);
             },
             addPauseController: (...controllers) => { pauseControllers.push(...controllers); },
         };
@@ -146,7 +153,7 @@ export const makeLooper = (makeLooperOptions: {
             if (destroyed) { return; }
             destroyed = true;
             thread[idx] = null;
-            kills.forEach(d => d.destroy());
+            destroys.forEach(d => d.destroy());
             callbacks.forEach(callback => callback());
         }
         return loop;
@@ -184,4 +191,4 @@ export const makeLooper = (makeLooperOptions: {
         threads,
         cleanThreads,
     }
-}
+};

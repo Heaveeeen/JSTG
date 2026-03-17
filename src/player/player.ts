@@ -84,10 +84,10 @@ export interface NewPlayerOptions {
     autoUpdateDanmakuPool: boolean | null;
     /** @default true */
     autoUpdateSelf: boolean | null;
-    initFn: (self: Player, options: NewPlayerOptions) => unknown;
-    updateFn: (self: Player, options: PlayerUpdateOptions) => unknown;
-    beHurtFn: (self: Player, options: PlayerBeHurtOptions) => unknown;
-    destroyFn: (self: Player) => unknown;
+    initFn: (self: Player, options: NewPlayerOptions) => void;
+    updateFn: (self: Player, options: PlayerUpdateOptions) => void;
+    beHurtFn: (self: Player, options: PlayerBeHurtOptions) => void;
+    destroyFn: (self: Player) => void;
 }
 
 export class Player {
@@ -134,7 +134,7 @@ export class Player {
     /** 减速时那个半透明转转转的魔法阵 */
     slowModeRing: pixi.Sprite;
 
-    /** @private */
+    /** @internal */
     private _hpAmount: number;
     /** 当前残机数量 */
     get hpAmount() { return this._hpAmount; }
@@ -146,7 +146,7 @@ export class Player {
     /** 残机数量上限 */
     maxHpAmount: number;
 
-    /** @private */
+    /** @internal */
     private _bombAmount: number;
     /** 当前 Bomb 数量 */
     get bombAmount() { return this._bombAmount; }
@@ -158,7 +158,7 @@ export class Player {
     /** Bomb 数量上限 */
     maxBombAmount: number;
 
-    /** @private @readonly */
+    /** @internal */
     private readonly missGainBombType: MissGainBombType;
 
     /** @internal 玩家在上一次判定时的 x */
@@ -210,15 +210,13 @@ export class Player {
         this.destroyFn = () => options.destroyFn(this);
 
         this.backParts = new pixi.Sprite({
-            parent: options.board.root,
+            parent: options.board.playerBackLayer,
             anchor: 0.5,
-            zIndex: -100,
         });
 
         this.frontParts = new pixi.Sprite({
-            parent: options.board.root,
+            parent: options.board.playerFrontLayer,
             anchor: 0.5,
-            zIndex: 100,
         });
 
         this.avatar = new pixi.Sprite({
@@ -290,11 +288,11 @@ export class Player {
      *     );
      * });
      */
-    update: (options: PlayerUpdateOptions) => unknown;
+    update: (options: PlayerUpdateOptions) => void;
 
-    beHurt: (options: PlayerBeHurtOptions) => unknown;
+    beHurt: (options: PlayerBeHurtOptions) => void;
 
-    destroyFn: () => unknown;
+    destroyFn: () => void;
 
     /** 移动自机，还有 isShooting */
     _updateInputAndMove(options: PlayerUpdateOptions) {
@@ -441,7 +439,8 @@ export class Player {
                     const self = this;
                     const { x, y } = this;
                     this.board.coDo(function*() {
-                        for (let radius = 0; radius <= 600; radius += 10 * self.game.timeScale) {
+                        for (let t = 0; t < 60; t += self.game.timeScale) {
+                            const radius = t * 10;
                             self.board.danmakuPool.eraseByRadius({ x, y, radius });
                             // TODO: damage (circle) r=radius, dmg=10*timescale, dmg to boss = 0.2
                             // 这个以后要换成进一步封装的工具函数，另外 dmg to boss 效果还没做
@@ -490,6 +489,7 @@ export class Player {
                 } else {
                     // TODO: 两种受伤行为，一种普通的，一种原地爆炸的
                     this.state = { type: "dying", timeSinceDying: 0 };
+                    this.board._spellcardPool.forEachAlive(spell => spell.onMiss({ player: this }));
                 }
             }
             if (this._isNeedEraseHitDanmaku) { options.danmaku?.erase(); }
@@ -504,12 +504,13 @@ export class Player {
         } else if (this.state.type === "dying") { // 决死
             this.state = { type: "common", invincibleTime: time };
         } else {
-            // 在 Miss 状态下给予无敌时间，忽略
+            const rt = this.state.rebirthInvincibleTime ?? 0;
+            this.state.rebirthInvincibleTime = Math.max(rt, time) + Math.min(rt, time) / 2;
         }
     }
 
     destroy() {
-        if (this.destroyed) { return };
+        if (this.backParts.destroyed) { return };
         this.backParts.destroy();
         this.frontParts.destroy();
         this.destroyFn();

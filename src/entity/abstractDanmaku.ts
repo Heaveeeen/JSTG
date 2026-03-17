@@ -34,7 +34,7 @@ export interface EraseDanmakuOptions {
      * 对于普通弹幕，该回调函数只会调用一次；对于激光，该回调函数会对激光的每一个“体节”都调用一次。
      * 如果该弹幕最终没有被消除（例如因为这个该弹幕无法被消除），则该回调函数不会被调用。
      */
-    forEachCorpse?: (corpseInfo: { x: number, y: number }) => unknown;
+    forEachCorpse?: (corpseInfo: { x: number, y: number }) => void;
     /**
      * 消弹的特效种类。  
      * 对于普通弹幕，若不填写此参数，则根据 this.type 自动决定。一般的弹幕为雾化消失，大玉和核弹为缩小虚化至消失。  
@@ -97,14 +97,17 @@ export abstract class AbstractDanmaku extends Entity {
     canBeErase: boolean = true;
 
     /**
-     * 预置的消弹效果，摧毁该弹幕，并生成一个消弹特效。  
+     * 消除该弹幕，并生成一个消弹特效。  
      * 如果该弹幕无法被消除，则该函数什么也不做。  
-     * 必须注意：调用该函数之后，该弹幕的生死是未知的。它可能会立即被摧毁，或者等下一帧才被摧毁，也有可能不会被摧毁。  
+     * 调用该函数之后，不能再使用该弹幕。  
      */
     abstract erase(options?: EraseDanmakuOptions): void;
 
     /** @internal */
-    _getIsCanBeEraseByPermissionType(permissionType: Exclude<EraseDanmakuOptions["permissionType"], undefined>) {
+    protected _erased = false;
+
+    /** @internal 此函数会考虑 destroyed */
+    protected _getIsCanBeEraseByPermissionType(permissionType: Exclude<EraseDanmakuOptions["permissionType"], undefined>) {
         if (this.destroyed) {
             return false;
         } else if (permissionType === "force") {

@@ -23,7 +23,7 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
     hurtHitboxRadius: number;
     maxHp: number;
 
-    /** @private */
+    /** @internal */
     private _hp: number;
     get hp() { return this._hp; }
     set hp(n: number) {
@@ -65,7 +65,7 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
 
     /** 
      * 击破这个敌人，并且消除与之对应的弹幕。  
-     * 调用此方法后，该敌人的生死是未知的。它可能会立即被摧毁，或者等下一帧才被摧毁，也有可能不会被摧毁。  
+     * 调用该函数后，不能再使用这个敌人。  
      */
     kill(options: {
         forEachCorpse?: EraseDanmakuOptions["forEachCorpse"],

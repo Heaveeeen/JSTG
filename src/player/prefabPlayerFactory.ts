@@ -32,7 +32,7 @@ export const prefabPlayerFactory = (()=>{
                     alpha: 0,
                     zIndex: -10,
                 }),
-                rotation: deg(90),
+                rotation: deg(-90),
                 laser: {
                     sprite: { destroy() {}, destroyed: true } as any, // MAGIC: 拿这么个玩意，伪装成一个摧毁后的激光，相当于空值
                     hitEffects: new Map(),

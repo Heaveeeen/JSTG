@@ -3,7 +3,7 @@ import { Board, Combat, Game } from "../jstg.js";
 import { Player } from "../player/player.js";
 import { alphaTo, decibel, getPointToSegmentDist2, select, SelectItem, staticAssert, Vec2 } from "../utils.js";
 import { DyedTextureColors, DyedTextures, makeCommonOrAnimatedSprite, PrefabDanmakuNames } from "../textures.js";
-import { AbstractDanmaku, EraseDanmakuOptions, NewAbstractDanmakuOptions, prefabDanmakuHitboxRadius } from "./abstractDanmaku.js";
+import { AbstractDanmaku, EraseDanmakuOptions as EraseDanmakuOptions, NewAbstractDanmakuOptions, prefabDanmakuHitboxRadius } from "./abstractDanmaku.js";
 
 
 
@@ -125,6 +125,7 @@ export class CommonDanmaku extends AbstractDanmaku {
 
     erase(options: EraseDanmakuOptions = {}) {
         if (!this._getIsCanBeEraseByPermissionType(options.permissionType ?? "common")) { return };
+        this._erased = true;
         this.enemy?.destroy();
         options.forEachCorpse?.({ x: this.x, y: this.y });
         if (options.effectType !== "none" &&this.isInBoundary() && this.visible && this.sprite.alpha > 0) {
@@ -144,8 +145,8 @@ export class CommonDanmaku extends AbstractDanmaku {
     }
 
     /** @internal @generator 雾化消失 */
-    *_EraseEffectBehaviorFog() {
-        if (this.destroyed) { return; }
+    private *_EraseEffectBehaviorFog() {
+        if (this.sprite.destroyed) { return; }
         const eraseEffectSprite = new pixi.Sprite({
             parent: this.board.danmakuEraseLayer,
             texture: this.game.prefabTextures.danmaku.particle.fog[this.color],
@@ -166,8 +167,8 @@ export class CommonDanmaku extends AbstractDanmaku {
     }
 
     /** @internal @generator 缩小虚化至消失 */
-    *_EraseEffectBehaviorReduce() {
-        if (this.destroyed) { return; }
+    private *_EraseEffectBehaviorReduce() {
+        if (this.sprite.destroyed) { return; }
         const eraseEffectSprite = new pixi.Sprite({
             parent: this.board.danmakuEraseLayer,
             texture: this.sprite.texture,
@@ -197,14 +198,14 @@ export class CommonDanmaku extends AbstractDanmaku {
     }
 
     destroy() {
-        if (this.destroyed) { return };
+        if (this.sprite.destroyed) { return };
         this.hitboxGraphics?.destroy();
         this.sprite.destroy();
         this.enemy?.destroy();
     }
 
     get destroyed() {
-        return this.sprite.destroyed;
+        return this.sprite.destroyed || this._erased;
     }
 }
 

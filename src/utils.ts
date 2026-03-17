@@ -9,10 +9,13 @@ import * as pixi from "pixi";
  */
 export const clamp = (n: number, a: number, b: number) => Math.min(Math.max(a, n), b);
 
+/** TODOC: lerp */
+export const lerp = (a: number, b: number, t: number) => a * (1 - t) + b * t;
+
 /**
  * 弹幕引擎 ghost to 同款  
  * ⚠️这玩意必须自己填 game.ts
- */
+ */ // TODO: 往 game 里塞一个这玩意，顺便做一个指数衰减的工具函数。以后说不定要把 Entity 放到这边来，也说不定要把这些都丢进 Entity 里……我倾向于前者。
 export const alphaTo = (spr: { alpha: number }, dst: number, speed: number) => {
     if (Math.abs(spr.alpha - dst) <= speed) {
         spr.alpha = dst;

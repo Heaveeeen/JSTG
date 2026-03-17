@@ -6,7 +6,7 @@
 
 import * as jstg from "./dist/jstg.js";
 import * as pixi from "pixi";
-import { deg } from "./dist/utils.js";
+import { decibel, deg } from "./dist/utils.js";
 
 
 // 启动游戏
@@ -20,6 +20,8 @@ import { deg } from "./dist/utils.js";
     const combat = await game.StartCombat()
     const { board } = combat;
     const { makeDanmaku, makeLaserBeam, prefabPlayers, prefabEnemys } = board;
+
+    console.log(game, combat, board);
 
     const txt = new pixi.Text({
         parent: board.root,
@@ -198,14 +200,15 @@ import { deg } from "./dist/utils.js";
     //makeFooMuseum();
 
     const colors = ["h0", "h30", "h60", "h90", "h120", "h150", "h180", "h210", "h240", "h270", "h300", "h330", "black", "white"];
-    for (let i = 0; i < 30; i++) {
+    function makeFooYinYangOrbs() { for (let i = 0; i < 30; i++) {
         prefabEnemys.makeYinYangOrb({
             // @ts-expect-error
             color: colors[Math.floor(Math.random() * colors.length)],
             x: (i * 45) % 340 - 170, y: i * 6 - 220 + Math.random() * 10, rotation: 0,
             maxHp: 300,
         });
-    }
+    } };
+    //makeFooYinYangOrbs();
 
     /*for (let i = 0; i < 5; i++) {
         combat.makeLaserBeam({
@@ -244,7 +247,7 @@ import { deg } from "./dist/utils.js";
             slow: [Key.ShiftLeft, Key.KeyL, Key.Space],
             attack: [Key.KeyZ, Key.KeyK],
             bomb: [Key.KeyX, Key.KeyJ],
-        }, slowSpeed: debug.godMode.isOn ? 0.2 : undefined});
+        }, slowSpeed: debug.godMode.isOn ? undefined : undefined});
         if (isDown(Key.KeyP)) {
             if (!debug.showHitbox.isOn) {
                 debug.showHitbox.isOn = true;
@@ -258,13 +261,45 @@ import { deg } from "./dist/utils.js";
         if (isDown(Key.KeyO)) {
             debug.godMode.isOn = !debug.godMode.isOn;
         }
+        if (isDown(Key.KeyI)) {
+            const sc = board.startSpellcard({
+                game, combat, board,
+                figure: game.prefabTextures.charFigure.maple.spellcard,
+                ownsEnemy: board.prefabEnemys.makeYinYangOrb({ maxHp: 4000, y: -60 }),
+                isPlayStartSound: true,
+                time: 80 * 60,
+                title: "你好「波粒海苔」",
+            });
+            let omega = 0;
+            let d = deg(-60);
+            sc.coDo(function*() {
+                yield* game.Sleep(50);
+                while (true) {
+                    game.prefabSounds.thse.tan00.play({ volume: decibel(-9) });
+                    for (let i = 0; i < 5; i++) {
+                        const dan = makeDanmaku({
+                            type: "grain", color: "h300",
+                            x: 0, y: -60,
+                            rotation: d + deg(i / 5 * 360),
+                        });
+                        dan.forever(loop => {
+                            dan.move(2.4);
+                            dan.boundaryDelete();
+                        });
+                    }
+                    d += omega;
+                    omega += deg(0.09);
+                    yield* game.Sleep(2);
+                }
+            });
+        }
     }, { order: 0 });
 
     let lastPauseClockTS = -999;
     forever(loop => {
         if (game.clock >= lastPauseClockTS + 30 && isDown(Key.Escape)) {
             lastPauseClockTS = game.clock;
-            game.defaultPauseController.isRun = !game.defaultPauseController.isRun;
+            game.mainPauseController.isRun = !game.mainPauseController.isRun;
             game.prefabSounds.thse.pause.play();
         }
     }, { order: 0, pauseController: "none" });
