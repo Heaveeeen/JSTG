@@ -54,7 +54,10 @@ export async function LoadSound(loadOptions: {
 
     let nextPoolItemIdx = 0;
 
-    const play = (options: PlaySoundOptions = {}) => {
+    function play(volume: number): PlaySoundController;
+    function play(options?: PlaySoundOptions): PlaySoundController;
+    function play(options: PlaySoundOptions | number = {}) {
+        if (typeof options === "number") { options = { volume: options }; }
         const item = sourcePool[nextPoolItemIdx];
         nextPoolItemIdx ++;
         if (nextPoolItemIdx >= poolSize) {

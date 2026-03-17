@@ -165,7 +165,7 @@ export const prefabPlayerFactory = (()=>{
                 } else {
                     if (shootTimer >= 6) { // 跟踪粒子导弹
                         shootTimer = 0;
-                        game.prefabSounds.thse.plst00.play({ volume: decibel(-6) });
+                        game.prefabSounds.thse.plst00.play(decibel(-6));
                         for (const drone of drones) { // 发射诱导弹
                             const bullet = new pixi.Sprite({ 
                                 parent: board.playerBulletLayer,

@@ -150,7 +150,7 @@ export class LaserBeam extends AbstractDanmaku {
             player.beHurt({ danmaku: this });
         } else if (this.isGrazing) {
             // 擦弹
-            this.game.prefabSounds.thse.graze.play({ volume: decibel(-3), });
+            this.game.prefabSounds.thse.graze.play(decibel(-3));
             this.grazeCd = 4;
         }
 
