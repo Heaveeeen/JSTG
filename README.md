@@ -18,6 +18,7 @@ JSTG 是一个用于制作类似《东方Project》的弹幕射击游戏的游�
 * 允许更多弹幕同屏共存。
   * *（simple 的弹幕引擎中，整个画面相比原作都等比放大了约4/3倍，弹幕和自机判定点都更大了，主要就是为了减少同屏的弹幕数量，照顾一下 Scratch 可怜的性能。因此那里边很难做太密集的弹幕。）*
 * Replay 功能。
+* 更灵活的异步编程体验。
 
 本框架不打算做成一个封闭的包（因为本人水平不足，设计不出足够通用的接口），而是打算做成一个可供自由修改的开放式框架，每个用户都可以按需修改框架的内容。换句话说，本项目可能会更像是一个“模板”而非“框架”。但这部分具体该怎么样还有待商榷。。。*（我自己跟自己商榷是吗）*
 
@@ -33,11 +34,10 @@ JSTG 是一个用于制作类似《东方Project》的弹幕射击游戏的游�
 
 如果您想要利用此框架制作自己的作品或者进行修改、分发等等，请注意不要侵犯我的上游版权方。请认真阅读 `./lib` 中的相关说明。
 
-## 相关链接
+## 友情链接
 
 [JSTG - github](https://github.com/Heaveeeen/JSTG)  
 [pixi.js](https://pixijs.com)  
-[pixi.js v8.14.3 官方文档](https://pixijs.download/v8.14.3/docs/index.html)  
-[howler.js](https://howlerjs.com/)  
+[pixi.js v8.15.0 官方文档](https://pixijs.download/v8.15.0/docs/index.html)  
 [simple 的弹幕引擎模板](https://www.ccw.site/detail/66b599236d94eb6335e33779)  
 [东方Project使用规定](https://www.bilibili.com/opus/400555526272745308)  
