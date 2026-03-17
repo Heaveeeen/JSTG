@@ -6,7 +6,7 @@ import { makeRng } from "./random.js";
 import * as utils from './utils.js';
 import { CommonDanmaku, makePrefabDanmaku } from "./entity/commonDanmaku.js";
 import { AbstractDanmaku, EraseDanmakuOptions, prefabDanmakuHitboxRadius } from "./entity/abstractDanmaku.js";
-import { makeObjPool } from "./objPool.js";
+import { makeRegList } from "./regList.js";
 import { LoadPrefabSounds, LoadPrefabSoundsOptions, LoadSound } from "./sounds.js";
 import { LaserBeam, makePrefabLaserBeam } from "./entity/laserBeam.js";
 import { Player } from "./player/player.js";
@@ -140,10 +140,10 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 y: stageHeight / 2,
             });
 
-            //#region danmakuPool
-            const danmakuPool = (() => {
-                const pool = makeObjPool<AbstractDanmaku>({ game });
-                const { objects, push, clean, forEachAlive, getAlives, destroy } = pool;
+            //#region danmakuRegList
+            const danmakuRegList = (() => {
+                const regList = makeRegList<AbstractDanmaku>({ game });
+                const { objects, push, clean, forEachAlive, getAlives, destroy } = regList;
 
                 const update = (player: Player) => {
                     if (player.state.type === "common") {
@@ -183,17 +183,17 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     /** 消除一个圆形范围内的所有弹幕 */
                     eraseByRadius,
                     /** @readonly @internal 当前场上的弹幕数量（⚠️包含无效弹幕） */
-                    get _validCount() { return pool._validCount; },
+                    get _validCount() { return regList._validCount; },
                     destroy,
-                    get destroyed() { return pool.destroyed; },
+                    get destroyed() { return regList.destroyed; },
                 };
             })();
-            //#endregion danmakuPool
+            //#endregion danmakuRegList
 
-            //#region enemyPool
-            const enemyPool = (() => {
-                const pool = makeObjPool<AbstractEnemy<AbstractDanmaku>>({ game });
-                const { objects, push, clean, forEachAlive, getAlives, destroy } = pool;
+            //#region enemyRegList
+            const enemyRegList = (() => {
+                const reglist = makeRegList<AbstractEnemy<AbstractDanmaku>>({ game });
+                const { objects, push, clean, forEachAlive, getAlives, destroy } = reglist;
 
                 const forEachByRadius = (options: { x: number, y: number, radius: number, callback: (enemy: AbstractEnemy<AbstractDanmaku>) => void }) => {
                     const { x, y, radius, callback } = options;
@@ -217,15 +217,15 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     forEachByRadius,
                     // TODO: damageByRadius, killByRadius
                     /** @readonly @internal 当前场上的敌人数量（⚠️包含无效敌人） */
-                    get _validCount() { return pool._validCount; },
+                    get _validCount() { return reglist._validCount; },
                     destroy,
-                    get destroyed() { return pool.destroyed; },
+                    get destroyed() { return reglist.destroyed; },
                 };
             })();
-            //#endregion enemyPool
+            //#endregion enemyRegList
 
-            const _playerPool = makeObjPool<Player>({ game });
-            const _spellcardPool = makeObjPool<Spellcard>({ game });
+            const _playerRegList = makeRegList<Player>({ game });
+            const _spellcardRegList = makeRegList<Spellcard>({ game });
 
             // 弹幕引擎的场地尺寸是 150 * 180，这里放大到了 4/3 倍
             let halfWidth = 200;
@@ -252,18 +252,18 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 /** 符卡 UI 的根节点，包括符卡名称、计时器等等。 */
                 spellcardFigureLayer: makeBoardLayer(-120),
                 /**
-                 * @readonly
-                 * 弹幕池，可以利用这个东西来每帧更新所有弹幕，这样弹幕才能攻击玩家。  
+                 * TODOC: danmakuRegList
+                 * 这个列表包含所有弹幕的引用，可以利用这个东西来每帧更新所有弹幕，这样弹幕才能攻击玩家。  
                  * 正常情况下不用管这个东西，因为自机会自动帮你调用它的 update 方法。  
                  * 也可以用这个来遍历所有弹幕。  
                  */
-                danmakuPool,
-                /** TODOC: enemyPool 理论上讲这里边是所有敌人，包括杂鱼和 boss */
-                enemyPool,
+                danmakuRegList,
+                /** TODOC: enemyRegList 理论上讲这里边是所有敌人，包括杂鱼和 boss */
+                enemyRegList,
                 /** @internal */
-                _playerPool,
+                _playerRegList,
                 /** @internal */
-                _spellcardPool,
+                _spellcardRegList,
                 /** 场地宽度的一半 */
                 get halfWidth() { return halfWidth; },
                 // set width(n: number) { width = n; },
@@ -283,9 +283,9 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 destroy() {
                     if (this.destroyed) { return; }
                     boardRoot.destroy();
-                    danmakuPool.destroy();
-                    enemyPool.destroy();
-                    for (const pl of _playerPool.getAlives()) { pl.destroy(); }
+                    danmakuRegList.destroy();
+                    enemyRegList.destroy();
+                    for (const pl of _playerRegList.getAlives()) { pl.destroy(); }
                 },
                 get destroyed() { return boardRoot.destroyed },
 
@@ -303,19 +303,19 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
             const prefabPlayers = (()=>{
                 const makePlayer = (player: Player) => {
-                    _playerPool.push(player);
+                    _playerRegList.push(player);
                     boardFrameUi.playerStateBar.updateWithPlayer(player);
                     return player;
                 }
 
                 const makeSimple = (options: {
                     /** @default true */
-                    autoUpdateDanmakuPool?: boolean,
+                    autoUpdateDanmakuRegList?: boolean,
                     /** @default true */
                     autoUpdateSelf?: boolean,
                 } = {}) => makePlayer(prefabPlayerFactory.makeSimple({
                     game, combat, board,
-                    autoUpdateDanmakuPool: options.autoUpdateDanmakuPool ?? null,
+                    autoUpdateDanmakuRegList: options.autoUpdateDanmakuRegList ?? null,
                     autoUpdateSelf: options.autoUpdateSelf ?? null,
                 }));
 

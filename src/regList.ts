@@ -1,9 +1,8 @@
 import { Destroyable, Game } from "./jstg.js";
-import { LoopController } from "./looper.js";
 
-// MAYDO: 把这个玩意封装一下，允许用户自己创建对象池，用来给弹幕分组啥的。（其实小规模的分组直接用数组就行……）
-/** 一个简单的对象池 */
-export const makeObjPool = <T extends Destroyable>(options: {
+// MAYDO: 把这个玩意封装一下，允许用户自己创建注册列表，用来给弹幕分组啥的。（其实小规模的分组直接用数组就行……）
+/** TODOC: RegList */
+export const makeRegList = <T extends Destroyable>(options: {
     game: Game,
     /** @default true */
     autoClean?: boolean,
@@ -42,7 +41,7 @@ export const makeObjPool = <T extends Destroyable>(options: {
         destroyed = true;
     };
 
-    const pool = {
+    const regList = {
         objects,
         push,
         clean,
@@ -58,8 +57,8 @@ export const makeObjPool = <T extends Destroyable>(options: {
             if (validCount > nextCleanValidCount) {
                 clean();
             }
-        }, { refs: pool, order: 10 });
+        }, { refs: regList, order: 10 });
     }
     
-    return pool;
+    return regList;
 }

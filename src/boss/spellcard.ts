@@ -58,7 +58,7 @@ export function startSpellcard(spellcardOptions: {
             return loop;
         },
     };
-    board._spellcardPool.push(spellcard);
+    board._spellcardRegList.push(spellcard);
 
     //#region 立绘
     const figure = spellcardOptions.figure === "noFigure" ? null : new pixi.Sprite({
@@ -149,7 +149,7 @@ export function startSpellcard(spellcardOptions: {
             game.prefabSounds.thse.cardget.play();
         }
         board.coDo(function*() {
-            board._playerPool.forEachAlive(pl => pl.applyInvincible(60));
+            board._playerRegList.forEachAlive(pl => pl.applyInvincible(60));
             // TODO: 击破消弹
         });
         for (let t = 0; t < 60; t += game.timeScale) { // 这里偷个懒复制粘贴

@@ -11,11 +11,11 @@ export const prefabPlayerFactory = (()=>{
     const makeSimple = (options: {
         game: Game, combat: Combat, board: Board,
         /** @default true */
-        autoUpdateDanmakuPool: boolean | null,
+        autoUpdateDanmakuRegList: boolean | null,
         /** @default true */
         autoUpdateSelf: boolean | null,
     }) => {
-        const { game, combat, board, autoUpdateDanmakuPool, autoUpdateSelf } = options;
+        const { game, combat, board, autoUpdateDanmakuRegList, autoUpdateSelf } = options;
         const { prefabTextures } = game;
         type Drone = { sprite: pixi.Sprite, rotation: number, laser: {
             sprite: pixi.Sprite,
@@ -113,7 +113,7 @@ export const prefabPlayerFactory = (()=>{
                                 }
                             }
                             // 新一轮命中判定。对于没命中但有特效的，移除其命中特效；对于命中但没特效的，创建其命中特效。
-                            for (const enemy of board.enemyPool.getAlives()) {
+                            for (const enemy of board.enemyRegList.getAlives()) {
                                 if (enemy instanceof CommonEnemy) {
                                     const { x: rx, y: ry } = rotateVec({ x: enemy.x - laser.sprite.x, y: enemy.y - laser.sprite.y }, laser.sprite.rotation);
                                     let eff = laser.hitEffects.get(enemy);
@@ -196,7 +196,7 @@ export const prefabPlayerFactory = (()=>{
                             board.forever(loop => {
                                 const currentSpeed = speed * game.timeScale;
                                 const currentOmega = omega * game.timeScale;
-                                for (const enemy of board.enemyPool.getAlives()) { // 攻击判定
+                                for (const enemy of board.enemyRegList.getAlives()) { // 攻击判定
                                     if (enemy instanceof CommonEnemy) {
                                         const { x: rx, y: ry } = rotateVec({ x: enemy.x - bullet.x, y: enemy.y - bullet.y }, bullet.rotation);
                                         if ((rx >= -enemy.hurtHitboxRadius) && (rx <= currentSpeed + enemy.hurtHitboxRadius) && (Math.abs(ry) <= 4 + enemy.hurtHitboxRadius)) {
@@ -262,7 +262,7 @@ export const prefabPlayerFactory = (()=>{
                                 }
                                 if (target === null) { // 选择新的追踪目标
                                     let minCost = 500; // 初始值是能接受的最大成本
-                                    for (const enemy of board.enemyPool.getAlives()) {
+                                    for (const enemy of board.enemyRegList.getAlives()) {
                                         const { cost, angle } = getCost(enemy);
                                         if (cost < minCost && angle <= deg(90)) {
                                             minCost = cost;

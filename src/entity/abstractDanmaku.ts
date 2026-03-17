@@ -64,7 +64,7 @@ export abstract class AbstractDanmaku extends Entity {
         super(options);
         this.type = options.type;
         this.color = options.color;
-        options.board.danmakuPool.push(this);
+        options.board.danmakuRegList.push(this);
     }
 
     hitboxGraphics: pixi.Graphics | null = null;

@@ -81,7 +81,7 @@ export interface NewPlayerOptions {
     /** @default "resetToInitAmount" */
     missGainBombType: MissGainBombType | null;
     /** @default true */
-    autoUpdateDanmakuPool: boolean | null;
+    autoUpdateDanmakuRegList: boolean | null;
     /** @default true */
     autoUpdateSelf: boolean | null;
     initFn: (self: Player, options: NewPlayerOptions) => void;
@@ -261,8 +261,8 @@ export class Player {
             this.forever(() => this.update({}), { order: 0 });
         }
 
-        if (options.autoUpdateDanmakuPool ?? true) {
-            this.forever(() => this.board.danmakuPool.update(this), { order: 10, owns: this }); // 这里 owns 是为了在 combat 销毁时让 player 随之销毁
+        if (options.autoUpdateDanmakuRegList ?? true) {
+            this.forever(() => this.board.danmakuRegList.update(this), { order: 10, owns: this }); // 这里 owns 是为了在 combat 销毁时让 player 随之销毁
         }
 
         options.initFn(this, options);
@@ -441,13 +441,13 @@ export class Player {
                     this.board.coDo(function*() {
                         for (let t = 0; t < 60; t += self.game.timeScale) {
                             const radius = t * 10;
-                            self.board.danmakuPool.eraseByRadius({ x, y, radius });
+                            self.board.danmakuRegList.eraseByRadius({ x, y, radius });
                             // TODO: damage (circle) r=radius, dmg=10*timescale, dmg to boss = 0.2
                             // 这个以后要换成进一步封装的工具函数，另外 dmg to boss 效果还没做
-                            self.board.enemyPool.forEachByRadius({ x, y, radius, callback: enemy => enemy.beHurt({ num: 10 * self.game.timeScale }) });
+                            self.board.enemyRegList.forEachByRadius({ x, y, radius, callback: enemy => enemy.beHurt({ num: 10 * self.game.timeScale }) });
                             yield;
                         }
-                        self.board.danmakuPool.forEachAlive(dan => dan.erase());
+                        self.board.danmakuRegList.forEachAlive(dan => dan.erase());
                     });
                 }
                 yield* this.game.Sleep(20);
@@ -489,7 +489,7 @@ export class Player {
                 } else {
                     // TODO: 两种受伤行为，一种普通的，一种原地爆炸的
                     this.state = { type: "dying", timeSinceDying: 0 };
-                    this.board._spellcardPool.forEachAlive(spell => spell.onMiss({ player: this }));
+                    this.board._spellcardRegList.forEachAlive(spell => spell.onMiss({ player: this }));
                 }
             }
             if (this._isNeedEraseHitDanmaku) { options.danmaku?.erase(); }

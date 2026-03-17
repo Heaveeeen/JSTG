@@ -33,7 +33,7 @@ export abstract class AbstractEnemy<T extends AbstractDanmaku = AbstractDanmaku>
     constructor(options: newAbstractEnemyOptions<T>) {
         this.danmaku = options.danmaku;
         this.danmaku.enemy = this;
-        this.danmaku.board.enemyPool.push(this);
+        this.danmaku.board.enemyRegList.push(this);
         this._birthClockTS = this.danmaku.game.clock;
         this._birthProtectDuration = options.birthProtectDuration;
     }
