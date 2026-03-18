@@ -263,13 +263,14 @@ import { prefabEnemyFactory } from "./dist/entity/prefabEnemyFactory.js";
             debug.godMode.isOn = !debug.godMode.isOn;
         }
         if (isDown(Key.KeyI)) {
+            const shield = prefabEnemyFactory.makeSpellcardShield({
+                game, combat, board, maxHp: 5000, color: "red",
+                x: 0, y: -60, rotation: 0, parent: null,
+            });
             const sc = board.startSpellcard({
                 game, combat, board,
                 figure: game.prefabTextures.charFigure.maple.spellcard,
-                ownsEnemy: prefabEnemyFactory.makeSpellcardShield({
-                    game, combat, board, maxHp: 5000, color: "red",
-                    x: 0, y: -60, rotation: 0, parent: null,
-                }),
+                ownsEnemy: shield,
                 isPlayStartSound: true,
                 time: 80 * 60,
                 title: "你好「波粒海苔」",
@@ -283,7 +284,7 @@ import { prefabEnemyFactory } from "./dist/entity/prefabEnemyFactory.js";
                     for (let i = 0; i < 5; i++) {
                         const dan = makeDanmaku({
                             type: "grain", color: "h300",
-                            x: 0, y: -60,
+                            x: shield.x, y: shield.y,
                             rotation: d + deg(i / 5 * 360),
                         });
                         dan.forever(loop => {
@@ -296,13 +297,15 @@ import { prefabEnemyFactory } from "./dist/entity/prefabEnemyFactory.js";
                     yield* game.Sleep(2);
                 }
             });
+            sc.forever(loop => {
+                shield.x = 40 * Math.cos(game.clock * 0.01);
+                shield.y = 20 * Math.sin(game.clock * 0.01) - 80;
+            })
         }
     }, { order: 0 });
 
-    let lastPauseClockTS = -999;
     forever(loop => {
-        if (game.clock >= lastPauseClockTS + 30 && isDown(Key.Escape)) {
-            lastPauseClockTS = game.clock;
+        if (isDown(Key.Escape)) {
             game.mainPauseController.isRun = !game.mainPauseController.isRun;
             game.prefabSounds.thse.pause.play();
         }

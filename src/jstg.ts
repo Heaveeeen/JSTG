@@ -578,6 +578,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         fpsMonitor.text = `FPS:${fps}`;
     }, { order: 0, pauseController: "none" });
 
+    const mainClockLoop = forever(()=>{}, { order: 0 });
+
     app.ticker.add(() => {
         looper.stepThreads();
         // 跳帧补偿
@@ -694,12 +696,20 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         /** 调试模式工具，如上帝模式 */
         debug,
         /**
-         * @readonly
          * 从游戏启动后过了多少帧。第一帧为0。  
-         * 会考虑 timeScale，并且尽可能根据 timeScale 向下取整。（取整机制与弹幕引擎略有不同，我感觉我写的这个应该稍微好点）
+         * 会考虑 timeScale，并且尽可能根据 timeScale 向下取整。（取整机制与弹幕引擎略有不同，我感觉我写的这个应该稍微好点）  
+         * ⚠️此计时器不受 mainPauseController 影响，在 mainPauseController 暂停期间依然会运作。  
+         */
+        get noPauseClock() {
+            return fpsCounterLoop.clock;
+        },
+        /**
+         * 从游戏启动后总共运行了多少帧。第一帧为0。  
+         * 会考虑 timeScale，并且尽可能根据 timeScale 向下取整。（取整机制与弹幕引擎略有不同，我感觉我写的这个应该稍微好点）  
+         * ⚠️此计时器受 mainPauseController 影响，在 mainPauseController 暂停期间不会运作。  
          */
         get clock() {
-            return fpsCounterLoop.clock;
+            return mainClockLoop.clock;
         },
         /** TODOC: mainPauseController */
         mainPauseController,

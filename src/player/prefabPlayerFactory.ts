@@ -141,7 +141,7 @@ export const prefabPlayerFactory = (()=>{
                                         eff.x = laser.sprite.x + hitDist * Math.cos(laser.sprite.rotation);
                                         eff.y = laser.sprite.y + hitDist * Math.sin(laser.sprite.rotation);
                                         eff.rotation = laser.sprite.rotation;
-                                        enemy.beHurt({ num: 1.25 * game.timeScale }); // MAYDO: 让这个激光闪烁起来
+                                        enemy.beHurt({ value: 1.25 * game.timeScale }); // MAYDO: 让这个激光闪烁起来
                                     } else {
                                         // 没有命中这个敌人
                                         if (eff !== undefined) {
@@ -171,7 +171,7 @@ export const prefabPlayerFactory = (()=>{
                                 parent: board.playerBulletLayer,
                                 x: player.x + drone.sprite.x,
                                 y: player.y + drone.sprite.y,
-                                scale: 1.3,
+                                scale: 1.2,
                                 rotation: drone.rotation,
                                 alpha: 0.4,
                                 filters: player.colorFilter,
@@ -182,6 +182,7 @@ export const prefabPlayerFactory = (()=>{
                                 anchor: 0.5,
                                 texture: game.prefabTextures.player.playerBullet.simpleBullet.head,
                                 zIndex: 0,
+                                blendMode: "add",
                             });
                             const trail = new pixi.Sprite({
                                 parent: bullet,
@@ -189,9 +190,10 @@ export const prefabPlayerFactory = (()=>{
                                 texture: game.prefabTextures.player.playerBullet.simpleBullet.trail,
                                 scale: { x: 0.3, y: 1 },
                                 zIndex: -5,
+                                blendMode: "add",
                             });
-                            let speed = 20;
-                            let omega = deg(8);
+                            let speed = 12;
+                            let omega = deg(5);
                             let target: AbstractEnemy | null = null;
                             board.forever(loop => {
                                 const currentSpeed = speed * game.timeScale;
@@ -201,7 +203,7 @@ export const prefabPlayerFactory = (()=>{
                                         const { x: rx, y: ry } = rotateVec({ x: enemy.x - bullet.x, y: enemy.y - bullet.y }, bullet.rotation);
                                         if ((rx >= -enemy.hurtHitboxRadius) && (rx <= currentSpeed + enemy.hurtHitboxRadius) && (Math.abs(ry) <= 4 + enemy.hurtHitboxRadius)) {
                                             // 命中
-                                            enemy.beHurt({ num: 5 });
+                                            enemy.beHurt({ value: 5 });
                                             bullet.x += currentSpeed * Math.cos(bullet.rotation);
                                             bullet.y += currentSpeed * Math.sin(bullet.rotation);
                                             { // 命中特效
@@ -232,7 +234,7 @@ export const prefabPlayerFactory = (()=>{
                                 // 移动
                                 bullet.x += currentSpeed * Math.cos(bullet.rotation);
                                 bullet.y += currentSpeed * Math.sin(bullet.rotation);
-                                if (Math.abs(bullet.x) >= board.halfWidth + 10 || Math.abs(bullet.y) >= board.halfHeight + 10) {
+                                if (Math.abs(bullet.x) >= board.halfWidth + 40 || Math.abs(bullet.y) >= board.halfHeight + 40) {
                                     return bullet.destroy();
                                 }
                                 let targetAngle = 0;
@@ -278,7 +280,7 @@ export const prefabPlayerFactory = (()=>{
                                     bullet.rotation += targetAngle;
                                 }
                                 alphaTo(bullet, 1, 0.05 * game.timeScale);
-                                trail.scale.x = Math.min(1, trail.scale.x + 0.2 * game.timeScale);
+                                trail.scale.x = Math.min(1, trail.scale.x + 0.1 * game.timeScale);
                                 omega -= deg(0.1) * game.timeScale;
                                 omega = Math.max(omega, 0);
                             }, { owns: bullet, order: 10 });

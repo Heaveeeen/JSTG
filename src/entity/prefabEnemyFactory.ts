@@ -50,6 +50,7 @@ export const prefabEnemyFactory = (()=>{
             danmaku, maxHp, hurtHitboxRadius: 14, // MAYDO: 想办法查查原版判定数据……？我不知道原版阴阳玉判定多大，我瞎填的……
             canBeErase: false,
             birthProtectDuration: 30,
+            afterBeHurtCallback: null,
         });
         enemy.forever(loop => {
             outerRing.rotation -= 0.07;
@@ -65,17 +66,26 @@ export const prefabEnemyFactory = (()=>{
             texture: game.prefabTextures.enemy.shield,
             x, y, rotation, anchor: 0.5,
             scale: 0.44,
+            alpha: 0,
+            blendMode: "add",
         });
         const danmaku = new CommonDanmaku({
             game, combat, board,
             type: "enemySpellcardShield",
-            color: "red", hitboxRadius: 20,
+            color: "red", hitboxRadius: 16,
             sprite,
         });
+        danmaku.grazeCd = Infinity;
         const enemy = new CommonEnemy({
             danmaku, maxHp, hurtHitboxRadius: 44,
             canBeErase: false,
             birthProtectDuration: 250,
+            afterBeHurtCallback: () => {
+                sprite.alpha = 0.8;
+            },
+        });
+        enemy.forever(loop => {
+            sprite.alpha += (0.2 - sprite.alpha) * 0.05 * game.timeScale;
         });
         return enemy;
     }

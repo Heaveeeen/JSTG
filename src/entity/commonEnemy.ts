@@ -1,7 +1,7 @@
 import * as pixi from "pixi";
 import { Combat, Board, Game, Destroyable } from "../jstg.js";
 import { DyedTextureColors } from "../textures.js";
-import { AbstractEnemy, newAbstractEnemyOptions } from "./abstractEnemy.js";
+import { AbstractEnemy, EnemyBeHurtOptions, newAbstractEnemyOptions } from "./abstractEnemy.js";
 import { CommonDanmaku } from "./commonDanmaku.js";
 import * as utils from "../utils.js";
 import { EraseDanmakuOptions } from "./abstractDanmaku.js";
@@ -14,6 +14,8 @@ interface NewCommonEnemyOptions extends newAbstractEnemyOptions<CommonDanmaku> {
     maxHp: number,
     /** @default false */
     canBeErase: boolean | null,
+    afterBeHurtCallback: ((options: EnemyBeHurtOptions) => void) | null,
+    // TODO: killedCallback
 }
 
 let lastPlayDamageSoundClockTS = -1;
@@ -39,6 +41,7 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
         this.hurtHitboxRadius = options.hurtHitboxRadius ?? this.danmaku.hitboxRadius;
         this.maxHp = this._hp = options.maxHp;
         this.danmaku.canBeErase = options.canBeErase ?? false;
+        this._afterBeHurtCallback = options.afterBeHurtCallback;
     }
 
     drawDebugHitbox(): void {
@@ -47,20 +50,20 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
         ).fill("hsla(0, 100%, 60%, 0.30)").stroke("#ffaaaa");
     }
 
-    beHurt(options: {
-        /** 造成了多少点伤害。原则上，这个值不应当小于0。 */
-        num: number,
-        // TODO: damageType
-    }) {
-        this.hp -= options.num * this._birthProtectCoef;
+    /** @internal */
+    private _afterBeHurtCallback: NewCommonEnemyOptions["afterBeHurtCallback"];
+
+    beHurt(options: EnemyBeHurtOptions) {
+        this.hp -= options.value * this._birthProtectCoef;
         if (this.danmaku.game.clock >= lastPlayDamageSoundClockTS + 3) {
             lastPlayDamageSoundClockTS = this.danmaku.game.clock;
-            if (this.hp / this.maxHp <= 0.1) {
+            if (this.hp <= Math.min(this.maxHp * 0.1, 500)) {
                 this.danmaku.game.prefabSounds.thse.damage01.play();
             } else {
                 this.danmaku.game.prefabSounds.thse.damage00.play();
             }
         }
+        this._afterBeHurtCallback?.(options);
     }
 
     /** 

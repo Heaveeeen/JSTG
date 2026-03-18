@@ -230,6 +230,40 @@ export function startSpellcard(spellcardOptions: {
     })();
     //#endregion
 
+    //#region 版底目标指示器
+    const targetPointers: pixi.Sprite[] = [];
+    for (const enemy of ownsEnemys) {
+        const pointer = new pixi.Sprite({
+            parent: board.spellcardUiLayer,
+            texture: game.prefabTextures.spellcardUi.targetPointer,
+            anchor: 0.5,
+            y: board.halfHeight, scale: 1.1,
+            alpha: 0,
+        });
+        targetPointers.push(pointer);
+        let twinkPhase = 0;
+        spellcard.forever(loop => {
+            pointer.x = enemy.x;
+            const minDist = Math.min(...board._playerRegList.getAlives().map(pl => Math.abs(pl.x - pointer.x)));
+            let alpha = Math.min(minDist * 0.004 + 0.16, 1);
+            const minHp = Math.min(...ownsEnemys.map(enemy => enemy.hp));
+            if (minHp <= 1000) {
+                const twinkOmega = Math.min((1300 - minHp) / 1000, 1);
+                twinkPhase += utils.deg(twinkOmega * 30 * game.timeScale);
+                alpha *= 1 - (twinkOmega * 0.2 * (Math.cos(twinkPhase) + 1));
+            } else {
+                twinkPhase = 0;
+            }
+            pointer.alpha = utils.clamp(alpha, 0, 1);
+        }, { refs: pointer, order: 10, }).then(() => { board.coDo(function*() {
+            while (pointer.alpha > 0) {
+                pointer.alpha -= 5 * game.timeScale;
+                yield;
+            }
+        }, { owns: pointer, order: 10 }) });
+    }
+    //#endregion
+
     return spellcard;
 }
 
