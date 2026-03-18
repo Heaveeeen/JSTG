@@ -84,10 +84,9 @@ export interface NewPlayerOptions {
     autoUpdateDanmakuRegList: boolean | null;
     /** @default true */
     autoUpdateSelf: boolean | null;
-    initFn: (self: Player, options: NewPlayerOptions) => void;
-    updateFn: (self: Player, options: PlayerUpdateOptions) => void;
-    beHurtFn: (self: Player, options: PlayerBeHurtOptions) => void;
-    destroyFn: (self: Player) => void;
+    updateFn: (options: PlayerUpdateOptions) => void;
+    beHurtFn: (options: PlayerBeHurtOptions) => void;
+    destroyFn: () => void;
 }
 
 export class Player {
@@ -205,9 +204,9 @@ export class Player {
         this.maxBombAmount = options.maxBombAmount ?? 8;
         this.missGainBombType = options.missGainBombType ?? "resetToInitAmount";
 
-        this.update = (opt: PlayerUpdateOptions) => options.updateFn(this, opt);
-        this.beHurt = (opt: PlayerBeHurtOptions) => options.beHurtFn(this, opt);
-        this.destroyFn = () => options.destroyFn(this);
+        this.update = options.updateFn;
+        this.beHurt = options.beHurtFn;
+        this.destroyFn = options.destroyFn;
 
         this.backParts = new pixi.Sprite({
             parent: options.board.playerBackLayer,
@@ -264,8 +263,6 @@ export class Player {
         if (options.autoUpdateDanmakuRegList ?? true) {
             this.forever(() => this.board.danmakuRegList.update(this), { order: 10, owns: this }); // 这里 owns 是为了在 combat 销毁时让 player 随之销毁
         }
-
-        options.initFn(this, options);
     }
 
     /**

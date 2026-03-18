@@ -22,7 +22,7 @@ export const prefabPlayerFactory = (()=>{
             hitEffects: Map<AbstractEnemy, pixi.Sprite>,
         } & Destroyable, } & Destroyable;
         let drones: [Drone, Drone, Drone, Drone];
-        const initFn = (player: Player, opt: NewPlayerOptions) => {
+        const initDrones = () => { // 这里写成函数是为了逻辑连贯，把初始化放前面……
             function makeDrone(): Drone { return {
                 sprite: new pixi.Sprite({
                     parent: player.backParts,
@@ -55,7 +55,7 @@ export const prefabPlayerFactory = (()=>{
         };
         let shootTimer = 0;
         const lasers = new Map<Drone, pixi.Sprite | null>();
-        const updateFn = (player: Player, opt: PlayerUpdateOptions) => {
+        const updateFn = (opt: PlayerUpdateOptions) => {
             const input = opt.input ?? game.input;
             player._defaultUpdate(opt);
             let trans: [[number, number, number], [number, number, number], [number, number, number], [number, number, number]];
@@ -288,8 +288,8 @@ export const prefabPlayerFactory = (()=>{
             }
             shootTimer += game.timeScale;
         }
-        const beHurtFn = (player: Player, opt: PlayerBeHurtOptions) => player._defaultBeHurt(opt);
-        const destroyFn = (player: Player) => {
+        const beHurtFn = (opt: PlayerBeHurtOptions) => player._defaultBeHurt(opt);
+        const destroyFn = () => {
             for (const drone of drones) {
                 drone.destroy();
             }
@@ -304,8 +304,9 @@ export const prefabPlayerFactory = (()=>{
             hitboxRadius: 1, highSpeed: 4, slowSpeed: 1.6,
             dyingBombTime: null, initHpAmount: null, initBombAmount: null, missGainBombType: null,
             maxHpAmount: null, maxBombAmount: null,
-            initFn, updateFn, beHurtFn, destroyFn,
+            updateFn, beHurtFn, destroyFn,
         });
+        initDrones();
         return player;
     };
 
