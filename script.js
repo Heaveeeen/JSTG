@@ -77,7 +77,7 @@ import { prefabEnemyFactory } from "./dist/entity/prefabEnemyFactory.js";
                         const danBaseOmega = -Math.sign(gunOmega);
                         forever(loop => {
                             dan.speedToA(Infinity, 0.04 * game.timeScale);
-                            dan.move();
+                            dan.step();
                             dan.rotation += danBaseOmega * deg(1.5) * game.timeScale;
                             dan.boundaryDelete();
                         }, { owns: dan });
@@ -100,7 +100,7 @@ import { prefabEnemyFactory } from "./dist/entity/prefabEnemyFactory.js";
                     dan.sprite.blendMode = "add";
                     forever(loop => {
                         dan.speedToA(0.8, 0.1);
-                        dan.move();
+                        dan.step();
                         dan.boundaryDelete();
                     }, { owns: dan });
                 }
@@ -288,7 +288,7 @@ import { prefabEnemyFactory } from "./dist/entity/prefabEnemyFactory.js";
                             rotation: d + deg(i / 5 * 360),
                         });
                         dan.forever(loop => {
-                            dan.move(2.4);
+                            dan.step(2.4);
                             dan.boundaryDelete();
                         });
                     }
