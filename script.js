@@ -7,6 +7,7 @@
 import * as jstg from "./dist/jstg.js";
 import * as pixi from "pixi";
 import { decibel, deg } from "./dist/utils.js";
+import { prefabEnemyFactory } from "./dist/entity/prefabEnemyFactory.js";
 
 
 // 启动游戏
@@ -265,7 +266,10 @@ import { decibel, deg } from "./dist/utils.js";
             const sc = board.startSpellcard({
                 game, combat, board,
                 figure: game.prefabTextures.charFigure.maple.spellcard,
-                ownsEnemy: board.prefabEnemys.makeYinYangOrb({ maxHp: 4000, y: -60 }),
+                ownsEnemy: prefabEnemyFactory.makeSpellcardShield({
+                    game, combat, board, maxHp: 5000, color: "red",
+                    x: 0, y: -60, rotation: 0, parent: null,
+                }),
                 isPlayStartSound: true,
                 time: 80 * 60,
                 title: "你好「波粒海苔」",

@@ -6,14 +6,17 @@ import { CommonDanmaku } from "./commonDanmaku.js";
 
 export const prefabEnemyFactory = (()=>{
 
-    const makeYinYangOrb = (options: {
+    type makeBaseEnemyOptions = {
         game: Game, combat: Combat, board: Board,
         maxHp: number, color: DyedTextureColors,
         x: number, y: number, rotation: number,
         /** @default board.commonEnemyLayer */
         parent: pixi.Container | null,
-        // TODO: hitboxRadius, isCanHurt, isTouchingDamage, isCanGraze, scale(?), animRotation(?), birthProtectDuration
-    }) => {
+        //scale: number, birthProtectDuration: number,
+        // TODO: hitboxRadius, isCanHurt, isTouchingDamage, isCanGraze, animRotation(?)
+    }
+
+    const makeYinYangOrb = (options: makeBaseEnemyOptions) => {
         const { game, combat, board, maxHp, color, x, y, rotation } = options;
         const rootSprite = new pixi.Sprite({
             parent: options.parent ?? board.commonEnemyLayer,
@@ -44,7 +47,7 @@ export const prefabEnemyFactory = (()=>{
         });
         danmaku.grazeCd = Infinity;
         const enemy = new CommonEnemy({
-            danmaku: danmaku, maxHp, hurtHitboxRadius: 14, // MAYDO: 想办法查查原版判定数据……？我不知道原版阴阳玉判定多大，我瞎填的……
+            danmaku, maxHp, hurtHitboxRadius: 14, // MAYDO: 想办法查查原版判定数据……？我不知道原版阴阳玉判定多大，我瞎填的……
             canBeErase: false,
             birthProtectDuration: 30,
         });
@@ -55,9 +58,32 @@ export const prefabEnemyFactory = (()=>{
         return enemy;
     };
 
+    const makeSpellcardShield = (options: makeBaseEnemyOptions) => {
+        const { game, combat, board, maxHp, color, x, y, rotation } = options;
+        const sprite = new pixi.Sprite({
+            parent: options.parent ?? board.commonEnemyLayer,
+            texture: game.prefabTextures.enemy.shield,
+            x, y, rotation, anchor: 0.5,
+            scale: 0.44,
+        });
+        const danmaku = new CommonDanmaku({
+            game, combat, board,
+            type: "enemySpellcardShield",
+            color: "red", hitboxRadius: 20,
+            sprite,
+        });
+        const enemy = new CommonEnemy({
+            danmaku, maxHp, hurtHitboxRadius: 44,
+            canBeErase: false,
+            birthProtectDuration: 250,
+        });
+        return enemy;
+    }
+
     return {
         /** 创建一个阴阳玉敌人。 */
         makeYinYangOrb,
+        makeSpellcardShield,
     }
 
 })();

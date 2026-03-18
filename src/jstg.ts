@@ -202,6 +202,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     });
                 };
 
+                // TODO: getAttackable
+
                 return {
                     /** @readonly 所有接受判定的敌人，⚠️可能含有已经摧毁的无效敌人 */
                     objects,

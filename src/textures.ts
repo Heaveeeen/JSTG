@@ -238,6 +238,7 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
                 innerRing: await lsdye(`enemy/yinYangOrb/innerRing.svg`),
                 outerRing: await lsdye(`enemy/yinYangOrb/outerRing.svg`),
             },
+            shield: await lsvg(`enemy/shield.svg`),
         },
         spellcardUi: {
             targetPointer: await lsvg(`spellcardUi/targetPointer.svg`),
