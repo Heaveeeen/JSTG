@@ -86,7 +86,7 @@ export interface NewPlayerOptions {
     autoUpdateSelf: boolean | null;
     updateFn: (options: PlayerUpdateOptions) => void;
     beHurtFn: (options: PlayerBeHurtOptions) => void;
-    destroyFn: () => void;
+    destroyCallback: () => void;
 }
 
 export class Player {
@@ -206,7 +206,7 @@ export class Player {
 
         this.update = options.updateFn;
         this.beHurt = options.beHurtFn;
-        this.destroyFn = options.destroyFn;
+        this.destroyFn = options.destroyCallback;
 
         this.backParts = new pixi.Sprite({
             parent: options.board.playerBackLayer,

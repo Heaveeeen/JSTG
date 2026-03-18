@@ -289,7 +289,7 @@ export const prefabPlayerFactory = (()=>{
             shootTimer += game.timeScale;
         }
         const beHurtFn = (opt: PlayerBeHurtOptions) => player._defaultBeHurt(opt);
-        const destroyFn = () => {
+        const destroyCallback = () => {
             for (const drone of drones) {
                 drone.destroy();
             }
@@ -304,7 +304,7 @@ export const prefabPlayerFactory = (()=>{
             hitboxRadius: 1, highSpeed: 4, slowSpeed: 1.6,
             dyingBombTime: null, initHpAmount: null, initBombAmount: null, missGainBombType: null,
             maxHpAmount: null, maxBombAmount: null,
-            updateFn, beHurtFn, destroyFn,
+            updateFn, beHurtFn, destroyCallback,
         });
         initDrones();
         return player;
