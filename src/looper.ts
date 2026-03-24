@@ -128,8 +128,8 @@ export const makeLooper = (makeLooperOptions: {
                 callbacks.push(callback);
                 return loop;
             },
-            addRefs: (...objs) => { refs.push(...objs) },
-            addDestroys: (...objs) => { destroys.push(...objs) },
+            addRefs: (...objs) => { refs.push(...objs); },
+            addDestroys: (...objs) => { destroys.push(...objs); },
             addOwns: (...objs) => {
                 refs.push(...objs);
                 destroys.push(...objs);

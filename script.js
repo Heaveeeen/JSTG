@@ -8,19 +8,21 @@ import * as jstg from "./dist/jstg.js";
 import * as pixi from "pixi";
 import { decibel, deg } from "./dist/utils.js";
 import { prefabEnemyFactory } from "./dist/entity/prefabEnemyFactory.js";
+import { Boss, baseStartSingleBossBattle } from "./dist/boss/bossBattle.js";
+
 
 
 // 启动游戏
 (async () => {
     const game = await jstg.LaunchGame();
     const { Key, prefabDanmakuHitboxRadius } = jstg;
-    const { input, forever, coDo, app, debug } = game;
+    const { input, app, debug } = game;
     const { isDown, isUp, isHold, isIdle } = input;
     const { asAny } = jstg.utils;
 
     const combat = await game.StartCombat()
     const { board } = combat;
-    const { makeDanmaku, makeLaserBeam, prefabPlayers, prefabEnemys } = board;
+    const { makeDanmaku, makeLaserBeam, prefabPlayers, prefabEnemys, forever, coDo, } = board;
 
     console.log(game, combat, board);
 
@@ -263,44 +265,48 @@ import { prefabEnemyFactory } from "./dist/entity/prefabEnemyFactory.js";
             debug.godMode.isOn = !debug.godMode.isOn;
         }
         if (isDown(Key.KeyI)) {
-            const shield = prefabEnemyFactory.makeSpellcardShield({
-                game, combat, board, maxHp: 5000, color: "red",
-                x: 0, y: -60, rotation: 0, parent: null,
-            });
-            const sc = board.startSpellcard({
-                game, combat, board,
-                figure: game.prefabTextures.charFigure.maple.spellcard,
-                ownsEnemy: shield,
-                isPlayStartSound: true,
-                time: 80 * 60,
-                title: "你好「波粒海苔」",
-            });
-            let omega = 0;
-            let d = deg(-60);
-            sc.coDo(function*() {
-                yield* game.Sleep(50);
-                while (true) {
-                    game.prefabSounds.thse.tan00.play({ volume: decibel(-9) });
-                    for (let i = 0; i < 5; i++) {
-                        const dan = makeDanmaku({
-                            type: "grain", color: "h300",
-                            x: shield.x, y: shield.y,
-                            rotation: d + deg(i / 5 * 360),
-                        });
-                        dan.forever(loop => {
-                            dan.step(2.4);
-                            dan.boundaryDelete();
-                        });
+            coDo(function*() {
+                const boss = new Boss({ game, combat, board, hue1: 16, hue2: 24, sprite: new pixi.Sprite({
+                    parent: board.bossLayer,
+                    anchor: 0.5,
+                    texture: game.prefabTextures.avatar.maple,
+                    x: 0, y: -100,
+                    scale: 1.1,
+                }), defaultSpellcardFigure: game.prefabTextures.charFigure.maple.spellcard });
+                const battle = baseStartSingleBossBattle({ game, combat, board, boss });
+                yield* game.Sleep(30);
+                const { spellcard, shield } = battle.startSpellcard({
+                    time: 80 * 60,
+                    hp: 4000,
+                    title: "你好「波粒海苔」",
+                });
+                let omega = 0;
+                let d = deg(-60);
+                spellcard.coDo(function*() {
+                    yield* game.Sleep(50);
+                    while (true) {
+                        game.prefabSounds.thse.tan00.play({ volume: decibel(-9) });
+                        for (let i = 0; i < 5; i++) {
+                            const dan = makeDanmaku({
+                                type: "grain", color: "h300",
+                                x: boss.x, y: boss.y,
+                                rotation: d + deg(i / 5 * 360),
+                            });
+                            dan.forever(loop => {
+                                dan.step(2.4);
+                                dan.boundaryDelete();
+                            });
+                        }
+                        d += omega;
+                        omega += deg(0.09);
+                        yield* game.Sleep(2);
                     }
-                    d += omega;
-                    omega += deg(0.09);
-                    yield* game.Sleep(2);
-                }
+                });
+                spellcard.forever(loop => {
+                    boss.x = 40 * Math.cos(game.clock * 0.01);
+                    boss.y = 20 * Math.sin(game.clock * 0.01) - 80;
+                })
             });
-            sc.forever(loop => {
-                shield.x = 40 * Math.cos(game.clock * 0.01);
-                shield.y = 20 * Math.sin(game.clock * 0.01) - 80;
-            })
         }
     }, { order: 0 });
 

@@ -6,18 +6,17 @@ import { CommonDanmaku } from "./commonDanmaku.js";
 
 export const prefabEnemyFactory = (()=>{
 
-    type makeBaseEnemyOptions = {
+    const makeYinYangOrb = (options: {
         game: Game, combat: Combat, board: Board,
         maxHp: number, color: DyedTextureColors,
         x: number, y: number, rotation: number,
         /** @default board.commonEnemyLayer */
         parent: pixi.Container | null,
-        //scale: number, birthProtectDuration: number,
+        birthProtectDuration: number,
+        //scale: number, 
         // TODO: hitboxRadius, isCanHurt, isTouchingDamage, isCanGraze, animRotation(?)
-    }
-
-    const makeYinYangOrb = (options: makeBaseEnemyOptions) => {
-        const { game, combat, board, maxHp, color, x, y, rotation } = options;
+    }) => {
+        const { game, combat, board, maxHp, color, x, y, rotation, birthProtectDuration } = options;
         const rootSprite = new pixi.Sprite({
             parent: options.parent ?? board.commonEnemyLayer,
             x, y, rotation, anchor: 0.5,
@@ -49,7 +48,7 @@ export const prefabEnemyFactory = (()=>{
         const enemy = new CommonEnemy({
             danmaku, maxHp, hurtHitboxRadius: 14, // MAYDO: 想办法查查原版判定数据……？我不知道原版阴阳玉判定多大，我瞎填的……
             canBeErase: false,
-            birthProtectDuration: 30,
+            birthProtectDuration,
             afterBeHurtCallback: null,
         });
         enemy.forever(loop => {
@@ -59,10 +58,19 @@ export const prefabEnemyFactory = (()=>{
         return enemy;
     };
 
-    const makeSpellcardShield = (options: makeBaseEnemyOptions) => {
-        const { game, combat, board, maxHp, color, x, y, rotation } = options;
+    const makeSpellcardShield = (options: {
+        game: Game, combat: Combat, board: Board,
+        maxHp: number,
+        x: number, y: number, rotation: number,
+        /** @default board.bossShieldLayer */
+        parent: pixi.Container | null,
+        birthProtectDuration: number,
+        //scale: number, 
+        // TODO: hitboxRadius, isCanHurt, isTouchingDamage, isCanGraze, animRotation(?)
+    }) => {
+        const { game, combat, board, maxHp, x, y, rotation, birthProtectDuration } = options;
         const sprite = new pixi.Sprite({
-            parent: options.parent ?? board.commonEnemyLayer,
+            parent: options.parent ?? board.bossShieldLayer,
             texture: game.prefabTextures.enemy.shield,
             x, y, rotation, anchor: 0.5,
             scale: 0.44,
@@ -79,7 +87,7 @@ export const prefabEnemyFactory = (()=>{
         const enemy = new CommonEnemy({
             danmaku, maxHp, hurtHitboxRadius: 44,
             canBeErase: false,
-            birthProtectDuration: 250,
+            birthProtectDuration,
             afterBeHurtCallback: () => {
                 sprite.alpha = 0.8;
             },

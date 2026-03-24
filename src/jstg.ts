@@ -1,19 +1,19 @@
 import * as pixi from "pixi";
 import { DyedTextures, LoadPixiAsset, LoadPrefabTextures, LoadPrefabTexturesOptions, LoadSvg, PrefabDanmakuNames, DyedTextureColors, makeDyedTextures, makeDyedFrames } from "./textures.js";
-import { Key, makeInput } from "./Input.js";
+import { Key, makeInput } from "./input.js";
 import { prefabPlayerFactory } from "./player/prefabPlayerFactory.js";
 import { makeRng } from "./random.js";
 import * as utils from './utils.js';
-import { CommonDanmaku, makePrefabDanmaku } from "./entity/commonDanmaku.js";
+import { CommonDanmaku, baseMakePrefabDanmaku } from "./entity/commonDanmaku.js";
 import { AbstractDanmaku, EraseDanmakuOptions, prefabDanmakuHitboxRadius } from "./entity/abstractDanmaku.js";
 import { makeRegList } from "./regList.js";
 import { LoadPrefabSounds, LoadPrefabSoundsOptions, LoadSound } from "./sounds.js";
-import { LaserBeam, makePrefabLaserBeam } from "./entity/laserBeam.js";
+import { LaserBeam, baseMakePrefabLaserBeam } from "./entity/laserBeam.js";
 import { Player } from "./player/player.js";
 import { CoDoGenFn, LoopController, LooperFn, LoopOptions, makeLooper, makePauseController } from "./looper.js";
 import { AbstractEnemy } from "./entity/abstractEnemy.js";
 import { prefabEnemyFactory } from "./entity/prefabEnemyFactory.js";
-import { Spellcard, startSpellcard } from "./boss/spellcard.js";
+import { Spellcard, baseStartSpellcard } from "./boss/spellcard.js";
 
 
 
@@ -247,8 +247,12 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 playerBulletLayer: makeBoardLayer(-5),
                 /** 所有常规敌人的根节点 */
                 commonEnemyLayer: makeBoardLayer(-10),
+                /** Boss 防护罩的根节点 */
+                bossShieldLayer: makeBoardLayer(-20),
+                /** Boss 本体的根节点 */
+                bossLayer: makeBoardLayer(-30),
                 /** 所有消弹特效的根节点 */
-                danmakuEraseLayer: makeBoardLayer(-20),
+                danmakuEraseLayer: makeBoardLayer(-40),
                 /** 自机后半部分所属的图层。 */
                 playerBackLayer: makeBoardLayer(-100),
                 /** 符卡 UI 的根节点，包括符卡名称、计时器等等。 */
@@ -281,7 +285,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 makeDanmaku: null as unknown as typeof makeDanmaku, // MAGIC:
                 /** TODOC: makeLaserBeam */
                 makeLaserBeam: null as unknown as typeof makeLaserBeam, // MAGIC:
-                startSpellcard,
+                startSpellcard: baseStartSpellcard,
                 destroy() {
                     if (this.destroyed) { return; }
                     boardRoot.destroy();
@@ -302,6 +306,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     return loop;
                 },
             };
+            board.forever = board.forever.bind(board);
+            board.coDo = board.coDo.bind(board);
 
             const prefabPlayers = (()=>{
                 const makePlayer = (player: Player) => {
@@ -352,7 +358,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     maxHp: options.maxHp ?? 30,
                     color: options.color ?? "red",
                     x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
-                    parent: options.parent ?? null, 
+                    parent: options.parent ?? null,
+                    birthProtectDuration: 30,
                 });
 
                 return {
@@ -388,7 +395,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 if (options === undefined || typeof options === "string") {
                     options = { type: options, color };
                 };
-                return makePrefabDanmaku({
+                return baseMakePrefabDanmaku({
                     game, combat, board,
                     type: options.type ?? "smallball", color: options.color ?? "red", parent: options.parent ?? null,
                     x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
@@ -438,7 +445,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 if (options === undefined || typeof options === "string") {
                     options = { type: options, color };
                 };
-                return makePrefabLaserBeam({
+                return baseMakePrefabLaserBeam({
                     game, combat, board,
                     type: options.type ?? "laserseg", color: options.color ?? "red",
                     x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
@@ -543,6 +550,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 return loop;
             },
         };
+        combat.forever = combat.forever.bind(combat);
+        combat.coDo = combat.coDo.bind(combat);
 
         return combat;
     }
@@ -572,7 +581,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
     const fpsCounterLoop = forever(() => {
         const now = performance.now();
         timeRecords.push(now);
-        if (timeRecords.length > 10) {
+        if (timeRecords.length > 10) {// MAYDO: 现在这个帧率测试器容易看不出来长期的平均帧率，跳得太快了
             fps = Math.round(1000000 / (now - (timeRecords.shift() as number))) / 100;
         }
         fpsMonitor.text = `FPS:${fps}`;

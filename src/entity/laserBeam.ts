@@ -258,7 +258,7 @@ export class LaserBeam extends AbstractDanmaku {
     }
 }
 
-export const makePrefabLaserBeam = (options: {
+export const baseMakePrefabLaserBeam = (options: {
     game: Game, combat: Combat, board: Board,
     type: PrefabDanmakuNames, color: DyedTextureColors,
     x: number, y: number, rotation: number,

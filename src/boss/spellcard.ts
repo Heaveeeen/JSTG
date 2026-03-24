@@ -9,16 +9,17 @@ import * as utils from "../utils.js";
 /** 弹幕引擎里一个跟摄像机变换有关的全局变量 */
 const fooUiGradient = 1;
 
-export function startSpellcard(spellcardOptions: {
+export interface StartSpellcardOptions {
     game: Game, combat: Combat, board: Board,
-    ownsEnemy?: CommonEnemy | CommonEnemy[],
+    ownEnemys: CommonEnemy[],
     figure: pixi.Texture | "noFigure" | "useTheUnknownFigure",
     title: string | null,
     time: number,
     isPlayStartSound: boolean,
-}) {
-    const { game, combat, board, title: titleString, time: maxTime } = spellcardOptions;
-    const ownsEnemys = makeElements(spellcardOptions.ownsEnemy);
+}
+
+export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
+    const { game, combat, board, title: titleString, time: maxTime, ownEnemys: ownsEnemys } = spellcardOptions;
     const beginClockTs = game.clock;
     let endClockTs: number | null = null;
     if (spellcardOptions.isPlayStartSound) { game.prefabSounds.thse.cat00.play(); }
@@ -26,7 +27,8 @@ export function startSpellcard(spellcardOptions: {
     let isMissOrBomb = false;
     let isSpellcardDestroyed = false;
     const spellcard = {
-        get timeRemaining() { return maxTime - (game.clock - beginClockTs); },
+        get clock() { return game.clock - beginClockTs; },
+        get timeRemaining() { return maxTime - this.clock; },
 
         kill() {
             mainLoop.destroy();
@@ -58,6 +60,8 @@ export function startSpellcard(spellcardOptions: {
             return loop;
         },
     };
+    spellcard.forever = spellcard.forever.bind(spellcard);
+    spellcard.coDo = spellcard.coDo.bind(spellcard);
     board._spellcardRegList.push(spellcard);
 
     //#region 立绘
@@ -69,6 +73,7 @@ export function startSpellcard(spellcardOptions: {
             spellcardOptions.figure,
         scale: 1.6,
         zIndex: 0,
+        alpha: 0,
     });
     if (figure !== null) { board.coDo(function*() { // 此处没必要依赖 spellcard ，一个立绘飞过去的动画而已……
         // MAYDO: 写个新的符卡宣言动画，这里直接沿用弹幕引擎的写法……其实我不是特别喜欢这个，但也完全谈不上讨厌，感觉犯不上为了这点破事大动干戈。反正调这玩意得不断编译，非常麻烦。。。
@@ -267,4 +272,4 @@ export function startSpellcard(spellcardOptions: {
     return spellcard;
 }
 
-export type Spellcard = ReturnType<typeof startSpellcard>;
+export type Spellcard = ReturnType<typeof baseStartSpellcard>;

@@ -209,7 +209,7 @@ export class CommonDanmaku extends AbstractDanmaku {
     }
 }
 
-export const makePrefabDanmaku = (options: {
+export const baseMakePrefabDanmaku = (options: {
     game: Game, combat: Combat, board: Board,
     type: PrefabDanmakuNames, color: DyedTextureColors,
     x: number, y: number, rotation: number,

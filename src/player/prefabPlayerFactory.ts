@@ -28,7 +28,7 @@ export const prefabPlayerFactory = (()=>{
                     parent: player.backParts,
                     texture: prefabTextures.player.drone.simpleDrone,
                     anchor: 0.5,
-                    filters: player.colorFilter,
+                    filters: player.hue1Filter,
                     alpha: 0,
                     zIndex: -10,
                 }),
@@ -152,14 +152,14 @@ export const prefabPlayerFactory = (()=>{
                                 } // MAYDO: 激光如何与其他类型的敌人进行判定……
                             }
                             if (laser.hitEffects.size === 0) {
-                                laser.sprite.filters = player.colorFilter;
-                                drone.sprite.filters = player.colorFilter;
+                                laser.sprite.filters = player.hue1Filter;
+                                drone.sprite.filters = player.hue1Filter;
                             } else {
                                 laser.sprite.filters = null;
                                 drone.sprite.filters = null;
                             }
                         }, { owns: drone.laser, order: 10 }).then(() => {
-                            drone.sprite.filters = player.colorFilter;
+                            drone.sprite.filters = player.hue1Filter;
                         });
                     }
                 } else {
@@ -174,7 +174,7 @@ export const prefabPlayerFactory = (()=>{
                                 scale: 1.2,
                                 rotation: drone.rotation,
                                 alpha: 0.4,
-                                filters: player.colorFilter,
+                                filters: player.hue1Filter,
                                 blendMode: "add",
                             });
                             const head = new pixi.Sprite({
