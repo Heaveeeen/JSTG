@@ -3,7 +3,6 @@ import { Game, Board, Player, Combat } from "../jstg.js";
 import { DyedTextureColors, DyedTextures } from "../textures.js";
 import { AbstractEnemy } from "./abstractEnemy.js";
 import { staticAssert } from "../utils.js";
-import { LooperFn, LoopOptions, CoDoGenFn } from "../looper.js";
 import { Entity } from "./entity.js";
 
 
@@ -130,17 +129,6 @@ export abstract class AbstractDanmaku extends Entity {
     abstract update(player: Player): void;
 
     abstract getIsCrossCircle(circle: { x: number, y: number, radius: number }): boolean;
-    
-    forever(fn: LooperFn, options: LoopOptions = {}) {
-        const loop = this.board.forever(fn, options);
-        loop.addRefs(this);
-        return loop;
-    }
-    coDo(genFn: CoDoGenFn, options: LoopOptions = {}) {
-        const loop = this.board.coDo(genFn, options);
-        loop.addRefs(this);
-        return loop;
-    }
 }
 
 /** 此处的数值与弹幕引擎有所不同 */

@@ -1,4 +1,6 @@
-import { Board, Combat, Game } from "../jstg";
+import { Board, Combat, Game } from "../jstg.js";
+import { CoDoGenFn, LoopController, LooperFn, LoopOptions } from "../looper.js";
+import * as utils from "../utils.js";
 
 
 export abstract class Entity {
@@ -42,6 +44,34 @@ export abstract class Entity {
     speedToK(/** 目标速度 */ dst: number, /** 每次变速的比 */ k: number) {
         this.speed += (dst - this.speed * k * this.game.timeScale);
     }
+
+    /** @internal */
+    private _glideLoop: LoopController | null = null;
+    /** TODOC: glideTo */
+    glideTo(targetPos: utils.Vec2, mode: {// MAYDO: 更多缓动模式
+        type: "jstgExp",
+        /** @default 0.04 */
+        minK?: number,
+    } = { type: "jstgExp" }) {
+        // TODO: 不重要，允许 glideTo 并发
+        this._glideLoop?.destroy();
+        const minK = mode.minK ?? 0.04;
+        this._glideLoop = this.forever(loop => {
+            const dx = targetPos.x - this.x;
+            const dy = targetPos.y - this.y;
+            const dist_2 = dx ** 2 + dy ** 2;
+            if (dist_2 <= 0.01) {
+                this.x = targetPos.x;
+                this.y = targetPos.y;
+                loop.destroy();
+            } else {
+                const k = Math.max((100 - Math.sqrt(dist_2)) / 50, 1) * minK * this.game.timeScale;
+                this.x += dx * k;
+                this.y += dy * k;
+            }
+        });
+        return this._glideLoop;
+    }
     
     /**
      * 判断该实体是否在版面内。  
@@ -63,4 +93,16 @@ export abstract class Entity {
      * 例如：一个跟踪弹保留了一个敌人的引用，并且追踪敌人的位置；那么，该跟踪弹应该在每帧都检查目标敌人是否已被摧毁，如果已被摧毁则失去目标，寻找新的目标或者进入游荡状态或者怎么怎么样
      */
     abstract readonly destroyed: boolean;
+    
+    forever(fn: LooperFn, options: LoopOptions = {}) {
+        const loop = this.board.forever(fn, options);
+        loop.addRefs(this);
+        return loop;
+    }
+
+    coDo(genFn: CoDoGenFn, options: LoopOptions = {}) {
+        const loop = this.board.coDo(genFn, options);
+        loop.addRefs(this);
+        return loop;
+    }
 }

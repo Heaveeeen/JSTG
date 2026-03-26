@@ -90,7 +90,7 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
     }) => {
         const { time, title, hp, figure } = options;
         const isShowFigureAndTitle = options.isShowFigureAndTitle ?? true;
-        const birthProtectDuration = options.birthProtectDuration ?? (isShowFigureAndTitle ? 6 * 60 : 4 * 60);
+        const birthProtectDuration = options.birthProtectDuration ?? 250;
         const opt = isShowFigureAndTitle ? {
             isPlayStartSound: true, title,
             figure: figure ?? boss.defaultSpellcardFigure ?? "useTheUnknownFigure",
@@ -109,6 +109,7 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
             shield.x = boss.x;
             shield.y = boss.y;
         });
+        boss.glideTo({ x: 0, y: -80 * 4/3 });
         return { spellcard, shield };
     };
 
@@ -131,6 +132,7 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
             time, ...opt,
             ownEnemys: [],
         });
+        boss.glideTo({ x: 0, y: -80 * 4/3 });
         return { spellcard };
     };
 

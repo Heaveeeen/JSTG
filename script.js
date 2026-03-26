@@ -283,7 +283,7 @@ import { Boss, baseStartSingleBossBattle } from "./dist/boss/bossBattle.js";
                 let omega = 0;
                 let d = deg(-60);
                 spellcard.coDo(function*() {
-                    yield* game.Sleep(50);
+                    yield* game.Sleep(60);
                     while (true) {
                         game.prefabSounds.thse.tan00.play({ volume: decibel(-9) });
                         for (let i = 0; i < 5; i++) {

@@ -53,8 +53,8 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
     /** @internal */
     private _afterBeHurtCallback: NewCommonEnemyOptions["afterBeHurtCallback"];
 
-    beHurt(options: EnemyBeHurtOptions) {
-        this.hp -= options.value * this._birthProtectCoef;
+    beHurt(value: number, options: EnemyBeHurtOptions = {}) {
+        this.hp -= value * this._birthProtectCoef;
         if (this.danmaku.game.clock >= lastPlayDamageSoundClockTS + 3) {
             lastPlayDamageSoundClockTS = this.danmaku.game.clock;
             if (this.hp <= Math.min(this.maxHp * 0.1, 500)) {

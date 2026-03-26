@@ -14,8 +14,6 @@ export interface newAbstractEnemyOptions<T extends AbstractDanmaku> {
 }
 
 export type EnemyBeHurtOptions = {
-    /** 造成了多少点伤害。原则上，这个值不应当小于0。 */
-    value: number;
     // TODO: damageType
 };
 
@@ -57,7 +55,11 @@ export abstract class AbstractEnemy<T extends AbstractDanmaku = AbstractDanmaku>
 
     abstract drawDebugHitbox(): void;
     
-    abstract beHurt(options: EnemyBeHurtOptions): void;
+    abstract beHurt(
+        /** 造成了多少点伤害。原则上，这个值不应当小于0。 */
+        value: number,
+        options?: EnemyBeHurtOptions
+    ): void;
 
     abstract kill(options?: {
         forEachCorpse?: EraseDanmakuOptions["forEachCorpse"],

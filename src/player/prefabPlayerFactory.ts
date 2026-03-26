@@ -141,7 +141,7 @@ export const prefabPlayerFactory = (()=>{
                                         eff.x = laser.sprite.x + hitDist * Math.cos(laser.sprite.rotation);
                                         eff.y = laser.sprite.y + hitDist * Math.sin(laser.sprite.rotation);
                                         eff.rotation = laser.sprite.rotation;
-                                        enemy.beHurt({ value: 1.25 * game.timeScale }); // MAYDO: 让这个激光闪烁起来
+                                        enemy.beHurt(1.25 * game.timeScale ); // MAYDO: 让这个激光闪烁起来
                                     } else {
                                         // 没有命中这个敌人
                                         if (eff !== undefined) {
@@ -203,7 +203,7 @@ export const prefabPlayerFactory = (()=>{
                                         const { x: rx, y: ry } = rotateVec({ x: enemy.x - bullet.x, y: enemy.y - bullet.y }, bullet.rotation);
                                         if ((rx >= -enemy.hurtHitboxRadius) && (rx <= currentSpeed + enemy.hurtHitboxRadius) && (Math.abs(ry) <= 4 + enemy.hurtHitboxRadius)) {
                                             // 命中
-                                            enemy.beHurt({ value: 5 });
+                                            enemy.beHurt(5);
                                             bullet.x += currentSpeed * Math.cos(bullet.rotation);
                                             bullet.y += currentSpeed * Math.sin(bullet.rotation);
                                             { // 命中特效
