@@ -109,8 +109,16 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
             shield.x = boss.x;
             shield.y = boss.y;
         });
-        boss.glideTo({ x: 0, y: -80 * 4/3 });
-        return { spellcard, shield };
+        const glideLoop = boss.glideTo({ x: 0, y: -80 * 4/3 });
+        let t = 0;
+        const initLoop = boss.forever(loop => {
+            if (t >= 60) {
+                loop.destroy();
+            } else {
+                t += game.timeScale;
+            }
+        }, { destroys: glideLoop });
+        return { spellcard, shield, initLoop };
     };
 
     const startSurvivalSpellcard = (options: {
@@ -132,8 +140,16 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
             time, ...opt,
             ownEnemys: [],
         });
-        boss.glideTo({ x: 0, y: -80 * 4/3 });
-        return { spellcard };
+        const glideLoop = boss.glideTo({ x: 0, y: -80 * 4/3 });
+        let t = 0;
+        const initLoop = boss.forever(loop => {
+            if (t >= 60) {
+                loop.destroy();
+            } else {
+                t += game.timeScale;
+            }
+        }, { destroys: glideLoop });
+        return { spellcard, initLoop };
     };
 
     return {

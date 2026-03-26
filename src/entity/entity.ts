@@ -45,32 +45,34 @@ export abstract class Entity {
         this.speed += (dst - this.speed * k * this.game.timeScale);
     }
 
-    /** @internal */
-    private _glideLoop: LoopController | null = null;
+    glideLoop: LoopController | null = null;
     /** TODOC: glideTo */
     glideTo(targetPos: utils.Vec2, mode: {// MAYDO: 更多缓动模式
         type: "jstgExp",
-        /** @default 0.04 */
+        /**
+         * @default 0.04
+         * 弹幕引擎中，这个值默认为 0.05
+         */
         minK?: number,
     } = { type: "jstgExp" }) {
-        // TODO: 不重要，允许 glideTo 并发
-        this._glideLoop?.destroy();
+        // MAYDO: 不重要，允许 glideTo 并发
+        this.glideLoop?.destroy();
         const minK = mode.minK ?? 0.04;
-        this._glideLoop = this.forever(loop => {
+        this.glideLoop = this.forever(loop => {
             const dx = targetPos.x - this.x;
             const dy = targetPos.y - this.y;
             const dist_2 = dx ** 2 + dy ** 2;
             if (dist_2 <= 0.01) {
                 this.x = targetPos.x;
                 this.y = targetPos.y;
-                loop.destroy();
+                return loop.destroy();
             } else {
                 const k = Math.max((100 - Math.sqrt(dist_2)) / 50, 1) * minK * this.game.timeScale;
                 this.x += dx * k;
                 this.y += dy * k;
             }
         });
-        return this._glideLoop;
+        return this.glideLoop;
     }
     
     /**

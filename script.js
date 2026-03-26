@@ -18,7 +18,7 @@ import { Boss, baseStartSingleBossBattle } from "./dist/boss/bossBattle.js";
     const { Key, prefabDanmakuHitboxRadius } = jstg;
     const { input, app, debug } = game;
     const { isDown, isUp, isHold, isIdle } = input;
-    const { asAny } = jstg.utils;
+    const { asAny, UntilDestroy } = jstg.utils;
 
     const combat = await game.StartCombat()
     const { board } = combat;
@@ -275,17 +275,21 @@ import { Boss, baseStartSingleBossBattle } from "./dist/boss/bossBattle.js";
                 }), defaultSpellcardFigure: game.prefabTextures.charFigure.maple.spellcard });
                 const battle = baseStartSingleBossBattle({ game, combat, board, boss });
                 yield* game.Sleep(30);
-                const { spellcard, shield } = battle.startSpellcard({
+                const { spellcard, shield, initLoop } = battle.startSpellcard({
                     time: 80 * 60,
                     hp: 4000,
                     title: "你好「波粒海苔」",
                 });
+                yield* UntilDestroy(initLoop);
+                spellcard.forever(loop => {
+                    boss.x = 40 * Math.cos(game.clock * 0.01);
+                    boss.y = 20 * Math.sin(game.clock * 0.01) - 80;
+                });
                 let omega = 0;
                 let d = deg(-60);
                 spellcard.coDo(function*() {
-                    yield* game.Sleep(60);
                     while (true) {
-                        game.prefabSounds.thse.tan00.play({ volume: decibel(-9) });
+                        game.prefabSounds.thse.tan00.play(decibel(-9));
                         for (let i = 0; i < 5; i++) {
                             const dan = makeDanmaku({
                                 type: "grain", color: "h300",
@@ -302,10 +306,6 @@ import { Boss, baseStartSingleBossBattle } from "./dist/boss/bossBattle.js";
                         yield* game.Sleep(2);
                     }
                 });
-                spellcard.forever(loop => {
-                    boss.x = 40 * Math.cos(game.clock * 0.01);
-                    boss.y = 20 * Math.sin(game.clock * 0.01) - 80;
-                })
             });
         }
     }, { order: 0 });

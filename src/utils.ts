@@ -1,4 +1,5 @@
 import * as pixi from "pixi";
+import { Destroyable } from "./jstg.js";
 
 /**
  * 把 n 限制在 [a, b] 范围内
@@ -88,6 +89,8 @@ export const select = <T>(t: number, results: Readonly<SelectItem<T>[]>): typeof
     }
     return results[results.length - 1].value;
 };
+
+export function* UntilDestroy(obj: Destroyable) { while (!obj.destroyed) { yield; } }
 
 
 
