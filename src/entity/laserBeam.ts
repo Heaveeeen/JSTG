@@ -119,10 +119,13 @@ export class LaserBeam extends AbstractDanmaku {
                     x: this.x,
                     y: this.y,
                 });
+            }
+            if (this.isHitboxGraphicsDirty) {
+                this.hitboxGraphics.clear();
                 this.hitboxGraphics.rect(
                     0, -(this.hitboxHalfWidth + player.hitboxRadius), this.hitboxLength, 2 * (this.hitboxHalfWidth + player.hitboxRadius)
                 ).fill("hsla(180, 100%, 60%, 0.50)").stroke("#ffffff");
-                this.hitboxGraphics.rotation = this.rotation
+                this.hitboxGraphics.rotation = this.rotation;
             }
             this.visible = showHitbox.isShowDanmakuBoth;
         } else {

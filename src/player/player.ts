@@ -432,21 +432,7 @@ export class Player {
                     });
                 }
                 yield* this.game.Sleep(40);
-                {// 消弹
-                    const self = this;
-                    const { x, y } = this;
-                    this.board.coDo(function*() {
-                        for (let t = 0; t < 60; t += self.game.timeScale) {
-                            const radius = t * 10;
-                            self.board.danmakuRegList.eraseByRadius({ x, y, radius });
-                            // TODO: damage (circle) r=radius, dmg=10*timescale, dmg to boss = 0.2
-                            // 这个以后要换成进一步封装的工具函数，另外 dmg to boss 效果还没做
-                            self.board.enemyRegList.forEachByRadius({ x, y, radius, callback: enemy => enemy.beHurt(10 * self.game.timeScale) });
-                            yield;
-                        }
-                        self.board.danmakuRegList.forEachAlive(dan => dan.erase());
-                    });
-                }
+                this.board.foo_clearScreen({ x: this.x, y: this.y });
                 yield* this.game.Sleep(20);
                 // 重生动画
                 this.alpha = 1;

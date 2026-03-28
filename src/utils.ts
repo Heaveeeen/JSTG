@@ -28,10 +28,11 @@ export const alphaTo = (spr: { alpha: number }, dst: number, speed: number) => {
 };
 
 /**
- * 把角度转换为弧度
+ * 把角度转换为弧度。
+ * ⚠️pixi 的坐标系是屏幕坐标系，不是数学中常用的笛卡尔坐标系。右方向为 0 ，但顺时针为正方向！
  * @example
  * deg(180) // π，即正左方向
- * deg(90) // π/2，即正上方向
+ * deg(90) // π/2，即正下方向，数学中为正上方向
  */
 export const deg = (n: number) => n * Math.PI / 180;
 

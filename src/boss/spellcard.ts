@@ -7,7 +7,7 @@ import * as utils from "../utils.js";
 
 
 /** 弹幕引擎里一个跟摄像机变换有关的全局变量 */
-const fooUiGradient = 1;
+const sic_UiGradient = 1;
 
 export interface StartSpellcardOptions {
     game: Game, combat: Combat, board: Board,
@@ -16,11 +16,12 @@ export interface StartSpellcardOptions {
     title: string | null,
     time: number,
     isPlayStartSound: boolean,
+    startupTime: number, // 这个不太优雅……但暂时来看够用。
 }
 
 export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
     const { game, combat, board, title: titleString, time: maxTime, ownEnemys: ownsEnemys } = spellcardOptions;
-    const beginClockTs = game.clock;
+    const beginClockTs = game.clock + spellcardOptions.startupTime;
     let endClockTs: number | null = null;
     if (spellcardOptions.isPlayStartSound) { game.prefabSounds.thse.cat00.play(); }
 
@@ -79,12 +80,12 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
         // MAYDO: 写个新的符卡宣言动画，这里直接沿用弹幕引擎的写法……其实我不是特别喜欢这个，但也完全谈不上讨厌，感觉犯不上为了这点破事大动干戈。反正调这玩意得不断编译，非常麻烦。。。
         for (let t = 20; t <= 140; t += game.timeScale) {
             // 这俩变量是弹幕引擎里的局部变量，我也不知道这玩意该叫啥……
-            const fooPosX = 100 - 155 * fooUiGradient;
-            const fooTemp = (t/2 - 35) * (Math.abs(t/2 - 35) + 10);
-            const x = fooTemp * 0.08 + fooPosX
+            const sic_posX = 100 - 155 * sic_UiGradient;
+            const sic_temp = (t/2 - 35) * (Math.abs(t/2 - 35) + 10);
+            const x = sic_temp * 0.08 + sic_posX
             figure.x = (x + 70) * 4/3;
-            figure.y = (fooTemp * 0.02 - 40) * -4/3;
-            figure.alpha = 1 - clamp(Math.abs(x - fooPosX) * 0.8 + 20, 0, 100) / 100;
+            figure.y = (sic_temp * 0.02 - 40) * -4/3;
+            figure.alpha = 1 - clamp(Math.abs(x - sic_posX) * 0.8 + 20, 0, 100) / 100;
             yield;
         }
     }, { owns: figure, order: 0 }); }
@@ -110,9 +111,10 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
     });
     let lastRingNum = 10;
     const timerTargetY = -board.halfHeight + (titleString === null ? 13 : 33);
+
     const mainLoop = spellcard.forever(() => {
         // 保留两位小数后取出的整数
-        const time = Math.round(spellcard.timeRemaining / 60 * 100);
+        const time = Math.round(utils.clamp(spellcard.timeRemaining, 0, spellcardOptions.time) / 60 * 100);
         timerText.style.fill = "#eeeeee";
         timerText.y += (timerTargetY - timerText.y) * 0.05 * game.timeScale;
         alphaTo(timerText, 1, 0.05 * game.timeScale);
@@ -155,7 +157,7 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
         }
         board.coDo(function*() {
             board._playerRegList.forEachAlive(pl => pl.applyInvincible(60));
-            // TODO: 击破消弹
+            board.foo_clearScreen({ x: 0, y: 80 * 4/3 }); // 此处姑且用一个固定坐标……敌人似了之后再读取坐标，逻辑比较麻烦。
         });
         for (let t = 0; t < 60; t += game.timeScale) { // 这里偷个懒复制粘贴
             timerText.y += (timerTargetY - timerText.y) * 0.05 * game.timeScale;
@@ -180,7 +182,7 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
         const targetY = -board.halfHeight + 11;
         const root = new pixi.Sprite({
             parent: board.spellcardUiLayer,
-            x: (300 - 155 * fooUiGradient) * 4/3, y: initY,
+            x: (300 - 155 * sic_UiGradient) * 4/3, y: initY,
             zIndex: 5,
             alpha: 0,
         });

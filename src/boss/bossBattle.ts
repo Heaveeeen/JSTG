@@ -73,12 +73,14 @@ export class Boss extends Entity {
 
 
 
+const _startupTime = 60;
+
 /** TODOC: baseStartSingleBossBattle */
 export const baseStartSingleBossBattle = (bossBattleOptions: {
     game: Game, combat: Combat, board: Board,
-    boss: Boss,
+    refBoss: Boss,
 }) => {
-    const { game, combat, board, boss } = bossBattleOptions;
+    const { game, combat, board, refBoss: boss } = bossBattleOptions;
     const startSpellcard = (options: {
         time: number,
         hp: number,
@@ -104,6 +106,7 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
             game, combat, board,
             time, ...opt,
             ownEnemys: [shield],
+            startupTime: _startupTime,
         });
         shield.forever(loop => {
             shield.x = boss.x;
@@ -111,14 +114,14 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
         });
         const glideLoop = boss.glideTo({ x: 0, y: -80 * 4/3 });
         let t = 0;
-        const initLoop = boss.forever(loop => {
-            if (t >= 60) {
+        const startupLoop = boss.forever(loop => {
+            if (t >= _startupTime) {
                 loop.destroy();
             } else {
                 t += game.timeScale;
             }
         }, { destroys: glideLoop });
-        return { spellcard, shield, initLoop };
+        return { spellcard, shield, startupLoop };
     };
 
     const startSurvivalSpellcard = (options: {
@@ -139,20 +142,33 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
             game, combat, board,
             time, ...opt,
             ownEnemys: [],
+            startupTime: _startupTime,
         });
         const glideLoop = boss.glideTo({ x: 0, y: -80 * 4/3 });
         let t = 0;
-        const initLoop = boss.forever(loop => {
-            if (t >= 60) {
+        const startupLoop = boss.forever(loop => {
+            if (t >= _startupTime) {
                 loop.destroy();
             } else {
                 t += game.timeScale;
             }
         }, { destroys: glideLoop });
-        return { spellcard, initLoop };
+        return { spellcard, startupLoop };
+    };
+
+    let _destroyed = false;
+    const destroy = () => {
+        if (_destroyed) { return; }
+        _destroyed = true;
     };
 
     return {
         startSpellcard, startSurvivalSpellcard,
+        kill() {
+            // TODO: bossbattle.kill
+            destroy();
+        },
+        destroy,
+        get destroyed() { return boss.destroyed || _destroyed; }
     }
 };

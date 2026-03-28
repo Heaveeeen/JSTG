@@ -52,6 +52,9 @@ export class CommonDanmaku extends AbstractDanmaku {
                     x: this.x,
                     y: this.y,
                 });
+            }
+            if (this.isHitboxGraphicsDirty) {
+                this.hitboxGraphics.clear();
                 this.enemy?.drawDebugHitbox();
                 this.hitboxGraphics.circle(
                     0, 0, this.hitboxRadius + player.hitboxRadius

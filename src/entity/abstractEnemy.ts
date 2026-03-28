@@ -5,12 +5,6 @@ import * as utils from "../utils.js";
 
 export interface newAbstractEnemyOptions<T extends AbstractDanmaku> {
     danmaku: T,
-    /**
-     * 所有敌人在刚出生时，都会有一个持续一小段时间的减伤护盾。在此期间，敌人所受的伤害会大大减少。
-     * 可以防止敌人在刚出生时立马被秒杀。
-     * 这个参数是出生保护减伤持续的帧数。
-     */
-    birthProtectDuration: number,
 }
 
 export type EnemyBeHurtOptions = {
@@ -21,25 +15,11 @@ export type EnemyBeHurtOptions = {
 export abstract class AbstractEnemy<T extends AbstractDanmaku = AbstractDanmaku> {
     /** 敌人的本体其实是一个 danmaku */
     danmaku: T;
-    /** @internal */
-    private _birthClockTS: number;
-    private _birthProtectDuration: number;
-    get _birthProtectCoef() {
-        if (this._birthProtectDuration <= 0) { return 1; }
-        const t = (this.danmaku.game.clock - this._birthClockTS) / this._birthProtectDuration - 1;
-        if (t >= 0) {
-            return 1;
-        } else {
-            return (this._birthProtectDuration * 0.2 + 20) ** t;
-        }
-    }
 
     constructor(options: newAbstractEnemyOptions<T>) {
         this.danmaku = options.danmaku;
         this.danmaku.enemy = this;
         this.danmaku.board.enemyRegList.push(this);
-        this._birthClockTS = this.danmaku.game.clock;
-        this._birthProtectDuration = options.birthProtectDuration;
     }
 
     get x() { return this.danmaku.x; }

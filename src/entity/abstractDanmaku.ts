@@ -67,11 +67,10 @@ export abstract class AbstractDanmaku extends Entity {
     }
 
     hitboxGraphics: pixi.Graphics | null = null;
+    isHitboxGraphicsDirty = true;
     clearHitboxGraphics() {
-        if (this.hitboxGraphics) {
-            this.hitboxGraphics.destroy();
-            this.hitboxGraphics = null;
-        }
+        this.hitboxGraphics?.clear();
+        this.isHitboxGraphicsDirty = true;
     }
 
     grazeCd: number = 0;

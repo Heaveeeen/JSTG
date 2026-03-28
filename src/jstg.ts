@@ -239,22 +239,24 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 root: boardRoot,
                 /** 自机前半部分所属的图层。 */
                 playerFrontLayer: makeBoardLayer(100),
-                /** 符卡 UI 的根节点，包括符卡名称、计时器等等。 */
+                /** 符卡 UI 的图层，包括符卡名称、计时器等等。 */
                 spellcardUiLayer: makeBoardLayer(20),
-                /** 所有普通弹幕节点的根节点 */
+                /** 所有普通弹幕节点的图层 */
                 commonDanmakuLayer: makeBoardLayer(0),
-                /** 自机发射出的所有子弹的根节点 */
+                /** 自机发射出的所有子弹的图层 */
                 playerBulletLayer: makeBoardLayer(-5),
-                /** 所有常规敌人的根节点 */
+                /** 所有常规敌人的图层 */
                 commonEnemyLayer: makeBoardLayer(-10),
-                /** Boss 防护罩的根节点 */
+                /** Boss 防护罩的图层 */
                 bossShieldLayer: makeBoardLayer(-20),
-                /** Boss 本体的根节点 */
+                /** Boss 本体的图层 */
                 bossLayer: makeBoardLayer(-30),
-                /** 所有消弹特效的根节点 */
+                /** 所有消弹特效的图层 */
                 danmakuEraseLayer: makeBoardLayer(-40),
                 /** 自机后半部分所属的图层。 */
                 playerBackLayer: makeBoardLayer(-100),
+                /** 敌人血条所属的图层。 */
+                enemyHpBarLayer: makeBoardLayer(-150),
                 /** 符卡 UI 的根节点，包括符卡名称、计时器等等。 */
                 spellcardFigureLayer: makeBoardLayer(-120),
                 /**
@@ -286,6 +288,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 /** TODOC: makeLaserBeam */
                 makeLaserBeam: null as unknown as typeof makeLaserBeam, // MAGIC:
                 startSpellcard: baseStartSpellcard,
+                /** TODOC: */
+                foo_clearScreen,
                 destroy() {
                     if (this.destroyed) { return; }
                     boardRoot.destroy();
@@ -457,6 +461,20 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 });
             }
             board.makeLaserBeam = makeLaserBeam;
+
+            function foo_clearScreen({ x, y }: utils.Vec2) { board.coDo(function*() {
+                for (let t = 0; t < 60; t += game.timeScale) {
+                    const radius = t * 10;
+                    board.danmakuRegList.eraseByRadius({ x, y, radius });
+                    // TODO: damage (circle) r=radius, dmg=10*timescale, dmg to boss = 0.2
+                    board.enemyRegList.forEachByRadius({ x, y, radius, callback: enemy => enemy.beHurt(
+                        // 此处图方便，直接用名称判断是不是 boss ……
+                        (enemy.danmaku.type === "enemySpellcardShield" ? 2 : 10) * game.timeScale
+                    ), });
+                    yield;
+                }
+                board.danmakuRegList.forEachAlive(dan => dan.erase());
+            }); }
 
             return board;
         })();

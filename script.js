@@ -273,17 +273,19 @@ import { Boss, baseStartSingleBossBattle } from "./dist/boss/bossBattle.js";
                     x: 0, y: -100,
                     scale: 1.1,
                 }), defaultSpellcardFigure: game.prefabTextures.charFigure.maple.spellcard });
-                const battle = baseStartSingleBossBattle({ game, combat, board, boss });
+                const battle = baseStartSingleBossBattle({ game, combat, board, refBoss: boss });
                 yield* game.Sleep(30);
-                const { spellcard, shield, initLoop } = battle.startSpellcard({
+                const { spellcard, shield, startupLoop } = battle.startSpellcard({
                     time: 80 * 60,
                     hp: 4000,
                     title: "你好「波粒海苔」",
                 });
-                yield* UntilDestroy(initLoop);
+                yield* UntilDestroy(startupLoop);
                 spellcard.forever(loop => {
-                    boss.x = 40 * Math.cos(game.clock * 0.01);
-                    boss.y = 20 * Math.sin(game.clock * 0.01) - 80;
+                    boss.glideTo({
+                        x: 40 * Math.cos(game.clock * 0.01),
+                        y: 20 * Math.sin(game.clock * 0.01) - 80,
+                    });
                 });
                 let omega = 0;
                 let d = deg(-60);
@@ -306,6 +308,7 @@ import { Boss, baseStartSingleBossBattle } from "./dist/boss/bossBattle.js";
                         yield* game.Sleep(2);
                     }
                 });
+                battle.kill();
             });
         }
     }, { order: 0 });

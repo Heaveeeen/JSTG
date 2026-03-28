@@ -14,7 +14,7 @@ export const prefabEnemyFactory = (()=>{
         parent: pixi.Container | null,
         birthProtectDuration: number,
         //scale: number, 
-        // TODO: hitboxRadius, isCanHurt, isTouchingDamage, isCanGraze, animRotation(?)
+        // TODO: hitboxRadius, isCanHurt, isTouchingDamage, isCanGraze, animRotation(?), hpBarType
     }) => {
         const { game, combat, board, maxHp, color, x, y, rotation, birthProtectDuration } = options;
         const rootSprite = new pixi.Sprite({
@@ -50,6 +50,7 @@ export const prefabEnemyFactory = (()=>{
             canBeErase: false,
             birthProtectDuration,
             afterBeHurtCallback: null,
+            hpBar: null,
         });
         enemy.forever(loop => {
             outerRing.rotation -= 0.07;
@@ -66,14 +67,14 @@ export const prefabEnemyFactory = (()=>{
         parent: pixi.Container | null,
         birthProtectDuration: number,
         //scale: number, 
-        // TODO: hitboxRadius, isCanHurt, isTouchingDamage, isCanGraze, animRotation(?)
+        // TODO: hitboxRadius, isCanHurt, isTouchingDamage, isCanGraze, animRotation(?), hpBarType
     }) => {
         const { game, combat, board, maxHp, x, y, rotation, birthProtectDuration } = options;
         const sprite = new pixi.Sprite({
             parent: options.parent ?? board.bossShieldLayer,
             texture: game.prefabTextures.enemy.shield,
             x, y, rotation, anchor: 0.5,
-            scale: 0.44,
+            scale: 0.4 * 1.1,
             alpha: 0,
             blendMode: "add",
         });
@@ -85,12 +86,13 @@ export const prefabEnemyFactory = (()=>{
         });
         danmaku.grazeCd = Infinity;
         const enemy = new CommonEnemy({
-            danmaku, maxHp, hurtHitboxRadius: 44,
+            danmaku, maxHp, hurtHitboxRadius: 40 * 1.1,
             canBeErase: false,
             birthProtectDuration,
             afterBeHurtCallback: () => {
                 sprite.alpha = 0.8;
             },
+            hpBar: { type: "circle", radius: 50 * 1.1 }, // TODO: hpBar.radius
         });
         enemy.forever(loop => {
             sprite.alpha += (0.2 - sprite.alpha) * 0.05 * game.timeScale;
