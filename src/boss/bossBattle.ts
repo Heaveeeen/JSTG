@@ -112,7 +112,7 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
             shield.x = boss.x;
             shield.y = boss.y;
         });
-        const glideLoop = boss.glideTo({ x: 0, y: -80 * 4/3 });
+        boss.glideTo({ x: 0, y: -80 * 4/3 });
         let t = 0;
         const startupLoop = boss.forever(loop => {
             if (t >= _startupTime) {
@@ -120,7 +120,7 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
             } else {
                 t += game.timeScale;
             }
-        }, { destroys: glideLoop });
+        }).then(() => boss.stopGlide());
         return { spellcard, shield, startupLoop };
     };
 
@@ -152,7 +152,7 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
             } else {
                 t += game.timeScale;
             }
-        }, { destroys: glideLoop });
+        }).then(() => boss.stopGlide());
         return { spellcard, startupLoop };
     };
 

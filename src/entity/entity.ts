@@ -14,6 +14,8 @@ export abstract class Entity {
         this.game = options.game;
         this.combat = options.combat;
         this.board = options.board;
+        this.stopGlide = this.stopGlide.bind(this);
+        this.forever(this._updateGlide.bind(this));
     }
 
     abstract x: number;
@@ -45,34 +47,66 @@ export abstract class Entity {
         this.speed += (dst - this.speed * k * this.game.timeScale);
     }
 
-    glideLoop: LoopController | null = null;
-    /** TODOC: glideTo */
-    glideTo(targetPos: utils.Vec2, mode: {// MAYDO: 更多缓动模式
-        type: "jstgExp",
-        /**
-         * @default 0.04
-         * 弹幕引擎中，这个值默认为 0.05
-         */
-        minK?: number,
-    } = { type: "jstgExp" }) {
-        // MAYDO: 不重要，允许 glideTo 并发
-        this.glideLoop?.destroy();
-        const minK = mode.minK ?? 0.04;
-        this.glideLoop = this.forever(loop => {
-            const dx = targetPos.x - this.x;
-            const dy = targetPos.y - this.y;
+    /** @internal */
+    private _updateGlide() {
+        if (!this.glideState.isGliding) { return; }
+        const { x: tx, y: ty, mode } = this.glideState;
+        if (mode.type === "jstgExp") {
+            const { minK } = mode;
+            const dx = tx - this.x;
+            const dy = ty - this.y;
             const dist_2 = dx ** 2 + dy ** 2;
             if (dist_2 <= 0.01) {
-                this.x = targetPos.x;
-                this.y = targetPos.y;
-                return loop.destroy();
+                this.x = tx;
+                this.y = ty;
+                this.stopGlide();
             } else {
                 const k = Math.max((100 - Math.sqrt(dist_2)) / 50, 1) * minK * this.game.timeScale;
                 this.x += dx * k;
                 this.y += dy * k;
             }
-        });
-        return this.glideLoop;
+        } else {
+            utils.staticAssert<never>(mode.type);
+        }
+    }
+
+    glideState: {
+        isGliding: true,
+        x: number, y: number,
+        mode: {// MAYDO: 更多缓动模式
+            type: "jstgExp", minK: number,
+        }
+    } | { isGliding: false } = { isGliding: false };
+
+    stopGlide() {
+        this.glideState = { isGliding: false };
+    };
+
+    /** TODO: 封装出一个类似 LoopController 的结构 */
+    /** TODOC: glideTo */
+    glideTo(options: {
+        x: number, y: number,
+        /** @default{ type: "jstgExp" } */
+        mode?: {// MAYDO: 更多缓动模式
+            type: "jstgExp",
+            /**
+             * @default 0.04
+             * 弹幕引擎中，这个值默认为 0.05
+             */
+            minK?: number,
+        }
+    }) {
+        // 能够允许 glideTo 并发吗……？从逻辑上就不太可能。
+        const { x, y } = options;
+        const optMode = options.mode ?? { type: "jstgExp" };
+        if (optMode.type === "jstgExp") {
+            this.glideState = {
+                isGliding: true, x, y,
+                mode: { type: "jstgExp", minK: optMode.minK ?? 0.04 },
+            };
+        } else {
+            utils.staticAssert<never>(optMode.type);
+        }
     }
     
     /**
