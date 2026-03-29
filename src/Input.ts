@@ -1,4 +1,7 @@
 
+
+// 这个文件是从我以前的项目里摘出来的，不是专为 JSTG 写的，所以风格跟 JSTG 不太一样。
+
 const enum KeyEventType {
     none = 0,
     down = 1,
@@ -6,7 +9,7 @@ const enum KeyEventType {
     downAndUp = 3,
 }
 
-// MAYDO: 把这玩意改成字符串，但这玩意我觉得用得应该比较少……我不知道。
+// 这玩意完全没必要改成字符串……
 /** 键码表，仅包含 Required 部分，注释为个人简单翻译  
  * 来源：{@link https://w3c.github.io/uievents-code/#code-value-tables}  
  * 此枚举最后更新于：2025/1/6 */
@@ -327,6 +330,7 @@ export function makeInput() {
         /** 如果长按按键并松开，在松开的那一帧返回 true */
         isLongRelease,
         /**
+         * TODOC: input._update
          * 此函数用于更新按键状态，须在每帧最开始时调用该函数。  
          * 启动游戏时默认会自动帮你做这一步，所以一般不用管这个。
          * @example
