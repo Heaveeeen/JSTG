@@ -5,6 +5,7 @@ import { prefabEnemyFactory } from "../entity/prefabEnemyFactory.js";
 import * as utils from "../utils.js";
 import { Entity } from "../entity/entity.js";
 import { CommonEnemy } from "../entity/commonEnemy.js";
+import { LooperFn, LoopOptions, CoDoGenFn } from "../looper.js";
 
 
 export interface MakeBossOptions {
@@ -87,10 +88,10 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
     const { game, combat, board, refBoss } = bossBattleOptions;
 
     const scCounterBar = (()=>{
-        // TODO: 淡入淡出
         const root = new pixi.Sprite({
             parent: board.spellcardUiLayer,
             x: -(300 - 155 * sic_UiGradient) * 4/3, y: -board.halfHeight,
+            alpha: 0,
         });
 
         const line = new pixi.Sprite({
@@ -116,6 +117,11 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
 
         const stars: pixi.Sprite[] = [];
 
+        const fadeInLoop = board.coDo(function*() { for (let t = 0; t <= 20; t += game.timeScale) {
+            root.alpha = t / 20;
+            yield;
+        } }, { refs: root });
+
         return {
             root, line, bossNameText, stars,
             pushStar(type: "spellcard" | "nonSpellcard") {
@@ -130,8 +136,24 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
                 // TODO: 使当前符卡对应的星星闪烁
             },
             popStar() {
-                stars.pop()?.destroy({ children: true });
-                // TODO: 动画效果
+                const star = stars.pop();
+                if (star === undefined) { return; }
+                board.coDo(function*() { for (let t = 0; t <= 20; t += game.timeScale) {
+                    star.alpha = 1 - (t / 20);
+                    yield;
+                } }, { refs: star }).then(() => {
+                    star.destroy({ children: true });
+                });
+            },
+            kill() {
+                if (this.destroyed) { return; }
+                fadeInLoop.destroy();
+                return board.coDo(function*() { for (let t = 0; t <= 20; t += game.timeScale) {
+                    root.alpha = 1 - (t / 20);
+                    yield;
+                } }, { refs: root }).then(() => {
+                    this.destroy();
+                });
             },
             destroy() {
                 if (this.destroyed) { return; }
@@ -223,13 +245,26 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
         scCounterBar.destroy();
     };
 
-    return {
+    const battle = {
         startSpellcard, startSurvivalSpellcard, scCounterBar,
         kill() {
-            // TODO: bossbattle.kill 顺便还要击破符卡
-            destroy();
+            scCounterBar.kill()?.then(() => destroy());
         },
         destroy,
-        get destroyed() { return refBoss.destroyed || _destroyed; }
-    }
+        get destroyed() { return refBoss.destroyed || _destroyed; },
+            
+        forever(fn: LooperFn, options: LoopOptions = {}) {
+            const loop = board.forever(fn, options);
+            loop.addRefs(battle);
+            return loop;
+        },
+    
+        coDo(genFn: CoDoGenFn, options: LoopOptions = {}) {
+            const loop = board.coDo(genFn, options);
+            loop.addRefs(battle);
+            return loop;
+        },
+    };
+
+    return battle;
 };
