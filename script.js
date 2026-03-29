@@ -144,7 +144,7 @@ import { Boss, baseStartSingleBossBattle } from "./dist/boss/bossBattle.js";
             }
         }
         makeFooExsibits(-188, (/** @type {number} */ r) => r * 3 + 4.3, (/** @type {number} */ r) => r * 3 + 5.2, [
-            "dot", "bacteria", "drip", "scale", "grain", "chain", "seed", "bullet", "bacillus", "crystal", "particle", "card",
+            "dot", "popcorn", "drip", "scale", "grain", "chain", "seed", "bullet", "darkpill", "crystal", "particle", "card",
             "smallball", "ringball", "glowball", "fireball", "smallstar", "nova", "coin", "laserseg",
         ]);
         y += 4;

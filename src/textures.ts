@@ -143,8 +143,8 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
                     // MAYDO: 炎弹的动画我不会画，喵😇
                 ] as const}),
                 dot: await lsdye(`danmaku/danmaku/dot.svg`),
-                bacteria: await lsdye(`danmaku/danmaku/bacteria.svg`),
-                bacillus: await lsdye(`danmaku/danmaku/bacillus.svg`),
+                popcorn: await lsdye(`danmaku/danmaku/popcorn.svg`),
+                darkpill: await lsdye(`danmaku/danmaku/darkpill.svg`),
                 grain: await lsdye(`danmaku/danmaku/grain.svg`),
                 chain: await lsdye(`danmaku/danmaku/chain.svg`),
                 seed: await lsdye(`danmaku/danmaku/seed.svg`),

@@ -137,8 +137,8 @@ export const prefabDanmakuHitboxRadius = {
     glowball: 4,
     fireball: 4,
     dot: 2.8,
-    bacteria: 2.8,
-    bacillus: 3,
+    popcorn: 2.8,
+    darkpill: 3,
     grain: 3,
     chain: 3,
     seed: 3,
@@ -166,5 +166,5 @@ export const prefabDanmakuHitboxRadius = {
     laserseg: 4,
     yinyang: 9.5,
     bigyinyang: 27,
-    // MAYDO: 休止符，宝珠（大水滴？），岩石（木糖醇）
+    // MAYDO: 休止符（英文名rest），宝珠（大水滴？），岩石（木糖醇）
 } as const;
