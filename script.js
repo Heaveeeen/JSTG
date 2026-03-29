@@ -32,7 +32,8 @@ import { Boss, baseStartSingleBossBattle } from "./dist/boss/bossBattle.js";
 `Hello, JSTG!
 按 P 显示判定范围。
 按 O 开启上帝模式。
-按 ESC 暂停。`,
+按 ESC 暂停。
+按 M 生成一个枫叶。`,
         x: 0,
         y: 0,
         anchor: 0.5,
@@ -264,7 +265,7 @@ import { Boss, baseStartSingleBossBattle } from "./dist/boss/bossBattle.js";
         if (isDown(Key.KeyO)) {
             debug.godMode.isOn = !debug.godMode.isOn;
         }
-        if (isDown(Key.KeyI)) {
+        if (isDown(Key.KeyM)) {
             coDo(function*() {
                 const boss = new Boss({ game, combat, board, hue1: 16, hue2: 24, sprite: new pixi.Sprite({
                     parent: board.bossLayer,
@@ -273,7 +274,12 @@ import { Boss, baseStartSingleBossBattle } from "./dist/boss/bossBattle.js";
                     x: 0, y: -100,
                     scale: 1.1,
                 }), defaultSpellcardFigure: game.prefabTextures.charFigure.maple.spellcard });
-                const battle = baseStartSingleBossBattle({ game, combat, board, refBoss: boss });
+                const battle = baseStartSingleBossBattle({ game, combat, board, refBoss: boss, name: "Maple Nightfall" });
+                battle.scCounterBar.pushStar("spellcard");
+                battle.scCounterBar.pushStar("spellcard");
+                battle.scCounterBar.pushStar("nonSpellcard");
+                battle.scCounterBar.pushStar("nonSpellcard");
+                battle.scCounterBar.pushStar("spellcard");
                 yield* game.Sleep(30);
                 const { spellcard, shield, startupLoop } = battle.startSpellcard({
                     time: 80 * 60,
@@ -289,7 +295,7 @@ import { Boss, baseStartSingleBossBattle } from "./dist/boss/bossBattle.js";
                 });
                 let omega = 0;
                 let d = deg(-60);
-                spellcard.coDo(function*() {
+                yield* UntilDestroy(spellcard.coDo(function*() {
                     while (true) {
                         game.prefabSounds.thse.tan00.play(decibel(-9));
                         for (let i = 0; i < 5; i++) {
@@ -307,7 +313,9 @@ import { Boss, baseStartSingleBossBattle } from "./dist/boss/bossBattle.js";
                         omega += deg(0.09);
                         yield* game.Sleep(2);
                     }
-                });
+                }));
+                battle.scCounterBar.popStar();
+                yield* game.Sleep(80);
                 battle.kill();
             });
         }

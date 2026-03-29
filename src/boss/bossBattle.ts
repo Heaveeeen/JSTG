@@ -1,6 +1,6 @@
 import * as pixi from "pixi";
 import { Game, Combat, Board } from "../jstg.js";
-import { baseStartSpellcard, StartSpellcardOptions } from "./spellcard.js";
+import { baseStartSpellcard, sic_UiGradient, StartSpellcardOptions } from "./spellcard.js";
 import { prefabEnemyFactory } from "../entity/prefabEnemyFactory.js";
 import * as utils from "../utils.js";
 import { Entity } from "../entity/entity.js";
@@ -16,7 +16,9 @@ export interface MakeBossOptions {
 
 export class Boss extends Entity {
     sprite: pixi.Sprite;
+    hue1: number;
     hue1Filter: pixi.ColorMatrixFilter;
+    hue2: number;
     hue2Filter: pixi.ColorMatrixFilter;
     defaultSpellcardFigure: pixi.Texture | null;
     /** @internal */
@@ -25,8 +27,10 @@ export class Boss extends Entity {
     constructor(options: MakeBossOptions) {
         super(options);
         this.sprite = options.sprite;
+        this.hue1 = options.hue1;
         this.hue1Filter = new pixi.ColorMatrixFilter({ resolution: "inherit" });
         this.hue1Filter.hue(options.hue1, false);
+        this.hue2 = options.hue2;
         this.hue2Filter = new pixi.ColorMatrixFilter({ resolution: "inherit" });
         this.hue2Filter.hue(options.hue2, false);
         this.defaultSpellcardFigure = options.defaultSpellcardFigure;
@@ -78,9 +82,65 @@ const _startupTime = 60;
 /** TODOC: baseStartSingleBossBattle */
 export const baseStartSingleBossBattle = (bossBattleOptions: {
     game: Game, combat: Combat, board: Board,
-    refBoss: Boss,
+    refBoss: Boss, name: string,
 }) => {
-    const { game, combat, board, refBoss: boss } = bossBattleOptions;
+    const { game, combat, board, refBoss } = bossBattleOptions;
+
+    const scCounterBar = (()=>{
+        // TODO: 淡入淡出
+        const root = new pixi.Sprite({
+            parent: board.spellcardUiLayer,
+            x: -(300 - 155 * sic_UiGradient) * 4/3, y: -board.halfHeight,
+        });
+
+        const line = new pixi.Sprite({
+            parent: root,
+            anchor: 0.5,
+            y: 15,
+            scale: 0.55,
+            texture: game.prefabTextures.spellcardUi.bossNameLine,
+        });
+
+        const bossNameText = new pixi.Text({
+            parent: root,
+            text: bossBattleOptions.name,
+            x: 3, y: 7, anchor: { x: 0, y: 0.5 },
+            resolution: 4,
+            style: {
+                fontSize: 10,
+                align: "center",
+                fill: "hsl(80, 60%, 67%)",
+                fontWeight: "700",
+            },
+        });
+
+        const stars: pixi.Sprite[] = [];
+
+        return {
+            root, line, bossNameText, stars,
+            pushStar(type: "spellcard" | "nonSpellcard") {
+                const star = new pixi.Sprite({
+                    parent: root,
+                    texture: game.prefabTextures.spellcardUi.scCounterIcon[type],
+                    anchor: 0.5,
+                    x: stars.length * 12 + 8, y: 23,
+                    scale: 0.8,
+                });
+                stars.push(star);
+                // TODO: 使当前符卡对应的星星闪烁
+            },
+            popStar() {
+                stars.pop()?.destroy();
+                // TODO: 动画效果
+            },
+            destroy() {
+                if (this.destroyed) { return; }
+                root.destroy();
+            },
+            get destroyed() { return root.destroyed; },
+        };
+    })();
+
     const startSpellcard = (options: {
         time: number,
         hp: number,
@@ -95,13 +155,13 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
         const birthProtectDuration = options.birthProtectDuration ?? 250;
         const opt = isShowFigureAndTitle ? {
             isPlayStartSound: true, title,
-            figure: figure ?? boss.defaultSpellcardFigure ?? "useTheUnknownFigure",
+            figure: figure ?? refBoss.defaultSpellcardFigure ?? "useTheUnknownFigure",
         } as const : {
             isPlayStartSound: false, title: null,
             figure: "noFigure",
         } as const;
-        const shield = boss.makeSpellcardShield({ maxHp: hp, birthProtectDuration });
-        shield.danmaku.sprite.filters = boss.hue2Filter;
+        const shield = refBoss.makeSpellcardShield({ maxHp: hp, birthProtectDuration });
+        shield.danmaku.sprite.filters = refBoss.hue2Filter;
         const spellcard = baseStartSpellcard({
             game, combat, board,
             time, ...opt,
@@ -109,18 +169,18 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
             startupTime: _startupTime,
         });
         shield.forever(loop => {
-            shield.x = boss.x;
-            shield.y = boss.y;
+            shield.x = refBoss.x;
+            shield.y = refBoss.y;
         });
-        boss.glideTo({ x: 0, y: -80 * 4/3 });
+        refBoss.glideTo({ x: 0, y: -80 * 4/3 });
         let t = 0;
-        const startupLoop = boss.forever(loop => {
+        const startupLoop = refBoss.forever(loop => {
             if (t >= _startupTime) {
                 loop.destroy();
             } else {
                 t += game.timeScale;
             }
-        }).then(() => boss.stopGlide());
+        }).then(() => refBoss.stopGlide());
         return { spellcard, shield, startupLoop };
     };
 
@@ -133,7 +193,7 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
         const { time, title, figure, isShowFigureAndTitle } = options;
         const opt = isShowFigureAndTitle ? {
             isPlayStartSound: true, title,
-            figure: figure ?? boss.defaultSpellcardFigure ?? "useTheUnknownFigure",
+            figure: figure ?? refBoss.defaultSpellcardFigure ?? "useTheUnknownFigure",
         } as const : {
             isPlayStartSound: false, title: null,
             figure: "noFigure",
@@ -144,15 +204,15 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
             ownEnemys: [],
             startupTime: _startupTime,
         });
-        const glideLoop = boss.glideTo({ x: 0, y: -80 * 4/3 });
+        refBoss.glideTo({ x: 0, y: -80 * 4/3 });
         let t = 0;
-        const startupLoop = boss.forever(loop => {
+        const startupLoop = refBoss.forever(loop => {
             if (t >= _startupTime) {
                 loop.destroy();
             } else {
                 t += game.timeScale;
             }
-        }).then(() => boss.stopGlide());
+        }).then(() => refBoss.stopGlide());
         return { spellcard, startupLoop };
     };
 
@@ -160,15 +220,16 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
     const destroy = () => {
         if (_destroyed) { return; }
         _destroyed = true;
+        scCounterBar.destroy();
     };
 
     return {
-        startSpellcard, startSurvivalSpellcard,
+        startSpellcard, startSurvivalSpellcard, scCounterBar,
         kill() {
-            // TODO: bossbattle.kill
+            // TODO: bossbattle.kill 顺便还要击破符卡
             destroy();
         },
         destroy,
-        get destroyed() { return boss.destroyed || _destroyed; }
+        get destroyed() { return refBoss.destroyed || _destroyed; }
     }
 };

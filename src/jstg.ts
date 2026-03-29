@@ -233,7 +233,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             let halfWidth = 200;
             let halfHeight = 240;
 
-            const makeBoardLayer = (zIndex?: number) => new pixi.Sprite({ parent: boardRoot, zIndex });
+            const makeBoardLayer = (zIndex: number) => new pixi.Sprite({ parent: boardRoot, zIndex });
             const board = {
                 /** 根节点 */
                 root: boardRoot,

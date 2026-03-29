@@ -6,8 +6,8 @@ import { LooperFn, LoopOptions, CoDoGenFn } from "../looper.js";
 import * as utils from "../utils.js";
 
 
-/** 弹幕引擎里一个跟摄像机变换有关的全局变量 */
-const sic_UiGradient = 1;
+/** 弹幕引擎里一个跟摄像机变换有关的全局变量，暂时只是个占位符，没有实际作用 */
+export const sic_UiGradient = 1;
 
 export interface StartSpellcardOptions {
     game: Game, combat: Combat, board: Board,
@@ -196,6 +196,7 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
             parent: root,
             text: titleString,
             x: 5, anchor: { x: 1, y: 0.5 },
+            resolution: 4,
             style: {
                 fontSize: 20,
                 align: "center",
