@@ -222,9 +222,9 @@ export class LaserBeam extends AbstractDanmaku {
             if (eraseEndPoint) { anim(eraseEndPoint); }
             yield;
         }
-        eraseMain.destroy();
-        eraseStartPoint?.destroy();
-        eraseEndPoint?.destroy();
+        eraseMain.destroy({ children: true });
+        eraseStartPoint?.destroy({ children: true });
+        eraseEndPoint?.destroy({ children: true });
     }
 
     isInBoundary() {
@@ -249,10 +249,10 @@ export class LaserBeam extends AbstractDanmaku {
 
     destroy() {
         if (this.mainSprite.destroyed) { return };
-        this.hitboxGraphics?.destroy();
-        this.startPoint?.sprite.destroy();
-        this.endPoint?.sprite.destroy();
-        this.mainSprite.destroy();
+        this.hitboxGraphics?.destroy({ children: true });
+        this.startPoint?.sprite.destroy({ children: true });
+        this.endPoint?.sprite.destroy({ children: true });
+        this.mainSprite.destroy({ children: true });
         this.enemy?.destroy();
     }
 

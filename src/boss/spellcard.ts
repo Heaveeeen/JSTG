@@ -41,7 +41,7 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
             mainLoop.destroy();
             // 此处无需摧毁 figure ，让它自生自灭就行。
             timerText.destroy();
-            title?.root.destroy();
+            title?.root.destroy({ children: true });
         },
         get destroyed() {
             return ownsEnemys.some(enemy => enemy.destroyed) || isSpellcardDestroyed || this.timeRemaining <= 0;

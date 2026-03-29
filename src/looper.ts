@@ -153,7 +153,7 @@ export const makeLooper = (makeLooperOptions: {
             if (destroyed) { return; }
             destroyed = true;
             thread[idx] = null;
-            destroys.forEach(d => d.destroy());
+            destroys.forEach(d => d.destroy({ children: true }));
             callbacks.forEach(callback => callback());
         }
         return loop;

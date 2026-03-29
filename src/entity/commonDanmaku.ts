@@ -166,7 +166,7 @@ export class CommonDanmaku extends AbstractDanmaku {
             alphaTo(eraseEffectSprite, 0, 0.05 * this.game.timeScale);
             yield;
         }
-        eraseEffectSprite.destroy();
+        eraseEffectSprite.destroy({ children: true });
     }
 
     /** @internal @generator 缩小虚化至消失 */
@@ -188,7 +188,7 @@ export class CommonDanmaku extends AbstractDanmaku {
             alphaTo(eraseEffectSprite, 0, 0.05 * this.game.timeScale);
             yield;
         }
-        eraseEffectSprite.destroy();
+        eraseEffectSprite.destroy({ children: true });
     }
 
     isInBoundary() {
@@ -202,8 +202,8 @@ export class CommonDanmaku extends AbstractDanmaku {
 
     destroy() {
         if (this.sprite.destroyed) { return };
-        this.hitboxGraphics?.destroy();
-        this.sprite.destroy();
+        this.hitboxGraphics?.destroy({ children: true });
+        this.sprite.destroy({ children: true });
         this.enemy?.destroy();
     }
 

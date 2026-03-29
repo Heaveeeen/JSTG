@@ -428,7 +428,7 @@ export class Player {
                         yield* self.game.Sleep(24);
                         makeMissFilterSprite(0, 0);
                         yield* self.game.Sleep(70);
-                        missFilterSprites.forEach(spr => spr.destroy());
+                        missFilterSprites.forEach(spr => spr.destroy({ children: true }));
                     });
                 }
                 yield* this.game.Sleep(40);
@@ -494,8 +494,8 @@ export class Player {
 
     destroy() {
         if (this.backParts.destroyed) { return };
-        this.backParts.destroy();
-        this.frontParts.destroy();
+        this.backParts.destroy({ children: true });
+        this.frontParts.destroy({ children: true });
         this.destroyFn();
     }
 

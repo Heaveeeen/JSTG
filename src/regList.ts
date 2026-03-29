@@ -37,7 +37,7 @@ export const makeRegList = <T extends Destroyable>(options: {
     let destroyed = false;
     const destroy = () => {
         if (destroyed) { return; }
-        for (const obj of objects) { obj.destroy(); }
+        for (const obj of objects) { obj.destroy({ children: true }); }
         destroyed = true;
     };
 

@@ -38,15 +38,15 @@ export const prefabPlayerFactory = (()=>{
                     hitEffects: new Map(),
                     destroy() {
                         if (this.destroyed) { return; }
-                        this.sprite.destroy();
-                        this.hitEffects.forEach(eff => eff.destroy());
+                        this.sprite.destroy({ children: true });
+                        this.hitEffects.forEach(eff => eff.destroy({ children: true }));
                         this.hitEffects.clear();
                     },
                     get destroyed() { return this.sprite.destroyed; }
                 },
                 destroy() {
                     if (this.destroyed) { return; }
-                    this.sprite.destroy();
+                    this.sprite.destroy({ children: true });
                     this.laser.destroy();
                 },
                 get destroyed() { return this.sprite.destroyed; },
@@ -108,7 +108,7 @@ export const prefabPlayerFactory = (()=>{
                                 const eff = laser.hitEffects.get(enemy);
                                 if (eff === undefined) { continue; }
                                 if (enemy.destroyed) {
-                                    eff.destroy();
+                                    eff.destroy({ children: true });
                                     laser.hitEffects.delete(enemy);
                                 }
                             }
@@ -145,7 +145,7 @@ export const prefabPlayerFactory = (()=>{
                                     } else {
                                         // 没有命中这个敌人
                                         if (eff !== undefined) {
-                                            eff.destroy();
+                                            eff.destroy({ children: true });
                                             laser.hitEffects.delete(enemy);
                                         }
                                     }
@@ -223,11 +223,11 @@ export const prefabPlayerFactory = (()=>{
                                                     hitEffect.scale.y -= 0.05 * game.timeScale;
                                                     alphaTo(hitEffect, 0, 0.075 * game.timeScale);
                                                     if (hitEffect.alpha <= 0) {
-                                                        hitEffect.destroy();
+                                                        hitEffect.destroy({ children: true });
                                                     }
                                                 }, { owns: hitEffect });
                                             }
-                                            return bullet.destroy();
+                                            return bullet.destroy({ children: true });
                                         }
                                     } // MAYDO: 子弹如何与其他类型的敌人判定……
                                 }
@@ -235,7 +235,7 @@ export const prefabPlayerFactory = (()=>{
                                 bullet.x += currentSpeed * Math.cos(bullet.rotation);
                                 bullet.y += currentSpeed * Math.sin(bullet.rotation);
                                 if (Math.abs(bullet.x) >= board.halfWidth + 40 || Math.abs(bullet.y) >= board.halfHeight + 40) {
-                                    return bullet.destroy();
+                                    return bullet.destroy({ children: true });
                                 }
                                 let targetAngle = 0;
                                 // cost 是一个综合评分，反映了追踪这个敌人的成本有多高

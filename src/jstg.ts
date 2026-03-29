@@ -18,7 +18,7 @@ import { Spellcard, baseStartSpellcard } from "./boss/spellcard.js";
 
 
 export interface Destroyable {
-    destroy(): void;
+    destroy(options?: { children: boolean }): void;
     readonly destroyed: boolean;
 }
 
@@ -292,7 +292,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 foo_clearScreen,
                 destroy() {
                     if (this.destroyed) { return; }
-                    boardRoot.destroy();
+                    boardRoot.destroy({ children: true });
                     danmakuRegList.destroy();
                     enemyRegList.destroy();
                     for (const pl of _playerRegList.getAlives()) { pl.destroy(); }
@@ -539,7 +539,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 windowFrame,
                 /** 显示残机和 Bomb 数量的那个状态栏 */
                 playerStateBar,
-                destroy() { boardFrameUiRoot.destroy(); },
+                destroy() { boardFrameUiRoot.destroy({ children: true }); },
                 get destroyed() { return boardFrameUiRoot.destroyed; },
             }
         })();

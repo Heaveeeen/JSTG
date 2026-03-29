@@ -66,7 +66,7 @@ export class Boss extends Entity {
 
     destroy() {
         if (this.destroyed) { return; }
-        this.sprite.destroy();
+        this.sprite.destroy({ children: true });
         this._shield?.destroy();
         //this.hue1Filter.destroy();
         //this.hue2Filter.destroy();
@@ -130,12 +130,12 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
                 // TODO: 使当前符卡对应的星星闪烁
             },
             popStar() {
-                stars.pop()?.destroy();
+                stars.pop()?.destroy({ children: true });
                 // TODO: 动画效果
             },
             destroy() {
                 if (this.destroyed) { return; }
-                root.destroy();
+                root.destroy({ children: true });
             },
             get destroyed() { return root.destroyed; },
         };

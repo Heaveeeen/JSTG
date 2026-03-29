@@ -152,7 +152,7 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
     destroy() {
         if (this.destroyed) { return; }
         this.danmaku.enemy = null;
-        this._hpBarGraphics?.destroy();
+        this._hpBarGraphics?.destroy({ children: true });
     }
 
     get destroyed(): boolean {
