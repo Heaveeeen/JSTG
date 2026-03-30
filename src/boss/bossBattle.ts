@@ -1,11 +1,11 @@
 import * as pixi from "pixi";
 import { Game, Combat, Board } from "../jstg.js";
-import { baseStartSpellcard, sic_UiGradient, StartSpellcardOptions } from "./spellcard.js";
+import { baseStartSpellcard, sic_UiGradient, Spellcard, StartSpellcardOptions } from "./spellcard.js";
 import { prefabEnemyFactory } from "../entity/prefabEnemyFactory.js";
 import * as utils from "../utils.js";
 import { Entity } from "../entity/entity.js";
 import { CommonEnemy } from "../entity/commonEnemy.js";
-import { LooperFn, LoopOptions, CoDoGenFn } from "../looper.js";
+import { LooperFn, LoopOptions, CoDoGenFn, CoDoGenerator, LoopController } from "../looper.js";
 
 
 export interface MakeBossOptions {
@@ -65,6 +65,11 @@ export class Boss extends Entity {
 
     isInBoundary() { return true; }/** MAYDO: 应该没啥用，Boss.isInBoundary */
 
+    kill() {
+        // TODO: 击破特效
+        this.destroy();
+    }
+
     destroy() {
         if (this.destroyed) { return; }
         this.sprite.destroy({ children: true });
@@ -80,12 +85,12 @@ export class Boss extends Entity {
 
 const _startupTime = 60;
 
-/** TODOC: baseStartSingleBossBattle */
-export const baseStartSingleBossBattle = (bossBattleOptions: {
+/** TODOC: baseMakeSingleBossBattleController */
+export const baseMakeSingleBossBattleController = (manualBossBattleOptions: {
     game: Game, combat: Combat, board: Board,
     refBoss: Boss, name: string,
 }) => {
-    const { game, combat, board, refBoss } = bossBattleOptions;
+    const { game, combat, board, refBoss } = manualBossBattleOptions;
 
     const scCounterBar = (()=>{
         const root = new pixi.Sprite({
@@ -104,7 +109,7 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
 
         const bossNameText = new pixi.Text({
             parent: root,
-            text: bossBattleOptions.name,
+            text: manualBossBattleOptions.name,
             x: 3, y: 7, anchor: { x: 0, y: 0.5 },
             resolution: 4,
             style: {
@@ -163,7 +168,7 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
         };
     })();
 
-    const startSpellcard = (options: {
+    const startCommonSpellcard = (options: {
         time: number,
         hp: number,
         figure?: pixi.Texture,
@@ -245,26 +250,128 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
         scCounterBar.destroy();
     };
 
-    const battle = {
-        startSpellcard, startSurvivalSpellcard, scCounterBar,
+    const battleController = {
+        startCommonSpellcard, startSurvivalSpellcard, scCounterBar,
         kill() {
             scCounterBar.kill()?.then(() => destroy());
+            // TODO: 击破特效？
         },
         destroy,
         get destroyed() { return refBoss.destroyed || _destroyed; },
             
         forever(fn: LooperFn, options: LoopOptions = {}) {
             const loop = board.forever(fn, options);
-            loop.addRefs(battle);
+            loop.addRefs(battleController);
             return loop;
         },
     
         coDo(genFn: CoDoGenFn, options: LoopOptions = {}) {
             const loop = board.coDo(genFn, options);
-            loop.addRefs(battle);
+            loop.addRefs(battleController);
             return loop;
         },
     };
+
+    return battleController;
+};
+
+export type SingleBossBattle = ReturnType<typeof baseMakeSingleBossBattleController>;
+
+
+
+//#region SpellOptions
+interface BaseSpellOptions {
+    /** @default false */
+    isSurvival?: boolean,
+    /** @default 2400 */
+    time?: number,
+    /** 不填写此参数，则采用构造战斗时设定的默认立绘；填写此参数，可以给这个符卡设定另一张立绘。（对非符无效，因为非符没有立绘） */
+    figure?: pixi.Texture,
+    /** 不填写此参数，则该符卡为非符 */
+    title?: string | number,
+}
+
+interface CommonSpellOptions extends BaseSpellOptions {
+    isSurvival?: false,
+    /** @default 3000 */
+    hp?: number,
+    /** @default 250 */
+    birthProtectDuration?: number,
+    fn?: ({ spellcard, shield }: { spellcard: Spellcard, shield: CommonEnemy }) => void,
+    gen?: ({ spellcard, shield }: { spellcard: Spellcard, shield: CommonEnemy }, loop: LoopController) => CoDoGenerator,
+}
+
+interface SurvivalSpellOptions extends BaseSpellOptions {
+    isSurvival: true,
+    fn?: ({ spellcard }: { spellcard: Spellcard }) => void,
+    gen?: ({ spellcard }: { spellcard: Spellcard }, loop: LoopController) => CoDoGenerator,
+}
+
+type SpellOptions = CommonSpellOptions | SurvivalSpellOptions;
+//#endregion
+
+export const baseStartSingleBossBattle = (bossBattleOptions: {
+    game: Game, combat: Combat, board: Board,
+    ownBoss: Boss, name: string,
+    /** @default null */
+    spells?: SpellOptions[],
+    /**
+     * 一般来说，不用管这个东西。  
+     * 这个函数可以让你指定非符标题的格式。默认的格式形如“非符1”，“非符3”。  
+     * @example
+     * num => `第 ${num} 张非符`
+     */
+    getNonSpellTitle?: (num: number) => string,
+}) => {
+    const { game, combat, board, ownBoss, name, } = bossBattleOptions;
+    const getNonSpellTitle = bossBattleOptions.getNonSpellTitle ?? ((num: number) => `非符${num}`);
+    const spellInfos = bossBattleOptions.spells ?? [];
+    const battle = baseMakeSingleBossBattleController({
+        game, combat, board, refBoss: ownBoss, name
+    });
+    for (let i = spellInfos.length - 1; i >= 0; i--) {
+        battle.scCounterBar.pushStar(spellInfos[i].title === undefined ? "nonSpellcard" : "spellcard");
+    }
+
+    battle.coDo(function*() {
+        let nonsCounter = 1;
+        for (const info of spellInfos) {
+            const isShowFigureAndTitle = info.title === undefined ? false : true;
+            const title = (()=>{
+                if (typeof info.title === "string") { return info.title; }
+                if (typeof info.title === "number") { nonsCounter = info.title; }
+                return getNonSpellTitle(nonsCounter++);
+            })();
+            const time = info.time ?? 2400;
+            const { figure } = info;
+            if (info.isSurvival) {
+                const spellController = battle.startSurvivalSpellcard({
+                    title, time, figure, isShowFigureAndTitle,
+                })
+                yield* utils.UntilDestroy(spellController.startupLoop);
+                const { fn, gen } = info;
+                fn?.(spellController);
+                if (gen !== undefined) { spellController.spellcard.coDo(loop => gen(spellController, loop)); }
+                yield* utils.UntilDestroy(spellController.spellcard);
+            } else {
+                const spellController = battle.startCommonSpellcard({
+                    title, time, figure, isShowFigureAndTitle,
+                    hp: info.hp ?? 3000,
+                    birthProtectDuration: info.birthProtectDuration, 
+                })
+                yield* utils.UntilDestroy(spellController.startupLoop);
+                const { fn, gen } = info;
+                fn?.(spellController);
+                if (gen !== undefined) { spellController.spellcard.coDo(loop => gen(spellController, loop)); }
+                yield* utils.UntilDestroy(spellController.spellcard);
+            }
+            battle.scCounterBar.popStar();
+        }
+    }).then(() => board.coDo(function*() {
+        battle.kill();
+        yield* game.Sleep(80);
+        ownBoss.kill();
+    }));
 
     return battle;
 };
