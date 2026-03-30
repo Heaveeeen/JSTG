@@ -50,12 +50,12 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
         onMiss(options: { player: Player }) { isMissOrBomb = true; },
         onBomb(options: { player: Player }) { isMissOrBomb = true; },
 
-        forever(fn: LooperFn, options: LoopOptions = {}) {
+        forever<T>(fn: LooperFn<T>, options: LoopOptions = {}) {
             const loop = board.forever(fn, options);
             loop.addRefs(this);
             return loop;
         },
-        coDo(genFn: CoDoGenFn, options: LoopOptions = {}) {
+        coDo<T>(genFn: CoDoGenFn<T>, options: LoopOptions = {}) {
             const loop = board.coDo(genFn, options);
             loop.addRefs(this);
             return loop;
@@ -128,7 +128,7 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
         } else if (time >= 10_00) {
             const s = `${time}`;
             timerText.text = `${s.substring(0, 2)}.${s.substring(2, 4)}`;
-        } else if (time >= 10) { // TODO: 计时器不固定在最后 10 秒内变红，而是在最后一定比例的时间内闪烁。
+        } else if (time >= 10) { //MAYDO: 计时器不固定在最后 10 秒内变红，而是在最后一定比例的时间内闪烁。
             const s = time >= 1_00 ? `0${time}` : `00${time}`;
             timerText.text = `${s.substring(0, 2)}.${s.substring(2, 4)}`
             timerText.style.fill = time > 500 ? "#ff6666" : "#f43636";

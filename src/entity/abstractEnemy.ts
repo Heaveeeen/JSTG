@@ -48,12 +48,12 @@ export abstract class AbstractEnemy<T extends AbstractDanmaku = AbstractDanmaku>
     abstract destroy(): void;
     abstract readonly destroyed: boolean;
 
-    forever(fn: LooperFn, options: LoopOptions = {}) {
+    forever<T>(fn: LooperFn<T>, options: LoopOptions = {}) {
         const loop = this.danmaku.board.forever(fn, options);
         loop.addRefs(this);
         return loop;
     }
-    coDo(genFn: CoDoGenFn, options: LoopOptions = {}) {
+    coDo<T>(genFn: CoDoGenFn<T>, options: LoopOptions = {}) {
         const loop = this.danmaku.board.coDo(genFn, options);
         loop.addRefs(this);
         return loop;

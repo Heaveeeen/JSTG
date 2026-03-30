@@ -298,12 +298,12 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 },
                 get destroyed() { return boardRoot.destroyed },
 
-                forever(fn: LooperFn, options: LoopOptions = {}) {
+                forever<T>(fn: LooperFn<T>, options: LoopOptions = {}) {
                     const loop = combat.forever(fn, options);
                     loop.addRefs(this);
                     return loop;
                 },
-                coDo(genFn: CoDoGenFn, options: LoopOptions = {}) {
+                coDo<T>(genFn: CoDoGenFn<T>, options: LoopOptions = {}) {
                     const loop = combat.coDo(genFn, options);
                     loop.addRefs(this);
                     return loop;
@@ -506,7 +506,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     hearts.push(new pixi.Sprite({ parent: stateBarRoot, anchor: 0.5, x, y: -30, texture: hpFull }));
                     stars.push(new pixi.Sprite({ parent: stateBarRoot, anchor: 0.5, x, y: 10, texture: bombFull }));
                 }
-                let loop: LoopController | null = null;
+                let loop: LoopController<any> | null = null;
                 function updateWithPlayer(player: Player) {
                     loop?.destroy();
                     loop = player.forever(()=>{
@@ -556,12 +556,12 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             },
             get destroyed() { return boardFrameUi.destroyed; },
 
-            forever(fn: LooperFn, options: LoopOptions = {}) {
+            forever<T>(fn: LooperFn<T>, options: LoopOptions = {}) {
                 const loop = game.forever(fn, options);
                 loop.addRefs(this);
                 return loop;
             },
-            coDo(genFn: CoDoGenFn, options: LoopOptions = {}) {
+            coDo<T>(genFn: CoDoGenFn<T>, options: LoopOptions = {}) {
                 const loop = game.coDo(genFn, options);
                 loop.addRefs(this);
                 return loop;

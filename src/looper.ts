@@ -10,9 +10,9 @@ type PauseController = ReturnType<typeof makePauseController>;
  * @example
  * loop.stop(); // 从下一帧开始，停止该循环
  */
-export interface LoopController {
+export interface LoopController<T> {
     /** 从下一帧起，停止该循环。 */
-    destroy(): void,
+    destroy(result?: T): void,
     readonly destroyed: boolean
     /**
      * @readonly
@@ -24,17 +24,19 @@ export interface LoopController {
      * 该循环结束时，调用回调函数。
      * 该方法只是执行一个回调函数而已，如果在回调函数里开启了一个新的 loop ，then 不会返回这个新的 loop 。
      */
-    then(callback: () => void): this,
+    then(callback: (result?: T) => void): this,
     addRefs(...objs: Destroyable[]): void,
     addDestroys(...objs: Destroyable[]): void,
     addOwns(...objs: Destroyable[]): void,
     addPauseController(...controllers: PauseController[]): void,
+    [Symbol.iterator](): CoDoGenerator<T>,
 }
 
 type LoopOrder = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
-export type LooperFn = (loop: LoopController) => void;
-export type CoDoGenFn = (loop: LoopController) => CoDoGenerator;
+export type LooperFn<T> = (loop: LoopController<T>) => void;
+export type CoDoGenerator<T> = Generator<void, T | undefined, void>;
+export type CoDoGenFn<T> = (loop: LoopController<T>) => CoDoGenerator<T>;
 
 export interface LoopOptions {
     /**
@@ -58,8 +60,6 @@ export interface LoopOptions {
     /** TODOC: LoopOptions.pauseController */
     pauseController?: PauseController | PauseController[] | "none",
 }
-
-export type CoDoGenerator = Generator<void, void, void>;
 
 export const makeLooper = (makeLooperOptions: {
     getTimescale: () => number,
@@ -102,9 +102,9 @@ export const makeLooper = (makeLooperOptions: {
     };
 
     
-    const forever = (
+    const forever = <T>(
         /** 要循环执行的回调函数 */
-        fn: LooperFn,
+        fn: LooperFn<T>,
         options: LoopOptions = {}
     ) => {
         const thread = threads[options.order ?? 5];
@@ -119,8 +119,9 @@ export const makeLooper = (makeLooperOptions: {
 
         let clock = 0;
         let destroyed = false;
-        const callbacks: (() => void)[] = [];
-        const loop: LoopController = {
+        let loopResult: T | undefined;
+        const callbacks: ((result?: T) => void)[] = [];
+        const loop: LoopController<T> = {
             destroy,
             get destroyed() { return destroyed || refs.some(r => r.destroyed); },
             get clock() { return clock },
@@ -135,6 +136,10 @@ export const makeLooper = (makeLooperOptions: {
                 destroys.push(...objs);
             },
             addPauseController: (...controllers) => { pauseControllers.push(...controllers); },
+            *[Symbol.iterator]() {
+                while (!loop.destroyed) { yield; }
+                return loopResult;
+            },
         };
         const looperFn = () => {
             if (refs.some(r => r.destroyed)) {
@@ -148,18 +153,19 @@ export const makeLooper = (makeLooperOptions: {
             }
         };
         let idx = thread.length;
-        thread.push(looperFn)
-        function destroy() {
+        thread.push(looperFn);
+        function destroy(result?: T) {
             if (destroyed) { return; }
             destroyed = true;
             thread[idx] = null;
             destroys.forEach(d => d.destroy({ children: true }));
-            callbacks.forEach(callback => callback());
+            callbacks.forEach(callback => callback(result));
+            loopResult = result;
         }
         return loop;
     };
     
-    const coDo = (
+    const coDo = <T>(
         /**
          * 要执行的生成器函数  
          * 注意：应为生成器函数，而非生成器实例！
@@ -171,10 +177,10 @@ export const makeLooper = (makeLooperOptions: {
          *     return; // return 和 loop.stop() 都能停止该协程
          * }
          */
-        genFn: CoDoGenFn,
+        genFn: CoDoGenFn<T>,
         options: LoopOptions = {}
     ) => {
-        const loop = forever(loop => {
+        const loop = forever<T>(loop => {
             const result = generator.next();
             if (result.done) {
                 loop.destroy();

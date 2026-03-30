@@ -259,13 +259,13 @@ export const baseMakeSingleBossBattleController = (manualBossBattleOptions: {
         destroy,
         get destroyed() { return refBoss.destroyed || _destroyed; },
             
-        forever(fn: LooperFn, options: LoopOptions = {}) {
+        forever<T>(fn: LooperFn<T>, options: LoopOptions = {}) {
             const loop = board.forever(fn, options);
             loop.addRefs(battleController);
             return loop;
         },
     
-        coDo(genFn: CoDoGenFn, options: LoopOptions = {}) {
+        coDo<T>(genFn: CoDoGenFn<T>, options: LoopOptions = {}) {
             const loop = board.coDo(genFn, options);
             loop.addRefs(battleController);
             return loop;
@@ -298,13 +298,13 @@ interface CommonSpellOptions extends BaseSpellOptions {
     /** @default 250 */
     birthProtectDuration?: number,
     fn?: ({ spellcard, shield }: { spellcard: Spellcard, shield: CommonEnemy }) => void,
-    gen?: ({ spellcard, shield }: { spellcard: Spellcard, shield: CommonEnemy }, loop: LoopController) => CoDoGenerator,
+    gen?: ({ spellcard, shield }: { spellcard: Spellcard, shield: CommonEnemy }, loop: LoopController<unknown>) => CoDoGenerator<unknown>,
 }
 
 interface SurvivalSpellOptions extends BaseSpellOptions {
     isSurvival: true,
     fn?: ({ spellcard }: { spellcard: Spellcard }) => void,
-    gen?: ({ spellcard }: { spellcard: Spellcard }, loop: LoopController) => CoDoGenerator,
+    gen?: ({ spellcard }: { spellcard: Spellcard }, loop: LoopController<unknown>) => CoDoGenerator<unknown>,
 }
 
 type SpellOptions = CommonSpellOptions | SurvivalSpellOptions;
@@ -348,7 +348,7 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
                 const spellController = battle.startSurvivalSpellcard({
                     title, time, figure, isShowFigureAndTitle,
                 })
-                yield* utils.UntilDestroy(spellController.startupLoop);
+                yield* spellController.startupLoop;
                 const { fn, gen } = info;
                 fn?.(spellController);
                 if (gen !== undefined) { spellController.spellcard.coDo(loop => gen(spellController, loop)); }
@@ -359,7 +359,7 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
                     hp: info.hp ?? 3000,
                     birthProtectDuration: info.birthProtectDuration, 
                 })
-                yield* utils.UntilDestroy(spellController.startupLoop);
+                yield* spellController.startupLoop;
                 const { fn, gen } = info;
                 fn?.(spellController);
                 if (gen !== undefined) { spellController.spellcard.coDo(loop => gen(spellController, loop)); }
