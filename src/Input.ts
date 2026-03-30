@@ -9,11 +9,10 @@ const enum KeyEventType {
     downAndUp = 3,
 }
 
-// 这玩意完全没必要改成字符串……
-/** 键码表，仅包含 Required 部分，注释为个人简单翻译  
+/** 键码表，不全，注释为个人简单翻译  
  * 来源：{@link https://w3c.github.io/uievents-code/#code-value-tables}  
  * 此枚举最后更新于：2025/1/6 */
-export enum Key {
+export enum KeyEnum {
     /* -- Alphanumeric Section - Writing System Keys -- */
     /** 美式键盘的 “`~”。 同时也是日式键盘的 “半角/全角/漢字” */
     Backquote = "Backquote",
@@ -247,6 +246,22 @@ export enum Key {
     Pause = "Pause",
 }
 
+export type KeyName = "Backquote" | "Backslash" | "BracketLeft" | "BracketRight" | "Comma" |
+    "Digit0" | "Digit1" | "Digit2" | "Digit3" | "Digit4" | "Digit5" | "Digit6" | "Digit7" | "Digit8" | "Digit9" |
+    "Equal" | "IntlBackslash" | "IntlRo" | "IntlYen" |
+    "KeyA" | "KeyB" | "KeyC" | "KeyD" | "KeyE" | "KeyF" | "KeyG" | "KeyH" | "KeyI" | "KeyJ" | "KeyK" | "KeyL" | "KeyM" |
+    "KeyN" | "KeyO" | "KeyP" | "KeyQ" | "KeyR" | "KeyS" | "KeyT" | "KeyU" | "KeyV" | "KeyW" | "KeyX" | "KeyY" | "KeyZ" |
+    "Minus" | "Period" | "Quote" | "Semicolon" | "Slash" | "AltLeft" | "AltRight" | "Backspace" | "CapsLock" |
+    "ContextMenu" | "ControlLeft" | "ControlRight" | "Enter" | "MetaLeft" | "MetaRight" | "ShiftLeft" | "ShiftRight" |
+    "Space" | "Tab" | "Delete" | "End" | "Help" | "Home" | "Insert" | "PageDown" | "PageUp" |
+    "ArrowDown" | "ArrowLeft" | "ArrowRight" | "ArrowUp" |
+    "NumLock" | "Numpad0" | "Numpad1" | "Numpad2" | "Numpad3" | "Numpad4" | "Numpad5" | "Numpad6" | "Numpad7" | "Numpad8" | "Numpad9" |
+    "NumpadAdd" | "NumpadDecimal" | "NumpadDivide" | "NumpadEnter" | "NumpadMultiply" |
+    "Escape" | "F1" | "F2" | "F3" | "F4" | "F5" | "F6" | "F7" | "F8" | "F9" | "F10" | "F11" | "F12" |
+    "PrintScreen" | "ScrollLock" | "Pause" ;
+
+// TODO: 支持鼠标
+
 export type Input = ReturnType<typeof makeInput>;
 
 export function makeInput() {
@@ -298,18 +313,18 @@ export function makeInput() {
         }
     }
 
-    const getState = (button: string) => states[button] ?? 0;
-    const isDown = (button: string) => getState(button) == 1;
-    const isUp = (button: string) => getState(button) < 0;
-    const isHold = (button: string) => getState(button) > 0;
-    const isIdle = (button: string) => getState(button) <= 0;
+    const getState = (button: KeyName) => states[button] ?? 0;
+    const isDown = (button: KeyName) => getState(button) == 1;
+    const isUp = (button: KeyName) => getState(button) < 0;
+    const isHold = (button: KeyName) => getState(button) > 0;
+    const isIdle = (button: KeyName) => getState(button) <= 0;
 
-    const isShortClick = (button: string,
+    const isShortClick = (button: KeyName,
         /** 容许按住的最大持续帧数，若按住的时长超过此值则不会判定为轻敲 */
         maxHoldTime: number = 10
     ) => isUp(button) && getState(button) >= -maxHoldTime;
 
-    const isLongRelease = (button: string,
+    const isLongRelease = (button: KeyName,
         /** 容许按住的最小持续帧数，若按住的时长低于此值则不会判定为长按 */
         minHoldTime: number = 12
     ) => getState(button) <= -minHoldTime;
@@ -341,6 +356,5 @@ export function makeInput() {
          * // 但这么写不太可靠，原因懒得解释，我个人不推荐
          */
         _update,
-    }
-
+    };
 }

@@ -1,6 +1,6 @@
 import * as pixi from "pixi";
 import { DyedTextures, LoadPixiAsset, LoadPrefabTextures, LoadPrefabTexturesOptions, LoadSvg, PrefabDanmakuNames, DyedTextureColors, makeDyedTextures, makeDyedFrames } from "./textures.js";
-import { Key, makeInput } from "./input.js";
+import { KeyName, KeyEnum, makeInput } from "./input.js";
 import { prefabPlayerFactory } from "./player/prefabPlayerFactory.js";
 import { makeRng } from "./random.js";
 import * as utils from './utils.js';
@@ -757,7 +757,7 @@ const Assets = {
 
 export {
     Assets,
-    Key,
+    KeyEnum,
     Player,
     makeRng,
     utils,

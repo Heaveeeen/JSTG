@@ -1,5 +1,5 @@
 import * as pixi from "pixi";
-import { Input, Key } from "../input.js";
+import { Input, KeyName } from "../input.js";
 import { Board, Combat, Game, utils } from "../jstg.js";
 import { alphaTo, deg, clamp, staticAssert } from "../utils.js";
 import { AbstractDanmaku } from "../entity/abstractDanmaku.js";
@@ -8,19 +8,19 @@ import { CoDoGenFn, LooperFn, LoopOptions } from "../looper.js";
 
 export interface PlayerKeyMapOptions {
     /** @default Key.ArrowUp */
-    up?: string | string[],
+    up?: KeyName | KeyName[],
     /** @default Key.ArrowDown */
-    down?: string | string[],
+    down?: KeyName | KeyName[],
     /** @default Key.ArrowLeft */
-    left?: string | string[],
+    left?: KeyName | KeyName[],
     /** @default Key.ArrowRight */
-    right?: string | string[],
+    right?: KeyName | KeyName[],
     /** @default Key.ShiftLeft */
-    slow?: string | string[],
+    slow?: KeyName | KeyName[],
     /** @default Key.KeyZ */
-    attack?: string | string[],
+    attack?: KeyName | KeyName[],
     /** @default Key.KeyX */
-    bomb?: string | string[],
+    bomb?: KeyName | KeyName[],
 }
 
 export interface PlayerUpdateOptions {
@@ -301,12 +301,12 @@ export class Player {
         let dx = 0;
         let dy = 0;
 
-        const kh = (keyOrKeys: string | string[]) => typeof keyOrKeys === "string" ? isHold(keyOrKeys) : keyOrKeys.some(key => isHold(key));
+        const kh = (keyOrKeys: KeyName | KeyName[]) => typeof keyOrKeys === "string" ? isHold(keyOrKeys) : keyOrKeys.some(key => isHold(key));
         // @ts-expect-error MAGIC: 布尔值隐式转换为 0 和 1 ，可以用于数学运算
         dx = kh(keyMap.right ?? Key.ArrowRight) - kh(keyMap.left ?? Key.ArrowLeft);
         // @ts-expect-error
         dy = kh(keyMap.down ?? Key.ArrowDown) - kh(keyMap.up ?? Key.ArrowUp);
-        this.isSlow = kh(keyMap.slow ?? Key.ShiftLeft);
+        this.isSlow = kh(keyMap.slow ?? "ShiftLeft");
 
         this.slowModeRing.rotation += deg(2 * ts);
         if (dx !== 0 || dy !== 0) {
@@ -322,7 +322,7 @@ export class Player {
             this.y = clamp(this.y + dy, -h, h);
         }
 
-        this.isShooting = kh(keyMap.attack ?? Key.KeyZ);
+        this.isShooting = kh(keyMap.attack ?? "KeyZ");
     }
 
     _defaultUpdate(options: PlayerUpdateOptions) {

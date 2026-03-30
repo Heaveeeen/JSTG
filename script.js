@@ -15,7 +15,7 @@ import { Boss, baseStartSingleBossBattle } from "./dist/boss/bossBattle.js";
 // 启动游戏
 (async () => {
     const game = await jstg.LaunchGame();
-    const { Key, prefabDanmakuHitboxRadius } = jstg;
+    const { prefabDanmakuHitboxRadius } = jstg;
     const { input, app, debug } = game;
     const { isDown, isUp, isHold, isIdle } = input;
     const { asAny, UntilDestroy } = jstg.utils;
@@ -244,15 +244,15 @@ import { Boss, baseStartSingleBossBattle } from "./dist/boss/bossBattle.js";
 
     forever(loop => {
         pl.update({input, keyMap: {
-            up: [Key.ArrowUp, Key.KeyW],
-            down: [Key.ArrowDown, Key.KeyS],
-            left: [Key.ArrowLeft, Key.KeyA],
-            right: [Key.ArrowRight, Key.KeyD],
-            slow: [Key.ShiftLeft, Key.KeyL, Key.Space],
-            attack: [Key.KeyZ, Key.KeyK],
-            bomb: [Key.KeyX, Key.KeyJ],
+            up: ["ArrowUp", "KeyW"],
+            down: ["ArrowDown", "KeyS"],
+            left: ["ArrowLeft", "KeyA"],
+            right: ["ArrowRight", "KeyD"],
+            slow: ["ShiftLeft", "KeyL", "Space"],
+            attack: ["KeyZ", "KeyK"],
+            bomb: ["KeyX", "KeyJ"],
         }, slowSpeed: debug.godMode.isOn ? undefined : undefined});
-        if (isDown(Key.KeyP)) {
+        if (isDown("KeyP")) {
             if (!debug.showHitbox.isOn) {
                 debug.showHitbox.isOn = true;
                 debug.showHitbox.isShowDanmakuBoth = true;
@@ -262,10 +262,10 @@ import { Boss, baseStartSingleBossBattle } from "./dist/boss/bossBattle.js";
                 debug.showHitbox.isOn = false;
             }
         }
-        if (isDown(Key.KeyO)) {
+        if (isDown("KeyO")) {
             debug.godMode.isOn = !debug.godMode.isOn;
         }
-        if (isDown(Key.KeyM)) {
+        if (isDown("KeyM")) {
             coDo(function*() {
                 const boss = new Boss({ game, combat, board, hue1: 16, hue2: 24, sprite: new pixi.Sprite({
                     parent: board.bossLayer,
@@ -312,7 +312,7 @@ import { Boss, baseStartSingleBossBattle } from "./dist/boss/bossBattle.js";
     }, { order: 0 });
 
     forever(loop => {
-        if (isDown(Key.Escape)) {
+        if (isDown("Escape")) {
             game.mainPauseController.isRun = !game.mainPauseController.isRun;
             game.prefabSounds.thse.pause.play();
         }
