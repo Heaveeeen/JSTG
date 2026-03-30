@@ -287,7 +287,6 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 makeDanmaku: null as unknown as typeof makeDanmaku, // MAGIC:
                 /** TODOC: makeLaserBeam */
                 makeLaserBeam: null as unknown as typeof makeLaserBeam, // MAGIC:
-                startSpellcard: baseStartSpellcard,
                 /** TODOC: */
                 foo_clearScreen,
                 destroy() {

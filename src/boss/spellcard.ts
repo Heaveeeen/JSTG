@@ -144,6 +144,7 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
     }, { order: 0 }).then(() => { board.coDo(function*() {
         endClockTs = game.clock;
         ownsEnemys.forEach(enemy => enemy.kill());
+        // TODO: 收卡提示，把 mainLoop 改成 liveLoop ，把这个回调函数合并到 mainLoop 里。
         if (endClockTs - beginClockTs >= maxTime) {
             // 全避
             timerText.text = "00.00";

@@ -266,6 +266,7 @@ export class Player {
     }
 
     /**
+     * TODOC:
      * 更新自机。
      * @example
      * game.forever(loop => {
