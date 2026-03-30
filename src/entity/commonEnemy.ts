@@ -5,6 +5,8 @@ import { AbstractEnemy, EnemyBeHurtOptions, newAbstractEnemyOptions } from "./ab
 import { CommonDanmaku } from "./commonDanmaku.js";
 import * as utils from "../utils.js";
 import { EraseDanmakuOptions } from "./abstractDanmaku.js";
+import { LoopController } from "../looper.js";
+import { PlaySoundOptions } from "../sounds.js";
 
 
 
@@ -27,7 +29,9 @@ interface NewCommonEnemyOptions extends newAbstractEnemyOptions<CommonDanmaku> {
     birthProtectDuration: number,
 }
 
-let lastPlayDamageSoundClockTS = -1;
+let lastPlayDamageSoundClockTs = -999;
+let damageSoundLoop: LoopController<void> | null = null;
+const damageSoundQueue: { play(options?: PlaySoundOptions): void }[] = [];
 
 // TODO: 一个比较偷懒的设计…… boss 身上的保护罩是一个 CommonEnemy ，打爆这个罩子就会打通一张符
 export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
@@ -108,6 +112,15 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
             utils.staticAssert<never>(options.hpBar.type);
             this._hpBarGraphics = null;
         }
+        if (damageSoundLoop === null || damageSoundLoop.destroyed) { damageSoundLoop = this.danmaku.game.forever(loop => {
+            if (this.danmaku.game.clock >= lastPlayDamageSoundClockTs + 3) {
+                const sound = damageSoundQueue.pop();
+                if (sound) {
+                    lastPlayDamageSoundClockTs = this.danmaku.game.clock;
+                    sound.play();
+                }
+            }
+        }); }
     }
 
     drawDebugHitbox(): void {
@@ -121,18 +134,18 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
 
     beHurt(value: number, options: EnemyBeHurtOptions = {}) {
         this.hp -= value * this._birthProtectCoef;
-        if (this.danmaku.game.clock >= lastPlayDamageSoundClockTS + 3) {
-            lastPlayDamageSoundClockTS = this.danmaku.game.clock;
-            if (this.hp <= Math.min(this.maxHp * 0.1, 500)) {
-                this.danmaku.game.prefabSounds.thse.damage01.play();
-            } else {
-                this.danmaku.game.prefabSounds.thse.damage00.play();
-            }
+        const { damage00, damage01 } = this.danmaku.game.prefabSounds.thse;
+        const sound = this.hp <= Math.min(this.maxHp * 0.1, 500) ? damage01 : damage00;
+        if (this.danmaku.game.clock >= lastPlayDamageSoundClockTs + 3) {
+            lastPlayDamageSoundClockTs = this.danmaku.game.clock;
+            sound.play();
+        } else if (this.danmaku.game.clock !== lastPlayDamageSoundClockTs) {
+            if (damageSoundQueue.length < 2) { damageSoundQueue.push(sound); }
         }
         this._afterBeHurtCallback?.(options);
     }
 
-    /** 
+    /**
      * 击破这个敌人，并且消除与之对应的弹幕。  
      * 调用该函数后，不能再使用这个敌人。  
      */
