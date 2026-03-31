@@ -215,7 +215,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     forEachAlive,
                     /** 获取所有活着的敌人 */
                     getAlives,
-                    /** 遍历一个圆形范围内的所有敌人 */
+                    /** 遍历所有碰到给定圆的敌人 */
                     forEachByRadius,
                     // TODO: damageByRadius, killByRadius
                     /** @readonly @internal 当前场上的敌人数量（⚠️包含无效敌人） */
@@ -245,14 +245,16 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 commonDanmakuLayer: makeBoardLayer(0),
                 /** 自机发射出的所有子弹的图层 */
                 playerBulletLayer: makeBoardLayer(-5),
+                /** 自机扔出的灵击圈（默认 Bomb ）所在的图层 */
+                reigekiRingLayer: makeBoardLayer(-10),
                 /** 所有常规敌人的图层 */
-                commonEnemyLayer: makeBoardLayer(-10),
+                commonEnemyLayer: makeBoardLayer(-30),
                 /** Boss 防护罩的图层 */
-                bossShieldLayer: makeBoardLayer(-20),
+                bossShieldLayer: makeBoardLayer(-40),
                 /** Boss 本体的图层 */
-                bossLayer: makeBoardLayer(-30),
+                bossLayer: makeBoardLayer(-50),
                 /** 所有消弹特效的图层 */
-                danmakuEraseLayer: makeBoardLayer(-40),
+                danmakuEraseLayer: makeBoardLayer(-60),
                 /** 自机后半部分所属的图层。 */
                 playerBackLayer: makeBoardLayer(-100),
                 /** 敌人血条所属的图层。 */
@@ -326,8 +328,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     autoUpdateSelf?: boolean,
                 } = {}) => makePlayer(prefabPlayerFactory.makeSimple({
                     game, combat, board,
-                    autoUpdateDanmakuRegList: options.autoUpdateDanmakuRegList ?? null,
-                    autoUpdateSelf: options.autoUpdateSelf ?? null,
+                    autoUpdateDanmakuRegList: options.autoUpdateDanmakuRegList ?? true,
+                    autoUpdateSelf: options.autoUpdateSelf ?? true,
                 }));
 
                 /* TODO: simple.homingOnly ...

@@ -1,5 +1,5 @@
 import * as pixi from "pixi";
-import { NewPlayerOptions, Player, PlayerBeHurtOptions, PlayerUpdateOptions } from "./player.js";
+import { NewPlayerOptions, Player, PlayerBeHurtOptions, PlayerBombOptions, PlayerUpdateOptions } from "./player.js";
 import { Board, Combat, Destroyable, Game } from "../jstg.js";
 import { alphaTo, decibel, deg, rotateVec, Vec2 } from "../utils.js";
 import { AbstractEnemy } from "../entity/abstractEnemy.js";
@@ -10,10 +10,8 @@ export const prefabPlayerFactory = (()=>{
 
     const makeSimple = (options: {
         game: Game, combat: Combat, board: Board,
-        /** @default true */
-        autoUpdateDanmakuRegList: boolean | null,
-        /** @default true */
-        autoUpdateSelf: boolean | null,
+        autoUpdateDanmakuRegList: boolean,
+        autoUpdateSelf: boolean,
     }) => {
         const { game, combat, board, autoUpdateDanmakuRegList, autoUpdateSelf } = options;
         const { prefabTextures } = game;
@@ -291,6 +289,7 @@ export const prefabPlayerFactory = (()=>{
             shootTimer += game.timeScale;
         }
         const beHurtFn = (opt: PlayerBeHurtOptions) => player._defaultBeHurt(opt);
+        const bombFn = (opt: PlayerBombOptions) => player._defaultReigekiBomb(opt);
         const destroyCallback = () => {
             for (const drone of drones) {
                 drone.destroy();
@@ -306,7 +305,7 @@ export const prefabPlayerFactory = (()=>{
             hitboxRadius: 1, highSpeed: 4, slowSpeed: 1.6,
             dyingBombTime: null, initHpAmount: null, initBombAmount: null, missGainBombType: null,
             maxHpAmount: null, maxBombAmount: null,
-            updateFn, beHurtFn, destroyCallback,
+            updateFn, beHurtFn, bombFn, destroyCallback,
         });
         initDrones();
         return player;

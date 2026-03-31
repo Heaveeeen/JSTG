@@ -8,7 +8,8 @@ export interface newAbstractEnemyOptions<T extends AbstractDanmaku> {
 }
 
 export type EnemyBeHurtOptions = {
-    // TODO: damageType
+    /** @default true */
+    isEffectByBirthProtect?: boolean,
 };
 
 /** Enemy 就是一个能被攻击的东西，必须依附于 AbstractDanmaku */

@@ -201,6 +201,7 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
             invincibleRing: await lsvg(`player/invincibleRing.svg`),
             slowMode: await lsvg(`player/slowMode.svg`),
             missFilter: await lsvg(`player/missFilter.svg`),
+            reigekiRing: await lsvg(`player/reigekiRing.svg`),
             drone: {
                 simpleDrone: await lsvg(`player/drone/simpleDrone.svg`),
             },

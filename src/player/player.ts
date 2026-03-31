@@ -5,6 +5,7 @@ import { alphaTo, deg, clamp, staticAssert } from "../utils.js";
 import { AbstractDanmaku } from "../entity/abstractDanmaku.js";
 import { DifferenceBlendFilter } from "../graphics/differenceBlendFilter.js";
 import { CoDoGenFn, LooperFn, LoopOptions } from "../looper.js";
+import { makeReigekiRing } from "./reigekiRing.js";
 
 export interface PlayerKeyMapOptions {
     /** @default Key.ArrowUp */
@@ -47,6 +48,10 @@ export interface PlayerBeHurtOptions {
     danmaku: AbstractDanmaku | null,
 }
 
+export interface PlayerBombOptions {
+    
+}
+
 export type MissGainBombType = "resetToInitAmount" | "increaseByInitAmount" | "none";
 
 const missInvincibleTime = 180;
@@ -80,12 +85,11 @@ export interface NewPlayerOptions {
     maxBombAmount: number | null;
     /** @default "resetToInitAmount" */
     missGainBombType: MissGainBombType | null;
-    /** @default true */
-    autoUpdateDanmakuRegList: boolean | null;
-    /** @default true */
-    autoUpdateSelf: boolean | null;
+    autoUpdateDanmakuRegList: boolean;
+    autoUpdateSelf: boolean;
     updateFn: (options: PlayerUpdateOptions) => void;
     beHurtFn: (options: PlayerBeHurtOptions) => void;
+    bombFn: (options: PlayerBombOptions) => void;
     destroyCallback: () => void;
 }
 
@@ -206,6 +210,7 @@ export class Player {
 
         this.update = options.updateFn;
         this.beHurt = options.beHurtFn;
+        this.bombFn = options.bombFn;
         this.destroyFn = options.destroyCallback;
 
         this.backParts = new pixi.Sprite({
@@ -256,11 +261,11 @@ export class Player {
         this.x = this._lastX = 0;
         this.y = this._lastY = 185;
 
-        if (options.autoUpdateSelf ?? true) {
+        if (options.autoUpdateSelf) {
             this.forever(() => this.update({}), { order: 0 });
         }
 
-        if (options.autoUpdateDanmakuRegList ?? true) {
+        if (options.autoUpdateDanmakuRegList) {
             this.forever(() => this.board.danmakuRegList.update(this), { order: 10, owns: this }); // 这里 owns 是为了在 combat 销毁时让 player 随之销毁
         }
     }
@@ -287,14 +292,14 @@ export class Player {
      * });
      */
     update: (options: PlayerUpdateOptions) => void;
-
     beHurt: (options: PlayerBeHurtOptions) => void;
-
+    bombFn: (options: PlayerBombOptions) => void;
     destroyFn: () => void;
+
+    private _lastBombClockTs = -999;
 
     /** 移动自机，还有 isShooting */
     _updateInputAndMove(options: PlayerUpdateOptions) {
-        if (!(this.state.type === "common")) { return; }
         const ts = this.game.timeScale;
         const keyMap = options.keyMap ?? {};
         const { isDown, isHold } = options.input ?? this.game.input;
@@ -302,36 +307,49 @@ export class Player {
         let dy = 0;
 
         const kh = (keyOrKeys: KeyName | KeyName[]) => typeof keyOrKeys === "string" ? isHold(keyOrKeys) : keyOrKeys.some(key => isHold(key));
+        const kd = (keyOrKeys: KeyName | KeyName[]) => typeof keyOrKeys === "string" ? isDown(keyOrKeys) : keyOrKeys.some(key => isDown(key));
         // @ts-expect-error MAGIC: 布尔值隐式转换为 0 和 1 ，可以用于数学运算
         dx = kh(keyMap.right ?? Key.ArrowRight) - kh(keyMap.left ?? Key.ArrowLeft);
         // @ts-expect-error
         dy = kh(keyMap.down ?? Key.ArrowDown) - kh(keyMap.up ?? Key.ArrowUp);
-        this.isSlow = kh(keyMap.slow ?? "ShiftLeft");
+        if (this.state.type === "common") {
+            this.isSlow = kh(keyMap.slow ?? "ShiftLeft");
 
-        this.slowModeRing.rotation += deg(2 * ts);
-        if (dx !== 0 || dy !== 0) {
-            let v = this.isSlow ? options.slowSpeed ?? this.slowSpeed : options.highSpeed ?? this.highSpeed;
-            v *= ts;
-            let m = v / Math.sqrt(dx * dx + dy * dy);
-            dx *= m;
-            dy *= m;
+            this.slowModeRing.rotation += deg(2 * ts);
+            if (dx !== 0 || dy !== 0) {
+                let v = this.isSlow ? options.slowSpeed ?? this.slowSpeed : options.highSpeed ?? this.highSpeed;
+                v *= ts;
+                let m = v / Math.sqrt(dx * dx + dy * dy);
+                dx *= m;
+                dy *= m;
 
-            let w = this.board.halfWidth - 16;
-            let h = this.board.halfHeight - 16;
-            this.x = clamp(this.x + dx, -w, w);
-            this.y = clamp(this.y + dy, -h, h);
+                let w = this.board.halfWidth - 16;
+                let h = this.board.halfHeight - 16;
+                this.x = clamp(this.x + dx, -w, w);
+                this.y = clamp(this.y + dy, -h, h);
+            }
+
+            this.isShooting = kh(keyMap.attack ?? "KeyZ");
         }
 
-        this.isShooting = kh(keyMap.attack ?? "KeyZ");
+        if (this.state.type === "common" || this.state.type === "dying") {
+            if (this.bombAmount >= 1 && kd(keyMap.bomb ?? "KeyX") && (
+                this.game.clock - this._lastBombClockTs > 150 || this.state.type !== "common" || this.state.invincibleTime <= 0
+            )) {
+                this._lastBombClockTs = this.game.clock;
+                this.bombFn({});
+                this.bombAmount -= 1;
+                this.board._spellcardRegList.forEachAlive(spell => spell.onBomb({ player: this }));
+            }
+        }
     }
 
     _defaultUpdate(options: PlayerUpdateOptions) {
-        if (this.state.type === "common") {
-            this._updateInputAndMove(options);
-        } else {
+        this._updateInputAndMove(options); // 这玩意不写在生成器里，是因为 options 传不进去。。。傻逼 js 没法获得第一次 next 传进去的东西
+        if (this.state.type !== "common") {
             this.isSlow = false;
             this.isShooting = false;
-        } // 这玩意不写在生成器里，是因为 options 传不进去。。。傻逼 js 没法获得第一次 next 传进去的东西
+        }
         this._updateStateGen.next();
     }
 
@@ -349,7 +367,7 @@ export class Player {
             // 更新各组件的外观，如透明度
             this.invincibleRing.scale = 0.00036 * this.state.invincibleTime * Math.sqrt(this.state.invincibleTime);
             if (this.state.invincibleTime > 30) {
-                this.invincibleRing.alpha = Math.min(this.state.invincibleTime / 180, 1); // 这里我总感觉让它超过 1 有点不稳当
+                this.invincibleRing.alpha = 1 - this.state.invincibleTime / 180;
             } else {
                 alphaTo(this.invincibleRing, 0, 0.025 * ts);
             }
@@ -478,6 +496,16 @@ export class Player {
             }
             if (this._isNeedEraseHitDanmaku) { options.danmaku?.erase(); }
         }
+    }
+
+    _defaultReigekiBomb(opt: PlayerBombOptions) {
+        this.applyInvincible(210);
+        this.game.prefabSounds.thse.slash.play();
+        makeReigekiRing({
+            game: this.game, combat: this.combat, board: this.board,
+            x: this.x, y: this.y + 50,
+            maxRadius: null, insideDps: null, outsideDps: null, initSpeed: null,
+        });
     }
 
     /** 给予玩家无敌效果。如果玩家处于 Miss 状态，则这些无敌时间会拖到玩家复活后再开始生效。 */

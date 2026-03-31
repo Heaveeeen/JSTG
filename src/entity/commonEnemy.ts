@@ -133,7 +133,10 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
     private _afterBeHurtCallback: NewCommonEnemyOptions["afterBeHurtCallback"];
 
     beHurt(value: number, options: EnemyBeHurtOptions = {}) {
-        this.hp -= value * this._birthProtectCoef;
+        if (options.isEffectByBirthProtect ?? true) {
+            value *= this._birthProtectCoef;
+        }
+        this.hp -= value;
         const { damage00, damage01 } = this.danmaku.game.prefabSounds.thse;
         const sound = this.hp <= Math.min(this.maxHp * 0.1, 500) ? damage01 : damage00;
         if (this.danmaku.game.clock >= lastPlayDamageSoundClockTs + 3) {
