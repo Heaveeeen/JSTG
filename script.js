@@ -276,7 +276,7 @@ import { Boss, baseStartSingleBossBattle } from "./dist/boss/bossBattle.js";
                 }), defaultSpellcardFigure: game.prefabTextures.charFigure.maple.spellcard });
                 yield* game.Sleep(30);
                 const battle = baseStartSingleBossBattle({ game, combat, board, ownBoss: boss, name: "Maple Nightfall", spells: [{
-                    time: 30 * 60, hp: 3000,
+                    time: 30 * 60, hp: 300,
                 }, {
                     time: 80 * 60, hp: 4000, title: "你好「波粒海苔」",
                     *gen({ spellcard, shield }) {
@@ -306,7 +306,7 @@ import { Boss, baseStartSingleBossBattle } from "./dist/boss/bossBattle.js";
                             yield* game.Sleep(2);
                         }
                     },
-                }] });
+                }, { hp: 50 }, { title: "aaaaaaaa", hp: 50, time: 15 * 60 }, { title: "bbbbbbbb", hp: 50, time: 15 * 60 }] });
             });
         }
     }, { order: 0 });

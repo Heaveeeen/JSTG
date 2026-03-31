@@ -91,7 +91,7 @@ export const select = <T>(t: number, results: Readonly<SelectItem<T>[]>): typeof
     return results[results.length - 1].value;
 };
 
-export function* UntilDestroy(obj: Destroyable) { while (!obj.destroyed) { yield; } }
+export function* UntilDestroy(...objs: Destroyable[]) { while (!objs.every(obj => obj.destroyed)) { yield; } }
 
 
 

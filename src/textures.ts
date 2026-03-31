@@ -245,8 +245,13 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
             spellcardTitleLine: await lsvg(`spellcardUi/spellcardTitleLine.svg`),
             bossNameLine: await lsvg(`spellcardUi/bossNameLine.svg`),
             scCounterIcon: {
-                nonSpellcard: await lsvg(`spellcardUi/ScCounterIcon/nonSpellcard.svg`),
-                spellcard: await lsvg(`spellcardUi/ScCounterIcon/spellcard.svg`),
+                nonSpellcard: await lsvg(`spellcardUi/scCounterIcon/nonSpellcard.svg`),
+                spellcard: await lsvg(`spellcardUi/scCounterIcon/spellcard.svg`),
+            },
+            result: {
+                get: await lsvg(`spellcardUi/result/get.svg`),
+                pass: await lsvg(`spellcardUi/result/pass.svg`),
+                dodge: await lsvg(`spellcardUi/result/dodge.svg`),
             },
         }
     }

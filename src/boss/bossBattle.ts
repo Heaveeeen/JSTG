@@ -1,6 +1,6 @@
 import * as pixi from "pixi";
 import { Game, Combat, Board } from "../jstg.js";
-import { baseStartSpellcard, sic_UiGradient, Spellcard, StartSpellcardOptions } from "./spellcard.js";
+import { baseStartSpellcard, spde_UiGradient, Spellcard, StartSpellcardOptions } from "./spellcard.js";
 import { prefabEnemyFactory } from "../entity/prefabEnemyFactory.js";
 import * as utils from "../utils.js";
 import { Entity } from "../entity/entity.js";
@@ -83,7 +83,7 @@ export class Boss extends Entity {
 
 
 
-const _startupTime = 60;
+const _startupDuration = 60;
 
 /** TODOC: baseMakeSingleBossBattleController */
 export const baseMakeSingleBossBattleController = (manualBossBattleOptions: {
@@ -95,7 +95,7 @@ export const baseMakeSingleBossBattleController = (manualBossBattleOptions: {
     const scCounterBar = (()=>{
         const root = new pixi.Sprite({
             parent: board.spellcardUiLayer,
-            x: -(300 - 155 * sic_UiGradient) * 4/3, y: -board.halfHeight,
+            x: -(300 - 155 * spde_UiGradient) * 4/3, y: -board.halfHeight,
             alpha: 0,
         });
 
@@ -181,19 +181,21 @@ export const baseMakeSingleBossBattleController = (manualBossBattleOptions: {
         const isShowFigureAndTitle = options.isShowFigureAndTitle ?? true;
         const birthProtectDuration = options.birthProtectDuration ?? 250;
         const opt = isShowFigureAndTitle ? {
-            isPlayStartSound: true, title,
+            isPlayStartSound: true,
             figure: figure ?? refBoss.defaultSpellcardFigure ?? "useTheUnknownFigure",
         } as const : {
-            isPlayStartSound: false, title: null,
+            isPlayStartSound: false,
             figure: "noFigure",
         } as const;
         const shield = refBoss.makeSpellcardShield({ maxHp: hp, birthProtectDuration });
         shield.danmaku.sprite.filters = refBoss.hue2Filter;
         const spellcard = baseStartSpellcard({
             game, combat, board,
-            time, ...opt,
+            title, time, ...opt,
             ownEnemys: [shield],
-            startupTime: _startupTime,
+            startupDuration: _startupDuration,
+            isNonSpell: !isShowFigureAndTitle,
+            isSurvival: false,
         });
         shield.forever(loop => {
             shield.x = refBoss.x;
@@ -202,7 +204,7 @@ export const baseMakeSingleBossBattleController = (manualBossBattleOptions: {
         refBoss.glideTo({ x: 0, y: -80 * 4/3 });
         let t = 0;
         const startupLoop = refBoss.forever(loop => {
-            if (t >= _startupTime) {
+            if (t >= _startupDuration) {
                 loop.destroy();
             } else {
                 t += game.timeScale;
@@ -219,22 +221,24 @@ export const baseMakeSingleBossBattleController = (manualBossBattleOptions: {
     }) => {
         const { time, title, figure, isShowFigureAndTitle } = options;
         const opt = isShowFigureAndTitle ? {
-            isPlayStartSound: true, title,
+            isPlayStartSound: true,
             figure: figure ?? refBoss.defaultSpellcardFigure ?? "useTheUnknownFigure",
         } as const : {
-            isPlayStartSound: false, title: null,
+            isPlayStartSound: false,
             figure: "noFigure",
         } as const;
         const spellcard = baseStartSpellcard({
             game, combat, board,
-            time, ...opt,
+            title, time, ...opt,
             ownEnemys: [],
-            startupTime: _startupTime,
+            startupDuration: _startupDuration,
+            isNonSpell: !isShowFigureAndTitle,
+            isSurvival: false,
         });
         refBoss.glideTo({ x: 0, y: -80 * 4/3 });
         let t = 0;
         const startupLoop = refBoss.forever(loop => {
-            if (t >= _startupTime) {
+            if (t >= _startupDuration) {
                 loop.destroy();
             } else {
                 t += game.timeScale;
@@ -335,7 +339,8 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
 
     battle.coDo(function*() {
         let nonsCounter = 1;
-        for (const info of spellInfos) {
+        for (let i = 0; i < spellInfos.length; i++) {
+            const info = spellInfos[i];
             const isShowFigureAndTitle = info.title === undefined ? false : true;
             const title = (()=>{
                 if (typeof info.title === "string") { return info.title; }
@@ -352,7 +357,7 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
                 const { fn, gen } = info;
                 fn?.(spellController);
                 if (gen !== undefined) { spellController.spellcard.coDo(loop => gen(spellController, loop)); }
-                yield* utils.UntilDestroy(spellController.spellcard);
+                yield* spellController.spellcard.mainLoop;
             } else {
                 const spellController = battle.startCommonSpellcard({
                     title, time, figure, isShowFigureAndTitle,
@@ -363,9 +368,13 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
                 const { fn, gen } = info;
                 fn?.(spellController);
                 if (gen !== undefined) { spellController.spellcard.coDo(loop => gen(spellController, loop)); }
-                yield* utils.UntilDestroy(spellController.spellcard);
+                yield* spellController.spellcard.mainLoop;
             }
             battle.scCounterBar.popStar();
+            const nextInfo = spellInfos[i + 1] as SpellOptions | undefined;
+            if (nextInfo && typeof info.title === "string" && typeof nextInfo.title === "string") {
+                yield* game.Sleep(60);
+            }
         }
     }).then(() => board.coDo(function*() {
         battle.kill();

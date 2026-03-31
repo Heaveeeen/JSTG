@@ -139,7 +139,7 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
         if (this.danmaku.game.clock >= lastPlayDamageSoundClockTs + 3) {
             lastPlayDamageSoundClockTs = this.danmaku.game.clock;
             sound.play();
-        } else if (this.danmaku.game.clock !== lastPlayDamageSoundClockTs) {
+        } else if (this.danmaku.game.clock >= lastPlayDamageSoundClockTs + 1) {
             if (damageSoundQueue.length < 2) { damageSoundQueue.push(sound); }
         }
         this._afterBeHurtCallback?.(options);
