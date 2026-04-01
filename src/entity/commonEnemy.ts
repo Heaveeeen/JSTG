@@ -86,15 +86,7 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
                 this._hpBarGraphics.x = this.x;
                 this._hpBarGraphics.y = this.y;
                 this._hpBarGraphics.clear();
-                // 内描边
-                this._hpBarGraphics.circle(0, 0, radius - 1.5).stroke({
-                    width: 0.5, color: "hsla(0, 90%, 30%, 0.70)",
-                });
-                // 外描边
-                this._hpBarGraphics.circle(0, 0, radius + 1.5).stroke({
-                    width: 0.5, color: "hsla(0, 90%, 30%, 0.70)",
-                });
-                // 填充 TODO: 缓动
+                // 填充
                 // 车万原作中，玩家靠近血条时血条会淡化，但是弹幕引擎没有这个设定。我感觉不是很必要，这个设定有时候有点烦人，贴近 boss 想把它秒了有可能因此看不清它剩多少血。
                 const tp = this.hp / this.maxHp;
                 if (p < tp - 0.02) {
@@ -105,7 +97,21 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
                     p = tp;
                 }
                 this._hpBarGraphics.moveTo(0, -radius).arc(0, 0, radius, utils.deg(-90), utils.deg(-90 - 360 * p), true).stroke({
-                    width: 3, color: "hsla(0, 80%, 95%, 1.00)",
+                    width: 4.5, color: "hsla(0, 100%, 60%, 0.40)",
+                });
+                this._hpBarGraphics.moveTo(0, -radius).arc(0, 0, radius, utils.deg(-90), utils.deg(-90 - 360 * p), true).stroke({
+                    width: 3, color: "hsla(0, 80%, 80%, 0.70)",
+                });
+                this._hpBarGraphics.moveTo(0, -radius).arc(0, 0, radius, utils.deg(-90), utils.deg(-90 - 360 * p), true).stroke({
+                    width: 1.5, color: "hsla(0, 80%, 95%, 1.00)",
+                });
+                // 内描边
+                this._hpBarGraphics.circle(0, 0, radius - 1.5).stroke({
+                    width: 0.5, color: "hsla(0, 90%, 30%, 0.70)",
+                });
+                // 外描边
+                this._hpBarGraphics.circle(0, 0, radius + 1.5).stroke({
+                    width: 0.5, color: "hsla(0, 90%, 30%, 0.70)",
                 });
             }, { order: 10 });
         } else {

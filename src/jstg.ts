@@ -707,7 +707,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         },
         icu: {
             name: "Icu Kitasenotogi", hue1: 287, hue2: 290,
-            figure: prefabTextures.charFigure.unknown,
+            figure: prefabTextures.charFigure.unknown,// MAYDO: 这俩人的立绘
             avatar: prefabTextures.avatar.icu,
         },
         wriggle: {
@@ -715,6 +715,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             figure: prefabTextures.charFigure.unknown,
             avatar: prefabTextures.avatar.wriggle,
         },
+        // MAYDO: JSTGDummy
     } as const;
 
     const game = {
