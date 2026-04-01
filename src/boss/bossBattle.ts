@@ -62,7 +62,7 @@ export const baseMakeSingleBossBattleController = (manualBossBattleOptions: {
                     scale: 0.8,
                 });
                 stars.push(star);
-                // TODO: 使当前符卡对应的星星闪烁
+                // MAYDO: 使当前符卡对应的星星闪烁
             },
             popStar() {
                 const star = stars.pop();

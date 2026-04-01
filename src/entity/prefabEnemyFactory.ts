@@ -13,8 +13,8 @@ export const prefabEnemyFactory = (()=>{
         /** @default board.commonEnemyLayer */
         parent: pixi.Container | null,
         birthProtectDuration: number,
-        //scale: number, 
-        // TODO: hitboxRadius, isCanHurt, isTouchingDamage, isCanGraze, animRotation(?), hpBarType
+        //scale: number,
+        // TODO: hitboxRadius, isCanHurt, isTouchingDamage, isCanGraze, hpBarType
     }) => {
         const { game, combat, board, maxHp, color, x, y, rotation, birthProtectDuration } = options;
         const rootSprite = new pixi.Sprite({

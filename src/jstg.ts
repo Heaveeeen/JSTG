@@ -694,7 +694,28 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         };
     })();
 
-    // TODO: const prefabCharInfos = {
+    const prefabCharInfos = {
+        simple: {
+            name: "Simple", hue1: 208.8, hue2: 201,
+            figure: prefabTextures.charFigure.simple.spellcard,
+            avatar: prefabTextures.avatar.simple,
+        },
+        maple: {
+            name: "Maple Nightfall", hue1: 36, hue2: 48,
+            figure: prefabTextures.charFigure.maple.spellcard,
+            avatar: prefabTextures.avatar.maple,
+        },
+        icu: {
+            name: "Icu Kitasenotogi", hue1: 287, hue2: 290,
+            figure: prefabTextures.charFigure.unknown,
+            avatar: prefabTextures.avatar.icu,
+        },
+        wriggle: {
+            name: "Wriggle Nightbug", hue1: 162, hue2: 72,
+            figure: prefabTextures.charFigure.unknown,
+            avatar: prefabTextures.avatar.wriggle,
+        },
+    } as const;
 
     const game = {
         /** @readonly pixi.Application 实例 */
@@ -787,6 +808,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         /** TODOC: mainPauseController */
         mainPauseController,
 
+        /** 一些预置角色的信息，从弹幕引擎里抄来的。 */
+        prefabCharInfos,
         /** 弹幕引擎 ghost to 同款。 */
         alphaTo,
     };

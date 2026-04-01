@@ -264,12 +264,7 @@ import * as pixi from "pixi";
         }
         if (isDown("KeyM")) {
             coDo(function*() {
-                const boss = board.makeBoss({
-                    name: "Maple Nightfall",
-                    hue1: 16, hue2: 24,
-                    figure: game.prefabTextures.charFigure.maple.spellcard,
-                    avatar: game.prefabTextures.avatar.maple,
-                });
+                const boss = board.makeBoss(game.prefabCharInfos.maple);
                 yield* game.Sleep(30);
                 const battle = board.startSingleBossBattle({
                     boss,
