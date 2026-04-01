@@ -300,6 +300,9 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
                 yield;
             }
         }, { refs: liveLoop, order: 0 }).then(() => { board.coDo(function*() {
+            root.alpha = 1;
+            root.scale = 0.7;
+            root.y = targetY;
             yield* game.Sleep(60);
             let v = 0;
             while (root.alpha > 0) {
