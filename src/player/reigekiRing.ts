@@ -8,7 +8,7 @@ export const makeReigekiRing = (options: {
     /**
      * 弹幕引擎中，该半径为 100 ；  
      * 《风神录》中，灵梦的灵击圈半径换算过来约为 160 ，魔理沙则约为 120 。  
-     * @default 120
+     * @default 140
      */
     maxRadius: number | null,
     /**
@@ -30,7 +30,7 @@ export const makeReigekiRing = (options: {
     initSpeed: number | null,
 }) => {
     const { game, combat, board, x: x0, y: y0 } = options;
-    const maxRadius = options.maxRadius ?? 120;
+    const maxRadius = options.maxRadius ?? 140;
     const insideDamage = options.insideDps ?? 300 / 60;
     const outsideDamage = options.outsideDps ?? 600 / 60;
     let speed = options.initSpeed ?? 3;
