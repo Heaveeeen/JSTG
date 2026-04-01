@@ -1,7 +1,6 @@
 import * as pixi from "pixi";
 import { CommonEnemy } from "../entity/commonEnemy.js";
 import { Game, Combat, Board, Player } from "../jstg.js";
-import { alphaTo, clamp, makeElements } from "../utils.js";
 import { LooperFn, LoopOptions, CoDoGenFn } from "../looper.js";
 import * as utils from "../utils.js";
 
@@ -108,7 +107,7 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
             const x = spde_temp * 0.08 + spde_posX
             figure.x = (x + 70) * 4/3;
             figure.y = (spde_temp * 0.02 - 40) * -4/3;
-            figure.alpha = 1 - clamp(Math.abs(x - spde_posX) * 0.8 + 20, 0, 100) / 100;
+            figure.alpha = 1 - utils.clamp(Math.abs(x - spde_posX) * 0.8 + 20, 0, 100) / 100;
             yield;
         }
     }, { owns: figure, order: 0 }); }
@@ -140,7 +139,7 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
         // 保留两位小数后取出的整数
         timerText.style.fill = "#eeeeee";
         timerText.y += (timerTargetY - timerText.y) * 0.05 * game.timeScale;
-        alphaTo(timerText, 1, 0.05 * game.timeScale);
+        game.alphaTo(timerText, 1, 0.05);
         timerText.scale.x += (1 - timerText.scale.x) * 0.1 * game.timeScale;
         timerText.scale.y += (1 - timerText.scale.y) * 0.1 * game.timeScale;
         const { timeRemaining } = spellcard;
@@ -166,7 +165,7 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
         board.coDo(function*() { // 计时器
             for (let t = 0; t < 40; t += game.timeScale) { // 这里偷个懒复制粘贴
                 timerText.y += (timerTargetY - timerText.y) * 0.05 * game.timeScale;
-                alphaTo(timerText, 1, 0.05 * game.timeScale);
+                game.alphaTo(timerText, 1, 0.05);
                 timerText.scale.x += (1 - timerText.scale.x) * 0.1 * game.timeScale;
                 timerText.scale.y += (1 - timerText.scale.y) * 0.1 * game.timeScale;
                 yield;
@@ -175,7 +174,7 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
             while (timerText.alpha > 0) {
                 timerText.y += v * game.timeScale;
                 v -= 0.2 * game.timeScale;
-                alphaTo(timerText, 0, 0.05 * game.timeScale);
+                game.alphaTo(timerText, 0, 0.05);
                 yield;
             }
         }, { owns: timerText, order: 0 });
@@ -241,7 +240,7 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
                 let tf = t < 30 ? (t - 30) / 30 : t < 90 ? 0 : (t - 90) / 30;
                 tf *= tf ** 2;
                 resultPopup.y = popupBaseY - tf * 30;
-                resultPopup.alpha = clamp(1 - Math.abs(tf), 0, 1);
+                resultPopup.alpha = utils.clamp(1 - Math.abs(tf), 0, 1);
                 if (t > 90 && resultPopup.alpha <= 0) {
                     return loop.destroy();
                 }
@@ -286,7 +285,7 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
         });
         spellcard.coDo(function*() {
             for (let t = 0; t < 70; t += game.timeScale) {
-                alphaTo(root, 1, 0.015 * game.timeScale);
+                game.alphaTo(root, 1, 0.015);
                 root.scale = Math.sin(utils.deg(180 + root.alpha * 90)) * 1.6 + 2.3;
                 yield;
             }
@@ -306,7 +305,7 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
             while (root.alpha > 0) {
                 root.x += v;
                 v += 0.3 * game.timeScale;
-                alphaTo(root, 0, 0.05 * game.timeScale);
+                game.alphaTo(root, 0, 0.05);
                 yield;
             }
         }, { owns: root, order: 0 }); });

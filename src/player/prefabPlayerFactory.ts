@@ -1,12 +1,14 @@
 import * as pixi from "pixi";
 import { NewPlayerOptions, Player, PlayerBeHurtOptions, PlayerBombOptions, PlayerUpdateOptions } from "./player.js";
 import { Board, Combat, Destroyable, Game } from "../jstg.js";
-import { alphaTo, decibel, deg, rotateVec, Vec2 } from "../utils.js";
+import * as utils from "../utils.js";
 import { AbstractEnemy } from "../entity/abstractEnemy.js";
 import { AbstractDanmaku } from "../entity/abstractDanmaku.js";
 import { CommonEnemy } from "../entity/commonEnemy.js";
 
 export const prefabPlayerFactory = (()=>{
+
+    const { deg } = utils;
 
     const makeSimple = (options: {
         game: Game, combat: Combat, board: Board,
@@ -113,7 +115,7 @@ export const prefabPlayerFactory = (()=>{
                             // 新一轮命中判定。对于没命中但有特效的，移除其命中特效；对于命中但没特效的，创建其命中特效。
                             for (const enemy of board.enemyRegList.getAlives()) {
                                 if (enemy instanceof CommonEnemy) {
-                                    const { x: rx, y: ry } = rotateVec({ x: enemy.x - laser.sprite.x, y: enemy.y - laser.sprite.y }, laser.sprite.rotation);
+                                    const { x: rx, y: ry } = utils.rotateVec({ x: enemy.x - laser.sprite.x, y: enemy.y - laser.sprite.y }, laser.sprite.rotation);
                                     let eff = laser.hitEffects.get(enemy);
                                     const laserHurtRadius = enemy.hurtHitboxRadius + 2;
                                     const { isHit, hitDist } = (()=>{
@@ -163,7 +165,7 @@ export const prefabPlayerFactory = (()=>{
                 } else {
                     if (shootTimer >= 6) { // 跟踪粒子导弹
                         shootTimer = 0;
-                        game.prefabSounds.thse.plst00.play(decibel(-6));
+                        game.prefabSounds.thse.plst00.play(utils.decibel(-6));
                         for (const drone of drones) { // 发射诱导弹
                             const bullet = new pixi.Sprite({ 
                                 parent: board.playerBulletLayer,
@@ -198,7 +200,7 @@ export const prefabPlayerFactory = (()=>{
                                 const currentOmega = omega * game.timeScale;
                                 for (const enemy of board.enemyRegList.getAlives()) { // 攻击判定
                                     if (enemy instanceof CommonEnemy) {
-                                        const { x: rx, y: ry } = rotateVec({ x: enemy.x - bullet.x, y: enemy.y - bullet.y }, bullet.rotation);
+                                        const { x: rx, y: ry } = utils.rotateVec({ x: enemy.x - bullet.x, y: enemy.y - bullet.y }, bullet.rotation);
                                         if ((rx >= -enemy.hurtHitboxRadius) && (rx <= currentSpeed + enemy.hurtHitboxRadius) && (Math.abs(ry) <= 4 + enemy.hurtHitboxRadius)) {
                                             // 命中
                                             enemy.beHurt(5);
@@ -219,7 +221,7 @@ export const prefabPlayerFactory = (()=>{
                                                 board.forever(loop => {
                                                     hitEffect.scale.x -= 0.05 * game.timeScale;
                                                     hitEffect.scale.y -= 0.05 * game.timeScale;
-                                                    alphaTo(hitEffect, 0, 0.075 * game.timeScale);
+                                                    game.alphaTo(hitEffect, 0, 0.075);
                                                     if (hitEffect.alpha <= 0) {
                                                         hitEffect.destroy({ children: true });
                                                     }
@@ -277,7 +279,7 @@ export const prefabPlayerFactory = (()=>{
                                 } else {
                                     bullet.rotation += targetAngle;
                                 }
-                                alphaTo(bullet, 1, 0.05 * game.timeScale);
+                                game.alphaTo(bullet, 1, 0.05);
                                 trail.scale.x = Math.min(1, trail.scale.x + 0.1 * game.timeScale);
                                 omega -= deg(0.1) * game.timeScale;
                                 omega = Math.max(omega, 0);

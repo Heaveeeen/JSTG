@@ -1,7 +1,7 @@
 import * as pixi from "pixi";
 import { Input, KeyName } from "../input.js";
-import { Board, Combat, Game, utils } from "../jstg.js";
-import { alphaTo, deg, clamp, staticAssert } from "../utils.js";
+import { Board, Combat, Game } from "../jstg.js";
+import * as utils from "../utils.js";
 import { AbstractDanmaku } from "../entity/abstractDanmaku.js";
 import { DifferenceBlendFilter } from "../graphics/differenceBlendFilter.js";
 import { CoDoGenFn, LooperFn, LoopOptions } from "../looper.js";
@@ -142,7 +142,7 @@ export class Player {
     /** 当前残机数量 */
     get hpAmount() { return this._hpAmount; }
     set hpAmount(n: number) {
-        this._hpAmount = clamp(n, 0, this.maxHpAmount);
+        this._hpAmount = utils.clamp(n, 0, this.maxHpAmount);
     }
     /** 起始残机数量 */
     initHpAmount: number;
@@ -154,7 +154,7 @@ export class Player {
     /** 当前 Bomb 数量 */
     get bombAmount() { return this._bombAmount; }
     set bombAmount(n: number) {
-        this._bombAmount = clamp(n, 0, this.maxBombAmount);
+        this._bombAmount = utils.clamp(n, 0, this.maxBombAmount);
     }
     /** 起始 Bomb 数量 */
     initBombAmount: number;
@@ -301,6 +301,7 @@ export class Player {
     /** 移动自机，还有 isShooting */
     _updateInputAndMove(options: PlayerUpdateOptions) {
         const ts = this.game.timeScale;
+        const { deg, clamp } = utils;
         const keyMap = options.keyMap ?? {};
         const { isDown, isHold } = options.input ?? this.game.input;
         let dx = 0;
@@ -369,7 +370,7 @@ export class Player {
             if (this.state.invincibleTime > 30) {
                 this.invincibleRing.alpha = 1 - this.state.invincibleTime / 180;
             } else {
-                alphaTo(this.invincibleRing, 0, 0.025 * ts);
+                this.game.alphaTo(this.invincibleRing, 0, 0.025);
             }
 
             let avatarAlpha = 1;
@@ -378,15 +379,15 @@ export class Player {
             }
 
             if (this.isSlow) {
-                alphaTo(this.avatar, avatarAlpha / 2, 0.1 * ts);
-                alphaTo(this.hitboxPoint, 1, 0.1 * ts);
-                alphaTo(this.slowModeRing, 1, 0.1 * ts);
+                this.game.alphaTo(this.avatar, avatarAlpha / 2, 0.1);
+                this.game.alphaTo(this.hitboxPoint, 1, 0.1);
+                this.game.alphaTo(this.slowModeRing, 1, 0.1);
             } else {
-                alphaTo(this.avatar, avatarAlpha, 0.1 * ts);
-                alphaTo(this.hitboxPoint, 0, 0.1 * ts);
-                alphaTo(this.slowModeRing, 0, 0.1 * ts);
+                this.game.alphaTo(this.avatar, avatarAlpha, 0.1);
+                this.game.alphaTo(this.hitboxPoint, 0, 0.1);
+                this.game.alphaTo(this.slowModeRing, 0, 0.1);
             }
-            alphaTo(this, 1, 0.1 * ts);
+            this.game.alphaTo(this, 1, 0.1);
 
             this.hitboxPoint.scale = this.hitboxRadius * 0.072 + 0.16;
 
@@ -399,7 +400,7 @@ export class Player {
         }
         while (this.state.type === "dying") { // 决死期间
             const ts = this.game.timeScale;
-            alphaTo(this, 0, 0.1 * ts)
+            this.game.alphaTo(this, 0, 0.1)
             if (this.state.timeSinceDying >= this.dyingBombTime) {
                 this.state = { type: "miss" }; // 似了
             } else {
@@ -466,7 +467,7 @@ export class Player {
                 } else if (this.missGainBombType === "increaseByInitAmount") {
                     this.bombAmount = Math.max(this.bombAmount, this.initBombAmount);
                 } else {
-                    staticAssert<"none">(this.missGainBombType)
+                    utils.staticAssert<"none">(this.missGainBombType)
                 }
                 while (this.y > 185) {
                     this.y -= 2 * this.game.timeScale;

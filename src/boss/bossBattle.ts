@@ -47,6 +47,8 @@ export class Boss extends Entity {
     set visible(v: boolean) { this.sprite.visible = v; }
     get zIndex() { return this.sprite.zIndex; }
     set zIndex(v: number) { this.sprite.zIndex = v; }
+    get alpha() { return this.sprite.alpha }
+    set alpha(n: number) { this.sprite.alpha = n; }
 
     makeSpellcardShield(options: {
         maxHp: number, birthProtectDuration: number,

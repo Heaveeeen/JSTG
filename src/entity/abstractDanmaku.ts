@@ -2,7 +2,7 @@ import * as pixi from "pixi";
 import { Game, Board, Player, Combat } from "../jstg.js";
 import { DyedTextureColors, DyedTextures } from "../textures.js";
 import { AbstractEnemy } from "./abstractEnemy.js";
-import { staticAssert } from "../utils.js";
+import * as utils from "../utils.js";
 import { Entity } from "./entity.js";
 
 
@@ -114,7 +114,7 @@ export abstract class AbstractDanmaku extends Entity {
             // ASSERTS: this.enemy !== null
             return true;
         } else {
-            staticAssert<"common">(permissionType);
+            utils.staticAssert<"common">(permissionType);
             return this.canBeErase;
         }
     }

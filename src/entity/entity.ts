@@ -23,7 +23,13 @@ export abstract class Entity {
     abstract rotation: number;
     abstract visible: boolean;
     abstract zIndex: number;
+    abstract alpha: number;
     speed = 0;
+
+    /** 弹幕引擎 ghost to 同款 */
+    alphaTo(dst: number, speed: number) {
+        this.game.alphaTo(this, dst, speed);
+    }
 
     /** 向着 this.rotation 的方向前进 dist 步，若 dist 留空则为 this.speed * game.timeScale */
     step(/** @default this.speed * game.timeScale */ dist: number = this.speed * this.game.timeScale) {

@@ -1,7 +1,7 @@
 import * as pixi from "pixi";
 import { AbstractDanmaku, EraseDanmakuOptions, NewAbstractDanmakuOptions, prefabDanmakuHitboxRadius } from "./abstractDanmaku.js";
 import { Game, Board, Player, Combat } from "../jstg.js";
-import { alphaTo, cast, decibel, getPointToSegmentDist2, rotateVec, staticAssert } from "../utils.js";
+import * as utils from "../utils.js";
 import { DyedTextures, PrefabDanmakuNames, DyedTextureColors, makeCommonOrAnimatedSprite } from "../textures.js";
 
 
@@ -93,6 +93,8 @@ export class LaserBeam extends AbstractDanmaku {
         if (this.startPoint) { this.startPoint.sprite.zIndex = v; }
         if (this.endPoint) { this.endPoint.sprite.zIndex = v; }
     }
+    get alpha() { return this.mainSprite.alpha }
+    set alpha(n: number) { this.mainSprite.alpha = n; }
 
     updateLaserPoints() {
         for (const point of [this.startPoint, this.endPoint]) {
@@ -141,7 +143,7 @@ export class LaserBeam extends AbstractDanmaku {
         this.updateDebugHitbox(player);
         this.isGrazing = false;
 
-        const { x: rx, y: ry } = rotateVec({ x: player.x - this.x, y: player.y - this.y }, this.rotation);
+        const { x: rx, y: ry } = utils.rotateVec({ x: player.x - this.x, y: player.y - this.y }, this.rotation);
         
         const radius = this.hitboxHalfWidth + player.hitboxRadius;
         const isHit = (rx >= 0) && (rx <= this.hitboxLength) && (Math.abs(ry) <= radius);
@@ -153,7 +155,7 @@ export class LaserBeam extends AbstractDanmaku {
             player.beHurt({ danmaku: this });
         } else if (this.isGrazing) {
             // 擦弹
-            this.game.prefabSounds.thse.graze.play(decibel(-3));
+            this.game.prefabSounds.thse.graze.play(utils.decibel(-3));
             this.grazeCd = 4;
         }
 
@@ -186,9 +188,9 @@ export class LaserBeam extends AbstractDanmaku {
             }
         }
         options.effectType ??= "reduce";
-        if (options.effectType !== "none" && this.isInBoundary() && this.visible && this.mainSprite.alpha > 0) {
+        if (options.effectType !== "none" && this.isInBoundary() && this.visible && this.alpha > 0) {
             // 如果能看见，则生成消弹特效，之后再删除
-            staticAssert<"reduce" | "fog">(options.effectType); // MAYDO: 激光的雾化消弹效果
+            utils.staticAssert<"reduce" | "fog">(options.effectType); // MAYDO: 激光的雾化消弹效果
             this.game.coDo(this._EraseEffectBehaviorGhost.bind(this));
         } else {
             // 如果看不见，直接删除
@@ -214,7 +216,7 @@ export class LaserBeam extends AbstractDanmaku {
         this.destroy();
         const anim = (spr: pixi.Sprite) => {
             spr.scale.y -= 0.05 * this.game.timeScale;
-            alphaTo(spr, 0, 0.05 * this.game.timeScale);
+            this.game.alphaTo(spr, 0, 0.05);
         }
         while (eraseMain.alpha > 0) {
             anim(eraseMain);
@@ -242,7 +244,7 @@ export class LaserBeam extends AbstractDanmaku {
     }
 
     getIsCrossCircle(circle: { x: number; y: number; radius: number; }) {
-        const { x: rx, y: ry } = rotateVec({ x: circle.x - this.x, y: circle.y - this.y }, this.rotation);
+        const { x: rx, y: ry } = utils.rotateVec({ x: circle.x - this.x, y: circle.y - this.y }, this.rotation);
         const radius = this.hitboxHalfWidth + circle.radius;
         return (rx >= 0) && (rx <= this.hitboxLength) && (Math.abs(ry) <= radius);
     }

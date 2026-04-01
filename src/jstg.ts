@@ -125,6 +125,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         }
     }
 
+    const alphaTo: typeof utils.alphaTo = (spr, dst, speed) => utils.alphaTo(spr, dst, speed * timeScale);
+
     const input = makeInput();
     if (gameOptions.autoUpdateInput ?? true) { forever(() => input._update(), { order: 0, pauseController: "none" }); }
 
@@ -741,6 +743,9 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         },
         /** TODOC: mainPauseController */
         mainPauseController,
+
+        /** 弹幕引擎 ghost to 同款。 */
+        alphaTo,
     };
 
     //#endregion game

@@ -1,7 +1,7 @@
 import * as pixi from "pixi";
 import { Board, Combat, Game } from "../jstg.js";
 import { Player } from "../player/player.js";
-import { alphaTo, decibel, getPointToSegmentDist2, select, SelectItem, staticAssert, Vec2 } from "../utils.js";
+import * as utils from "../utils.js";
 import { DyedTextureColors, DyedTextures, makeCommonOrAnimatedSprite, PrefabDanmakuNames } from "../textures.js";
 import { AbstractDanmaku, EraseDanmakuOptions as EraseDanmakuOptions, NewAbstractDanmakuOptions, prefabDanmakuHitboxRadius } from "./abstractDanmaku.js";
 
@@ -79,7 +79,7 @@ export class CommonDanmaku extends AbstractDanmaku {
             Math.abs(player.x - this.x) <= this.hitboxRadius + 40 &&
             Math.abs(player.y - this.y) <= this.hitboxRadius + 40
         ) {
-            let dist = getPointToSegmentDist2(
+            let dist = utils.getPointToSegmentDist2(
                 { // D'D - P'P
                     x: (this.x - this._lastX) - (player.x - player._lastX),
                     y: (this.y - this._lastY) - (player.y - player._lastY)
@@ -98,7 +98,7 @@ export class CommonDanmaku extends AbstractDanmaku {
             player.beHurt({ danmaku: this });
         } else if (this.isGrazing) {
             // 擦弹
-            this.game.prefabSounds.thse.graze.play(decibel(-3));
+            this.game.prefabSounds.thse.graze.play(utils.decibel(-3));
             this.grazeCd = 200;
         }
 
@@ -125,13 +125,15 @@ export class CommonDanmaku extends AbstractDanmaku {
     set visible(v: boolean) { this.sprite.visible = v; }
     get zIndex() { return this.sprite.zIndex; }
     set zIndex(v: number) { this.sprite.zIndex = v; }
+    get alpha() { return this.sprite.alpha }
+    set alpha(n: number) { this.sprite.alpha = n; }
 
     erase(options: EraseDanmakuOptions = {}) {
         if (!this._getIsCanBeEraseByPermissionType(options.permissionType ?? "common")) { return };
         this._erased = true;
         this.enemy?.destroy();
         options.forEachCorpse?.({ x: this.x, y: this.y });
-        if (options.effectType !== "none" &&this.isInBoundary() && this.visible && this.sprite.alpha > 0) {
+        if (options.effectType !== "none" &&this.isInBoundary() && this.visible && this.alpha > 0) {
             // 如果能看见，则生成消弹特效，之后再删除
             const eraseEffectType: "fog" | "reduce" = options.effectType ?? (this.type === "bubble" || this.type === "nuclear" ? "reduce" : "fog");
             if (eraseEffectType === "fog") {
@@ -163,7 +165,7 @@ export class CommonDanmaku extends AbstractDanmaku {
         while (eraseEffectSprite.alpha > 0) {
             eraseEffectSprite.scale.x += 0.1 * this.game.timeScale;
             eraseEffectSprite.scale.y += 0.1 * this.game.timeScale;
-            alphaTo(eraseEffectSprite, 0, 0.05 * this.game.timeScale);
+            this.game.alphaTo(eraseEffectSprite, 0, 0.05);
             yield;
         }
         eraseEffectSprite.destroy({ children: true });
@@ -185,7 +187,7 @@ export class CommonDanmaku extends AbstractDanmaku {
         while (eraseEffectSprite.alpha > 0) {
             eraseEffectSprite.scale.x -= 0.05 * this.game.timeScale;
             eraseEffectSprite.scale.y -= 0.05 * this.game.timeScale;
-            alphaTo(eraseEffectSprite, 0, 0.05 * this.game.timeScale);
+            this.game.alphaTo(eraseEffectSprite, 0, 0.05);
             yield;
         }
         eraseEffectSprite.destroy({ children: true });

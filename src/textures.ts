@@ -1,5 +1,5 @@
 import * as pixi from "pixi";
-import { cast, select } from "./utils.js";
+import * as utils from "./utils.js";
 import { Board, Combat, Game } from "./jstg.js";
 
 /** @async 加载一个素材（如图像）。加载 svg 时请使用 {@linkcode LoadSvg} */
@@ -282,7 +282,7 @@ export function makeCommonOrAnimatedSprite(options: {
             value: frame.texture
         }));
         board.forever(loop => {
-            sprite.texture = select((1000 * t / game.standardFps) % loopLength, selectTextures);
+            sprite.texture = utils.select((1000 * t / game.standardFps) % loopLength, selectTextures);
             t += game.timeScale;
         }, { refs: sprite });
     }

@@ -50,12 +50,12 @@ export const makeReigekiRing = (options: {
         let tf: number;
         if (t < 30) {
             tf = t / 30;
-            utils.alphaTo(ring, 1, 0.05 * game.timeScale);
+            game.alphaTo(ring, 1, 0.05);
         } else if (t < 120) {
             tf = 1;
         } else if (t <= 180) {
             tf = 1 - (t - 120) / 60;
-            utils.alphaTo(ring, 0, 0.01 * game.timeScale);
+            game.alphaTo(ring, 0, 0.01);
         } else {
             return loop.destroy();
         }
