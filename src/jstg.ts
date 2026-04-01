@@ -1,5 +1,5 @@
 import * as pixi from "pixi";
-import { DyedTextures, LoadPixiAsset, LoadPrefabTextures, LoadPrefabTexturesOptions, LoadSvg, PrefabDanmakuNames, DyedTextureColors, makeDyedTextures, makeDyedFrames } from "./textures.js";
+import { LoadPixiAsset, LoadPrefabTextures, LoadPrefabTexturesOptions, LoadSvg, PrefabDanmakuNames, DyedTextureColors, makeDyedTextures, makeDyedFrames } from "./textures.js";
 import { KeyName, KeyEnum, makeInput } from "./input.js";
 import { prefabPlayerFactory } from "./player/prefabPlayerFactory.js";
 import { makeRng } from "./random.js";
@@ -13,8 +13,9 @@ import { Player } from "./player/player.js";
 import { CoDoGenFn, LoopController, LooperFn, LoopOptions, makeLooper, makePauseController } from "./looper.js";
 import { AbstractEnemy } from "./entity/abstractEnemy.js";
 import { prefabEnemyFactory } from "./entity/prefabEnemyFactory.js";
-import { Spellcard, baseStartSpellcard } from "./boss/spellcard.js";
-import { baseMakeBoss, baseStartSingleBossBattle, Boss, SingleBossSpellOptions } from "./boss/bossBattle.js";
+import { Spellcard } from "./boss/spellcard.js";
+import { baseStartSingleBossBattle, SingleBossSpellOptions } from "./boss/bossBattle.js";
+import { baseMakeBoss, Boss } from "./boss/boss.js";
 
 
 
