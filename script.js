@@ -6,9 +6,6 @@
 
 import * as jstg from "./dist/jstg.js";
 import * as pixi from "pixi";
-import { decibel, deg } from "./dist/utils.js";
-import { prefabEnemyFactory } from "./dist/entity/prefabEnemyFactory.js";
-import { Boss, baseStartSingleBossBattle } from "./dist/boss/bossBattle.js";
 
 
 
@@ -18,7 +15,7 @@ import { Boss, baseStartSingleBossBattle } from "./dist/boss/bossBattle.js";
     const { prefabDanmakuHitboxRadius } = jstg;
     const { input, app, debug } = game;
     const { isDown, isUp, isHold, isIdle } = input;
-    const { asAny, UntilDestroy } = jstg.utils;
+    const { asAny, UntilDestroy, decibel, deg } = jstg.utils;
 
     const combat = await game.StartCombat()
     const { board } = combat;
@@ -267,46 +264,48 @@ import { Boss, baseStartSingleBossBattle } from "./dist/boss/bossBattle.js";
         }
         if (isDown("KeyM")) {
             coDo(function*() {
-                const boss = new Boss({ game, combat, board, hue1: 16, hue2: 24, sprite: new pixi.Sprite({
-                    parent: board.bossLayer,
-                    anchor: 0.5,
-                    texture: game.prefabTextures.avatar.maple,
-                    x: 0, y: -100,
-                    scale: 1.1,
-                }), defaultSpellcardFigure: game.prefabTextures.charFigure.maple.spellcard });
+                const boss = board.makeBoss({
+                    name: "Maple Nightfall",
+                    hue1: 16, hue2: 24,
+                    figure: game.prefabTextures.charFigure.maple.spellcard,
+                    avatar: game.prefabTextures.avatar.maple,
+                });
                 yield* game.Sleep(30);
-                const battle = baseStartSingleBossBattle({ game, combat, board, ownBoss: boss, name: "Maple Nightfall", spells: [{
-                    time: 30 * 60, hp: 300,
-                }, {
-                    time: 80 * 60, hp: 4000, title: "你好「波粒海苔」",
-                    *gen({ spellcard, shield }) {
-                        spellcard.forever(loop => {
-                            boss.glideTo({
-                                x: 40 * Math.cos(game.clock * 0.01),
-                                y: 20 * Math.sin(game.clock * 0.01) - 80,
+                const battle = board.startSingleBossBattle({
+                    boss,
+                    spells: [{
+                        time: 30 * 60, hp: 300,
+                    }, {
+                        time: 80 * 60, hp: 4000, title: "你好「波粒海苔」",
+                        *gen({ spellcard, shield }) {
+                            spellcard.forever(loop => {
+                                boss.glideTo({
+                                    x: 40 * Math.cos(game.clock * 0.01),
+                                    y: 20 * Math.sin(game.clock * 0.01) - 80,
+                                });
                             });
-                        });
-                        let omega = 0;
-                        let d = deg(-60);
-                        while (true) {
-                            game.prefabSounds.thse.tan00.play(decibel(-9));
-                            for (let i = 0; i < 5; i++) {
-                                const dan = makeDanmaku({
-                                    type: "crystal", color: "h30",
-                                    x: boss.x, y: boss.y,
-                                    rotation: d + deg(i / 5 * 360),
-                                });
-                                dan.forever(loop => {
-                                    dan.step(2.5);
-                                    dan.boundaryDelete();
-                                });
+                            let omega = 0;
+                            let d = deg(-60);
+                            while (true) {
+                                game.prefabSounds.thse.tan00.play(decibel(-9));
+                                for (let i = 0; i < 5; i++) {
+                                    const dan = makeDanmaku({
+                                        type: "crystal", color: "h30",
+                                        x: boss.x, y: boss.y,
+                                        rotation: d + deg(i / 5 * 360),
+                                    });
+                                    dan.forever(loop => {
+                                        dan.step(2.5);
+                                        dan.boundaryDelete();
+                                    });
+                                }
+                                d += omega;
+                                omega += deg(0.09);
+                                yield* game.Sleep(2);
                             }
-                            d += omega;
-                            omega += deg(0.09);
-                            yield* game.Sleep(2);
-                        }
-                    },
-                }, { hp: 50 }, { title: "aaaaaaaa", hp: 50, time: 15 * 60 }, { title: "bbbbbbbb", hp: 50, time: 15 * 60 }] });
+                        },
+                    }, { hp: 50 }, { title: "aaaaaaaa", hp: 50, time: 15 * 60 }, { title: "bbbbbbbb", hp: 50, time: 15 * 60}],
+                });
             });
         }
     }, { order: 0 });

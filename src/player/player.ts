@@ -452,7 +452,7 @@ export class Player {
                     });
                 }
                 yield* this.game.Sleep(40);
-                this.board.foo_clearScreen({ x: this.x, y: this.y });
+                this.board.clearBoard({ x: this.x, y: this.y });
                 yield* this.game.Sleep(20);
                 // 重生动画
                 this.alpha = 1;

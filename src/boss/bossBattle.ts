@@ -10,23 +10,26 @@ import { LooperFn, LoopOptions, CoDoGenFn, CoDoGenerator, LoopController } from 
 
 export interface MakeBossOptions {
     game: Game, combat: Combat, board: Board,
+    name: string,
     sprite: pixi.Sprite,
     hue1: number, hue2: number,
-    defaultSpellcardFigure: pixi.Texture | null,
+    defaultSpellcardFigure: pixi.Texture | "useTheUnknownFigure",
 }
 
 export class Boss extends Entity {
+    name: string;
     sprite: pixi.Sprite;
     hue1: number;
     hue1Filter: pixi.ColorMatrixFilter;
     hue2: number;
     hue2Filter: pixi.ColorMatrixFilter;
-    defaultSpellcardFigure: pixi.Texture | null;
+    defaultSpellcardFigure: pixi.Texture | "useTheUnknownFigure";
     /** @internal */
     private _shield: CommonEnemy | null = null;
     
     constructor(options: MakeBossOptions) {
         super(options);
+        this.name = options.name;
         this.sprite = options.sprite;
         this.hue1 = options.hue1;
         this.hue1Filter = new pixi.ColorMatrixFilter({ resolution: "inherit" });
@@ -82,6 +85,28 @@ export class Boss extends Entity {
 
     get destroyed() { return this.sprite.destroyed; }
 };
+
+export const baseMakeBoss = (options: {
+    game: Game, combat: Combat, board: Board,
+    name: string,
+    x: number, y: number,
+    hue1: number, hue2: number,
+    defaultSpellcardFigure: pixi.Texture | "useTheUnknownFigure",
+    avatar: pixi.Texture | "useTheUnknownAvatar",
+}) => {
+    const { game, combat, board, name, x, y, hue1, hue2, defaultSpellcardFigure, avatar } = options;
+    const sprite = new pixi.Sprite({
+        parent: board.bossLayer,
+        anchor: 0.5,
+        texture: avatar === "useTheUnknownAvatar" ? game.prefabTextures.avatar.unknown : avatar,
+        x, y, scale: 1.1,
+    });
+    return new Boss({
+        game, combat, board,
+        name, hue1, hue2, defaultSpellcardFigure,
+        sprite,
+    })
+}
 
 
 
@@ -184,7 +209,7 @@ export const baseMakeSingleBossBattleController = (manualBossBattleOptions: {
         const birthProtectDuration = options.birthProtectDuration ?? 250;
         const opt = isShowFigureAndTitle ? {
             isPlayStartSound: true,
-            figure: figure ?? refBoss.defaultSpellcardFigure ?? "useTheUnknownFigure",
+            figure: figure ?? refBoss.defaultSpellcardFigure,
         } as const : {
             isPlayStartSound: false,
             figure: "noFigure",
@@ -224,7 +249,7 @@ export const baseMakeSingleBossBattleController = (manualBossBattleOptions: {
         const { time, title, figure, isShowFigureAndTitle } = options;
         const opt = isShowFigureAndTitle ? {
             isPlayStartSound: true,
-            figure: figure ?? refBoss.defaultSpellcardFigure ?? "useTheUnknownFigure",
+            figure: figure ?? refBoss.defaultSpellcardFigure,
         } as const : {
             isPlayStartSound: false,
             figure: "noFigure",
@@ -303,35 +328,28 @@ interface CommonSpellOptions extends BaseSpellOptions {
     hp?: number,
     /** @default 250 */
     birthProtectDuration?: number,
-    fn?: ({ spellcard, shield }: { spellcard: Spellcard, shield: CommonEnemy }) => void,
-    gen?: ({ spellcard, shield }: { spellcard: Spellcard, shield: CommonEnemy }, loop: LoopController<unknown>) => CoDoGenerator<unknown>,
+    fn?: ({ boss, spellcard, shield }: { boss: Boss, spellcard: Spellcard, shield: CommonEnemy }) => void,
+    gen?: ({ boss, spellcard, shield }: { boss: Boss, spellcard: Spellcard, shield: CommonEnemy }, loop: LoopController<unknown>) => CoDoGenerator<unknown>,
 }
 
 interface SurvivalSpellOptions extends BaseSpellOptions {
     isSurvival: true,
-    fn?: ({ spellcard }: { spellcard: Spellcard }) => void,
-    gen?: ({ spellcard }: { spellcard: Spellcard }, loop: LoopController<unknown>) => CoDoGenerator<unknown>,
+    fn?: ({ boss, spellcard }: { boss: Boss, spellcard: Spellcard }) => void,
+    gen?: ({ boss, spellcard }: { boss: Boss, spellcard: Spellcard }, loop: LoopController<unknown>) => CoDoGenerator<unknown>,
 }
 
-type SpellOptions = CommonSpellOptions | SurvivalSpellOptions;
+export type SingleBossSpellOptions = CommonSpellOptions | SurvivalSpellOptions;
 //#endregion
 
 export const baseStartSingleBossBattle = (bossBattleOptions: {
     game: Game, combat: Combat, board: Board,
     ownBoss: Boss, name: string,
-    /** @default null */
-    spells?: SpellOptions[],
-    /**
-     * 一般来说，不用管这个东西。  
-     * 这个函数可以让你指定非符标题的格式。默认的格式形如“非符1”，“非符3”。  
-     * @example
-     * num => `第 ${num} 张非符`
-     */
-    getNonSpellTitle?: (num: number) => string,
+    spells: SingleBossSpellOptions[],
+    getNonSpellTitle: ((num: number) => string) | null,
 }) => {
     const { game, combat, board, ownBoss, name, } = bossBattleOptions;
-    const getNonSpellTitle = bossBattleOptions.getNonSpellTitle ?? ((num: number) => `非符${num}`);
-    const spellInfos = bossBattleOptions.spells ?? [];
+    const getNonSpellTitle = bossBattleOptions.getNonSpellTitle ?? (num => `非符${num}`);
+    const spellInfos = bossBattleOptions.spells;
     const battle = baseMakeSingleBossBattleController({
         game, combat, board, refBoss: ownBoss, name
     });
@@ -357,8 +375,8 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
                 })
                 yield* spellController.startupLoop;
                 const { fn, gen } = info;
-                fn?.(spellController);
-                if (gen !== undefined) { spellController.spellcard.coDo(loop => gen(spellController, loop)); }
+                fn?.({ ...spellController, boss: ownBoss });
+                if (gen !== undefined) { spellController.spellcard.coDo(loop => gen({ ...spellController, boss: ownBoss }, loop)); }
                 yield* spellController.spellcard.mainLoop;
             } else {
                 const spellController = battle.startCommonSpellcard({
@@ -368,12 +386,12 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
                 })
                 yield* spellController.startupLoop;
                 const { fn, gen } = info;
-                fn?.(spellController);
-                if (gen !== undefined) { spellController.spellcard.coDo(loop => gen(spellController, loop)); }
+                fn?.({ ...spellController, boss: ownBoss });
+                if (gen !== undefined) { spellController.spellcard.coDo(loop => gen({ ...spellController, boss: ownBoss }, loop)); }
                 yield* spellController.spellcard.mainLoop;
             }
             battle.scCounterBar.popStar();
-            const nextInfo = spellInfos[i + 1] as SpellOptions | undefined;
+            const nextInfo = spellInfos[i + 1] as SingleBossSpellOptions | undefined;
             if (nextInfo && typeof info.title === "string" && typeof nextInfo.title === "string") {
                 yield* game.Sleep(60);
             }

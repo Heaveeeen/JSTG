@@ -14,6 +14,7 @@ import { CoDoGenFn, LoopController, LooperFn, LoopOptions, makeLooper, makePause
 import { AbstractEnemy } from "./entity/abstractEnemy.js";
 import { prefabEnemyFactory } from "./entity/prefabEnemyFactory.js";
 import { Spellcard, baseStartSpellcard } from "./boss/spellcard.js";
+import { baseMakeBoss, baseStartSingleBossBattle, Boss, SingleBossSpellOptions } from "./boss/bossBattle.js";
 
 
 
@@ -228,6 +229,45 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             })();
             //#endregion enemyRegList
 
+            const makeBoss = (options?: {
+                /** @default "JSTG Boss" */name?: string,
+                /** @default 0 */x?: number,
+                /** @default -100 */y?: number,
+                /** @default 0 */hue1?: number,
+                /** @default 0 */hue2?: number,
+                /** @default "useTheUnknownFigure" */figure?: pixi.Texture | "useTheUnknownFigure",
+                /** @default "useTheUnknownAvatar" */avatar?: pixi.Texture | "useTheUnknownAvatar",
+            }) => baseMakeBoss({
+                game, combat, board,
+                name: options?.name ?? "JSTG Boss",
+                x: options?.x ?? 0,
+                y: options?.y ?? -100,
+                hue1: options?.hue1 ?? 0,
+                hue2: options?.hue2 ?? 0,
+                defaultSpellcardFigure: options?.figure ?? "useTheUnknownFigure",
+                avatar: options?.avatar ?? "useTheUnknownAvatar",
+            });
+
+            const startSingleBossBattle = (options: {
+                /** @default boss.name */
+                name?: string,
+                spells: SingleBossSpellOptions[],
+                boss: Boss,
+                /**
+                 * 一般来说，不用管这个东西。  
+                 * 这个函数可以让你指定非符标题的格式。  
+                 * @default
+                 * num => `非符${num}`
+                 */
+                getNonSpellTitle?: ((num: number) => string),
+            }) => baseStartSingleBossBattle({
+                game, combat, board,
+                name: options.name ?? options.boss.name,
+                spells: options.spells,
+                ownBoss: options.boss,
+                getNonSpellTitle: options.getNonSpellTitle ?? null,
+            });
+
             const _playerRegList = makeRegList<Player>({ game });
             const _spellcardRegList = makeRegList<Spellcard>({ game });
 
@@ -291,8 +331,12 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 makeDanmaku: null as unknown as typeof makeDanmaku, // MAGIC:
                 /** TODOC: makeLaserBeam */
                 makeLaserBeam: null as unknown as typeof makeLaserBeam, // MAGIC:
-                /** TODOC: */
-                foo_clearScreen,
+                /** TODOC: makeBoss */
+                makeBoss,
+                /** TODOC: startSingleBossBattle */
+                startSingleBossBattle,
+                /** TODOC: clearBoard */
+                clearBoard,
                 destroy() {
                     if (this.destroyed) { return; }
                     boardRoot.destroy({ children: true });
@@ -465,7 +509,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             }
             board.makeLaserBeam = makeLaserBeam;
 
-            function foo_clearScreen({ x, y }: utils.Vec2) { board.coDo(function*() {
+            function clearBoard({ x, y }: utils.Vec2) { board.coDo(function*() {
                 for (let t = 0; t < 60; t += game.timeScale) {
                     const radius = t * 10;
                     board.danmakuRegList.eraseByRadius({ x, y, radius });
@@ -636,6 +680,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         };
     })();
 
+    // TODO: const prefabCharInfos = {
+
     const game = {
         /** @readonly pixi.Application 实例 */
         app,
@@ -647,7 +693,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         StartCombat,
         /** fps 指示器 */
         fpsMonitor,
-        /** @readonly 游戏的标准帧率 */
+        /** @readonly 游戏的标准帧率，默认为 60 。 */
         standardFps,
         /**
          * @readonly
@@ -730,17 +776,13 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
          * 会考虑 timeScale，并且尽可能根据 timeScale 向下取整。（取整机制与弹幕引擎略有不同，我感觉我写的这个应该稍微好点）  
          * ⚠️此计时器不受 mainPauseController 影响，在 mainPauseController 暂停期间依然会运作。  
          */
-        get noPauseClock() {
-            return fpsCounterLoop.clock;
-        },
+        get noPauseClock() { return fpsCounterLoop.clock; },
         /**
          * 从游戏启动后总共运行了多少帧。第一帧为0。  
          * 会考虑 timeScale，并且尽可能根据 timeScale 向下取整。（取整机制与弹幕引擎略有不同，我感觉我写的这个应该稍微好点）  
          * ⚠️此计时器受 mainPauseController 影响，在 mainPauseController 暂停期间不会运作。  
          */
-        get clock() {
-            return mainClockLoop.clock;
-        },
+        get clock() { return mainClockLoop.clock; },
         /** TODOC: mainPauseController */
         mainPauseController,
 
