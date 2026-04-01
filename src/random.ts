@@ -26,7 +26,7 @@ export function makeRng(
          * rng.float(0, 4) // 可能是：0.3547, 3.5813, 1.2, ...
          */
         float,
-        /** 
+        /**
          * 返回一个 [from, to) 范围内的随机整数
          * @example
          * rng.int(2, 8) // 可能是：7, 2, 4, 5, ... 不可能是 8

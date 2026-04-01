@@ -107,8 +107,6 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
     //#region game
 
-    const rand = makeRng();
-
     let timeScale: number = 1;
 
     const mainPauseController = makePauseController();
@@ -593,11 +591,26 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         })();
         //#endregion
 
+        const rand = makeRng();
+
         const combat = {
             /** @readonly  游戏内 UI ，版面上盖着的那一层 UI ，包括血条啥的以及那个像窗口框架的东西 */
             boardFrameUi,
             /** @readonly 版面，就是自机和弹幕所处的那个主要场地 */
             board,
+            /**
+             * 一个随机数发生器，你可以用它来生成随机数。
+             * @example
+             * game.rand.int(0, 10); // 生成一个 [0, 10) 之间的随机整数
+             * game.rand.float(5, 8); // 生成一个 [5, 8) 之间的随机浮点数
+             * game.rand.maybe(0.3); // 有 30% 的概率返回 true
+             * game.rand.select(
+             *     [1, "smallball"],
+             *     [3, "ringball"],
+             *     [6, "glowball"],
+             * ); // 根据权重，随机返回一个弹幕类型
+             */
+            rand,
             destroy() {
                 if (this.destroyed) { return; }
                 boardFrameUi.destroy();
@@ -757,19 +770,6 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         prefabTextures,
         /** JSTG 预置的一些音效，部分音效解包自东方原作 */
         prefabSounds,
-        /**
-         * 一个随机数发生器，你可以用它来生成随机数。
-         * @example
-         * game.rand.int(0, 10); // 生成一个 [0, 10) 之间的随机整数
-         * game.rand.float(5, 8); // 生成一个 [5, 8) 之间的随机浮点数
-         * game.rand.maybe(0.3); // 有 30% 的概率返回 true
-         * game.rand.select(
-         *     [1, "smallball"],
-         *     [3, "ringball"],
-         *     [6, "glowball"],
-         * ); // 根据权重，随机返回一个弹幕类型
-         */
-        rand,
         /** 调试模式工具，如上帝模式 */
         debug,
         /**
@@ -783,7 +783,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
          * 会考虑 timeScale，并且尽可能根据 timeScale 向下取整。（取整机制与弹幕引擎略有不同，我感觉我写的这个应该稍微好点）  
          * ⚠️此计时器受 mainPauseController 影响，在 mainPauseController 暂停期间不会运作。  
          */
-        get clock() { return mainClockLoop.clock; },
+        get clock() { return mainClockLoop.clock; }, // 每个 looper 都有自己的时钟，因为它们会暂停，不一定是同步的。
         /** TODOC: mainPauseController */
         mainPauseController,
 
