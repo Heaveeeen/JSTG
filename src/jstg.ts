@@ -236,6 +236,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 shieldFilters?: pixi.Filter | pixi.Filter[],
                 /** @default "useTheUnknownFigure" */figure?: pixi.Texture | "useTheUnknownFigure",
                 /** @default "useTheUnknownAvatar" */avatar?: pixi.Texture | "useTheUnknownAvatar",
+                /** @default 0 */hpBarHue?: number,
             } = {}) => baseMakeBoss({
                 game, combat, board,
                 name: options.name ?? "JSTG Boss",
@@ -244,6 +245,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 shieldFilters: utils.makeElements(options.shieldFilters),
                 defaultSpellcardFigure: options.figure ?? "useTheUnknownFigure",
                 avatar: options.avatar ?? "useTheUnknownAvatar",
+                hpBarHue: options.hpBarHue ?? 0,
             });
 
             const startSingleBossBattle = (options: {
@@ -706,6 +708,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             shieldFilters: pixi.Filter[];
             figure: pixi.Texture | "useTheUnknownFigure";
             avatar: pixi.Texture | "useTheUnknownAvatar";
+            hpBarHue: number;
         };
     };
 
@@ -716,10 +719,14 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         avatar: pixi.Texture | "useTheUnknownAvatar",
         color1: HslaOptions,
         color2: HslaOptions,
-        playerHue?: number,
-        shieldHsla?: HslaOptions,
+        /** @default hsla1.h */
+        playerHue: number | null,
+        /** @default hsla2 */
+        shieldHsla: HslaOptions | null,
+        /** @default hsla2.h */
+        bossHpBarHue: number | null,
     }): CharInfo {
-        let { playerName, bossName, defaultSpellcardFigure, avatar, color1, color2, playerHue, shieldHsla } = options;
+        let { playerName, bossName, defaultSpellcardFigure, avatar, color1, color2, playerHue, shieldHsla, bossHpBarHue } = options;
         //defaultSpellcardFigure ??= "useTheUnknownFigure";
         //avatar ??= "useTheUnknownAvatar";
         //color1 ??= "#ff3333";
@@ -728,6 +735,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         const hsla2 = makeHsla(color2);
         playerHue ??= hsla1.h;
         shieldHsla ??= hsla2;
+        bossHpBarHue ??= hsla2.h;
 
         const playerHueFilter = new pixi.ColorMatrixFilter({ resolution: "inherit" });
         playerHueFilter.hue(playerHue, false);
@@ -742,6 +750,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             boss: {
                 name: bossName, figure: defaultSpellcardFigure, avatar,
                 shieldFilters: [shieldHslaFilter],
+                hpBarHue: bossHpBarHue,
             },
         };
     }
@@ -754,6 +763,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             avatar: prefabTextures.avatar.simple,
             color1: "#80c2ff",
             color2: "#bfe9ff",
+            playerHue: null, shieldHsla: null, bossHpBarHue: null,
         }),
         maple: makeJstgCharInfo({
             playerName: "maple",
@@ -762,6 +772,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             avatar: prefabTextures.avatar.maple,
             color1: "#ffad33",
             color2: "#ffd931",
+            playerHue: null, shieldHsla: null, bossHpBarHue: null,
         }),
         // TODO: icu, wriggle
         // MAYDO: JSTGDummy

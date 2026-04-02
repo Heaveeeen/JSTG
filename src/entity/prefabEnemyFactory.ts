@@ -66,10 +66,11 @@ export const prefabEnemyFactory = (()=>{
         /** @default board.bossShieldLayer */
         parent: pixi.Container | null,
         birthProtectDuration: number,
+        hpBarHue: number,
         //scale: number, 
         // TODO: hitboxRadius, isCanHurt, isTouchingDamage, isCanGraze, animRotation(?), hpBarType
     }) => {
-        const { game, combat, board, maxHp, x, y, rotation, birthProtectDuration } = options;
+        const { game, combat, board, maxHp, x, y, rotation, birthProtectDuration, hpBarHue } = options;
         const sprite = new pixi.Sprite({
             parent: options.parent ?? board.bossShieldLayer,
             texture: game.prefabTextures.enemy.shield,
@@ -92,7 +93,7 @@ export const prefabEnemyFactory = (()=>{
             afterBeHurtCallback: () => {
                 sprite.alpha = 0.8;
             },
-            hpBar: { type: "circle", radius: 50 * 1.1 }, // TODO: hpBar.radius
+            hpBar: { type: "circle", radius: 50 * 1.1, hue: hpBarHue }, // TODO: hpBar.radius
         });
         enemy.forever(loop => {
             sprite.alpha += (0.2 - sprite.alpha) * 0.05 * game.timeScale;

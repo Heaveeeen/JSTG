@@ -19,7 +19,7 @@ interface NewCommonEnemyOptions extends newAbstractEnemyOptions<CommonDanmaku> {
     afterBeHurtCallback: ((options: EnemyBeHurtOptions) => void) | null,
     // TODO: killedCallback
     hpBar: {
-        type: "circle", radius: number,
+        type: "circle", radius: number, hue: number,
     } | null,
     /**
      * 所有敌人在刚出生时，都会有一个持续一小段时间的减伤护盾。在此期间，敌人所受的伤害会大大减少。
@@ -75,7 +75,7 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
         if (options.hpBar === null) {
             this._hpBarGraphics = null;
         } else if (options.hpBar.type === "circle") {
-            const { radius } = options.hpBar;
+            const { radius, hue } = options.hpBar;
             this._hpBarGraphics = new pixi.Graphics({
                 parent: this.danmaku.board.enemyHpBarLayer,
                 x: this.x, y: this.y,
@@ -97,21 +97,21 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
                     p = tp;
                 }
                 this._hpBarGraphics.moveTo(0, -radius).arc(0, 0, radius, utils.deg(-90), utils.deg(-90 - 360 * p), true).stroke({
-                    width: 4.5, color: "hsla(0, 100%, 60%, 0.40)",
+                    width: 4.5, color: `hsla(${hue}, 100%, 60%, 0.40)`,
                 });
                 this._hpBarGraphics.moveTo(0, -radius).arc(0, 0, radius, utils.deg(-90), utils.deg(-90 - 360 * p), true).stroke({
-                    width: 3, color: "hsla(0, 80%, 80%, 0.70)",
+                    width: 3, color: `hsla(${hue}, 80%, 80%, 0.70)`,
                 });
                 this._hpBarGraphics.moveTo(0, -radius).arc(0, 0, radius, utils.deg(-90), utils.deg(-90 - 360 * p), true).stroke({
-                    width: 1.5, color: "hsla(0, 80%, 95%, 1.00)",
+                    width: 1.5, color: `hsla(${hue}, 80%, 95%, 1.00)`,
                 });
                 // 内描边
                 this._hpBarGraphics.circle(0, 0, radius - 1.5).stroke({
-                    width: 0.5, color: "hsla(0, 90%, 30%, 0.70)",
+                    width: 0.5, color: `hsla(${hue}, 90%, 30%, 0.70)`,
                 });
                 // 外描边
                 this._hpBarGraphics.circle(0, 0, radius + 1.5).stroke({
-                    width: 0.5, color: "hsla(0, 90%, 30%, 0.70)",
+                    width: 0.5, color: `hsla(${hue}, 90%, 30%, 0.70)`,
                 });
             }, { order: 10 });
         } else {
