@@ -33,7 +33,6 @@ let lastPlayDamageSoundClockTs = -999;
 let damageSoundLoop: LoopController<void> | null = null;
 const damageSoundQueue: { play(options?: PlaySoundOptions): void }[] = [];
 
-// TODO: 一个比较偷懒的设计…… boss 身上的保护罩是一个 CommonEnemy ，打爆这个罩子就会打通一张符
 export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
     hurtHitboxRadius: number;
     maxHp: number;

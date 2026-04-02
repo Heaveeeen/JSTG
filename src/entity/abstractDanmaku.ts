@@ -13,7 +13,7 @@ export interface NewAbstractDanmakuOptions {
      * "smallball"
      */
     type: string;
-    color: DyedTextureColors; // TODO: null
+    color: DyedTextureColors | "noColor";
     game: Game;
     combat: Combat;
     board: Board;
@@ -50,7 +50,7 @@ export abstract class AbstractDanmaku extends Entity {
      * "smallball"
      */
     readonly type: string;
-    readonly color: DyedTextureColors;
+    readonly color: DyedTextureColors | "noColor";
 
     /**
      * @readonly  

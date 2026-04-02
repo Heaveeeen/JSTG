@@ -153,7 +153,6 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
                 drip: await lsdye(`danmaku/danmaku/drip.svg`),
                 card: await lsdye(`danmaku/danmaku/card.svg`),
                 note: makeDyedFrames({ app, redFrames: [
-                    // TODO: 现在这个音符的动画太夸张了，以后还得改……😇😇😇
                     { texture: await lsvg(`danmaku/danmaku/note2.svg`), time: 120, },
                     { texture: await lsvg(`danmaku/danmaku/note1.svg`), time: 120, },
                     { texture: await lsvg(`danmaku/danmaku/note2.svg`), time: 120, },// 此处有两个相同的路径加载了两次，姑且先这么写，以后考虑优化一下。

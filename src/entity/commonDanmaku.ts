@@ -152,9 +152,10 @@ export class CommonDanmaku extends AbstractDanmaku {
     /** @internal @generator 雾化消失 */
     private *_EraseEffectBehaviorFog() {
         if (this.sprite.destroyed) { return; }
+        const color = this.color === "noColor" ? "red" : this.color;
         const eraseEffectSprite = new pixi.Sprite({
             parent: this.board.danmakuEraseLayer,
-            texture: this.game.prefabTextures.danmaku.particle.fog[this.color],
+            texture: this.game.prefabTextures.danmaku.particle.fog[color],
             anchor: 0.5,
             x: this.x, y: this.y, 
             scale: { x: this.sprite.scale.x * 0.5, y: this.sprite.scale.y * 0.5 },

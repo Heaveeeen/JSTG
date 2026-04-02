@@ -82,7 +82,8 @@ export const prefabEnemyFactory = (()=>{
         const danmaku = new CommonDanmaku({
             game, combat, board,
             type: "enemySpellcardShield",
-            color: "red", hitboxRadius: 16,
+            color: "red", // 罩子原始颜色就是红的，所以这里填红色没毛病
+            hitboxRadius: 16,
             sprite,
         });
         danmaku.grazeCd = Infinity;
@@ -93,7 +94,7 @@ export const prefabEnemyFactory = (()=>{
             afterBeHurtCallback: () => {
                 sprite.alpha = 0.8;
             },
-            hpBar: { type: "circle", radius: 50 * 1.1, hue: hpBarHue }, // TODO: hpBar.radius
+            hpBar: { type: "circle", radius: 50 * 1.1, hue: hpBarHue },
         });
         enemy.forever(loop => {
             sprite.alpha += (0.2 - sprite.alpha) * 0.05 * game.timeScale;
