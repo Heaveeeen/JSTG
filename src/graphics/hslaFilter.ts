@@ -126,7 +126,7 @@ void main() {
     vec3 outHsl = vec3(th + uh, ts * us, tl * ul * 2.0);
     vec3 outRgb = hsl2rgb(outHsl);
     finalColor = vec4(outRgb, ta * ua);
-}`;
+}`;// TODO: 这个数值或许会溢出
 
 export type HslaColor = { h: number, s: number, l: number, a: number };
 export type RgbaColor = { r: number, g: number, b: number, a: number };

@@ -693,34 +693,37 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         };
     })();
 
-    type CharInfo<TBossName extends string> = {
+    type CharInfo = {
         hsla1: HslaColor;
         hsla2: HslaColor;
-        playerHueFilter: pixi.Filter;
-        shieldHslaFilter: pixi.Filter;
-        // TODO: player
+        player: {
+            name: string,
+            avatarTexture: pixi.Texture;
+            filters: pixi.Filter[];
+        },
         boss: {
-            name: TBossName;
+            name: string;
             shieldFilters: pixi.Filter[];
             figure: pixi.Texture | "useTheUnknownFigure";
             avatar: pixi.Texture | "useTheUnknownAvatar";
         };
     };
 
-    function makeCharInfo<TBossName extends string>(options: {
-        bossName: TBossName,
-        defaultSpellcardFigure?: pixi.Texture | "useTheUnknownFigure",
-        avatar?: pixi.Texture | "useTheUnknownAvatar",
-        color1?: HslaOptions,
-        color2?: HslaOptions,
+    function makeJstgCharInfo(options: {
+        playerName: string,
+        bossName: string,
+        defaultSpellcardFigure: pixi.Texture | "useTheUnknownFigure",
+        avatar: pixi.Texture | "useTheUnknownAvatar",
+        color1: HslaOptions,
+        color2: HslaOptions,
         playerHue?: number,
         shieldHsla?: HslaOptions,
-    }): CharInfo<TBossName> {
-        let { bossName, defaultSpellcardFigure, avatar, color1, color2, playerHue, shieldHsla } = options;
-        defaultSpellcardFigure ??= "useTheUnknownFigure";
-        avatar ??= "useTheUnknownAvatar";
-        color1 ??= "#ff3333";
-        color2 ??= "#ff8080";
+    }): CharInfo {
+        let { playerName, bossName, defaultSpellcardFigure, avatar, color1, color2, playerHue, shieldHsla } = options;
+        //defaultSpellcardFigure ??= "useTheUnknownFigure";
+        //avatar ??= "useTheUnknownAvatar";
+        //color1 ??= "#ff3333";
+        //color2 ??= "#ff8080";
         const hsla1 = makeHsla(color1);
         const hsla2 = makeHsla(color2);
         playerHue ??= hsla1.h;
@@ -731,7 +734,11 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         const shieldHslaFilter = new HslaFilter(shieldHsla);
         return {
             hsla1, hsla2,
-            playerHueFilter, shieldHslaFilter,
+            player: {
+                name: playerName,
+                avatarTexture: prefabTextures.avatar.simple,
+                filters: [playerHueFilter],
+            },
             boss: {
                 name: bossName, figure: defaultSpellcardFigure, avatar,
                 shieldFilters: [shieldHslaFilter],
@@ -740,14 +747,16 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
     }
 
     const prefabCharInfos = {
-        simple: makeCharInfo({
+        simple: makeJstgCharInfo({
+            playerName: "simple",
             bossName: "Simple",
             defaultSpellcardFigure: prefabTextures.charFigure.simple.spellcard,
             avatar: prefabTextures.avatar.simple,
             color1: "#80c2ff",
             color2: "#bfe9ff",
         }),
-        maple: makeCharInfo({
+        maple: makeJstgCharInfo({
+            playerName: "maple",
             bossName: "Maple Nightfall",
             defaultSpellcardFigure: prefabTextures.charFigure.maple.spellcard,
             avatar: prefabTextures.avatar.maple,

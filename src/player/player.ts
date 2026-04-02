@@ -52,7 +52,7 @@ export interface PlayerBombOptions {
     
 }
 
-export type MissGainBombType = "resetToInitAmount" | "increaseByInitAmount" | "none";
+export type MissGainBombType = "resetToInitAmount" | "increaseToInitAmount" | "none";
 
 const missInvincibleTime = 180;
 
@@ -61,11 +61,11 @@ export interface NewPlayerOptions {
     game: Game;
     combat: Combat;
     board: Board;
-    mainTexture: pixi.Texture;
+    avatarTexture: pixi.Texture;
     hitboxTexture: pixi.Texture;
     slowModeRingTexture: pixi.Texture;
     invincibleRingTexture: pixi.Texture;
-    playerFilters: pixi.Filter[];
+    filters: pixi.Filter[];
     /** @default 3 */
     hitboxRadius: number | null;
     /** @default 4 */
@@ -193,7 +193,7 @@ export class Player {
         this.game = options.game;
         this.combat = options.combat;
         this.board = options.board;
-        this.filters = options.playerFilters;
+        this.filters = options.filters;
         this.hitboxRadius = options.hitboxRadius ?? 3;
         this.highSpeed = options.highSpeed ?? 4;
         this.slowSpeed = options.slowSpeed ?? 1.6;
@@ -221,7 +221,7 @@ export class Player {
 
         this.avatar = new pixi.Sprite({
             parent: this.backParts,
-            texture: options.mainTexture,
+            texture: options.avatarTexture,
             anchor: 0.5,
             scale: 1.1,
             zIndex: 10,
@@ -460,7 +460,7 @@ export class Player {
                 // 重置 Bomb 的数量
                 if (this.missGainBombType === "resetToInitAmount") {
                     this.bombAmount = this.initBombAmount;
-                } else if (this.missGainBombType === "increaseByInitAmount") {
+                } else if (this.missGainBombType === "increaseToInitAmount") {
                     this.bombAmount = Math.max(this.bombAmount, this.initBombAmount);
                 } else {
                     utils.staticAssert<"none">(this.missGainBombType)

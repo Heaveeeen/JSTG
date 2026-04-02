@@ -298,12 +298,11 @@ export const prefabPlayerFactory = (()=>{
             }
         };
         const player = new Player({
-            name: "Simple", ...options,
-            mainTexture: prefabTextures.avatar.simple,
+            ...options,
             hitboxTexture: prefabTextures.player.hitbox,
             slowModeRingTexture: prefabTextures.player.slowMode,
             invincibleRingTexture: prefabTextures.player.invincibleRing,
-            playerFilters: [game.prefabCharInfos.simple.playerHueFilter],
+            ...game.prefabCharInfos.simple.player,
             hitboxRadius: 1, highSpeed: 4, slowSpeed: 1.6,
             dyingBombTime: null, initHpAmount: null, initBombAmount: null, missGainBombType: null,
             maxHpAmount: null, maxBombAmount: null,
