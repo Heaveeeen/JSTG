@@ -264,7 +264,7 @@ import * as pixi from "pixi";
         }
         if (isDown("KeyM")) {
             coDo(function*() {
-                const boss = board.makeBoss(game.prefabCharInfos.maple);
+                const boss = board.makeBoss(game.prefabCharInfos.maple.boss);
                 yield* game.Sleep(30);
                 const battle = board.startSingleBossBattle({
                     boss,

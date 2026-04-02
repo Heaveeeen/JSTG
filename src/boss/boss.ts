@@ -6,36 +6,28 @@ import { Entity } from "../entity/entity.js";
 import { CommonEnemy } from "../entity/commonEnemy.js";
 
 
-export interface MakeBossOptions {
+export interface NewBossOptions {
     game: Game, combat: Combat, board: Board,
     name: string,
     sprite: pixi.Sprite,
-    hue1: number, hue2: number,
+    shieldFilters: pixi.Filter[],
     defaultSpellcardFigure: pixi.Texture | "useTheUnknownFigure",
 }
 
 export class Boss extends Entity {
     name: string;
     sprite: pixi.Sprite;
-    hue1: number;
-    hue1Filter: pixi.ColorMatrixFilter;
-    hue2: number;
-    hue2Filter: pixi.ColorMatrixFilter;
     defaultSpellcardFigure: pixi.Texture | "useTheUnknownFigure";
+    shieldColorFilters: pixi.Filter[];
     /** @internal */
     private _shield: CommonEnemy | null = null;
     
-    constructor(options: MakeBossOptions) {
+    constructor(options: NewBossOptions) {
         super(options);
         this.name = options.name;
         this.sprite = options.sprite;
-        this.hue1 = options.hue1;
-        this.hue1Filter = new pixi.ColorMatrixFilter({ resolution: "inherit" });
-        this.hue1Filter.hue(options.hue1, false);
-        this.hue2 = options.hue2;
-        this.hue2Filter = new pixi.ColorMatrixFilter({ resolution: "inherit" });
-        this.hue2Filter.hue(options.hue2, false);
         this.defaultSpellcardFigure = options.defaultSpellcardFigure;
+        this.shieldColorFilters = options.shieldFilters;
     }
 
     get x() { return this.sprite.x; }
@@ -62,7 +54,7 @@ export class Boss extends Entity {
             x: this.x, y: this.y, rotation: 0, parent: null,
             ...options,
         });
-        this._shield.danmaku.sprite.filters = this.hue2Filter;
+        this._shield.danmaku.sprite.filters = this.shieldColorFilters;
         return this._shield;
     }
 
@@ -77,8 +69,6 @@ export class Boss extends Entity {
         if (this.destroyed) { return; }
         this.sprite.destroy({ children: true });
         this._shield?.destroy();
-        //this.hue1Filter.destroy();
-        //this.hue2Filter.destroy();
     }
 
     get destroyed() { return this.sprite.destroyed; }
@@ -88,11 +78,11 @@ export const baseMakeBoss = (options: {
     game: Game, combat: Combat, board: Board,
     name: string,
     x: number, y: number,
-    hue1: number, hue2: number,
+    shieldFilters: pixi.Filter[],
     defaultSpellcardFigure: pixi.Texture | "useTheUnknownFigure",
     avatar: pixi.Texture | "useTheUnknownAvatar",
 }) => {
-    const { game, combat, board, name, x, y, hue1, hue2, defaultSpellcardFigure, avatar } = options;
+    const { game, combat, board, name, x, y, shieldFilters, defaultSpellcardFigure, avatar } = options;
     const sprite = new pixi.Sprite({
         parent: board.bossLayer,
         anchor: 0.5,
@@ -101,7 +91,7 @@ export const baseMakeBoss = (options: {
     });
     return new Boss({
         game, combat, board,
-        name, hue1, hue2, defaultSpellcardFigure,
-        sprite,
-    })
-}
+        name, defaultSpellcardFigure,
+        sprite, shieldFilters,
+    });
+};

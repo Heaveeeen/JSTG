@@ -13,7 +13,7 @@ export interface NewAbstractDanmakuOptions {
      * "smallball"
      */
     type: string;
-    color: DyedTextureColors;
+    color: DyedTextureColors; // TODO: null
     game: Game;
     combat: Combat;
     board: Board;

@@ -65,8 +65,7 @@ export interface NewPlayerOptions {
     hitboxTexture: pixi.Texture;
     slowModeRingTexture: pixi.Texture;
     invincibleRingTexture: pixi.Texture;
-    /** @default 0 */
-    hue1: number | null;
+    playerFilters: pixi.Filter[];
     /** @default 3 */
     hitboxRadius: number | null;
     /** @default 4 */
@@ -100,8 +99,7 @@ export class Player {
     readonly combat: Combat;
     readonly board: Board;
 
-    hue1: number;
-    hue1Filter: pixi.ColorMatrixFilter;
+    filters: pixi.Filter[];
     hitboxRadius: number;
     highSpeed: number;
     slowSpeed: number;
@@ -195,9 +193,7 @@ export class Player {
         this.game = options.game;
         this.combat = options.combat;
         this.board = options.board;
-        this.hue1 = options.hue1 ?? 0;
-        this.hue1Filter = new pixi.ColorMatrixFilter({ resolution: "inherit" });
-        this.hue1Filter.hue(this.hue1, false);
+        this.filters = options.playerFilters;
         this.hitboxRadius = options.hitboxRadius ?? 3;
         this.highSpeed = options.highSpeed ?? 4;
         this.slowSpeed = options.slowSpeed ?? 1.6;
@@ -235,7 +231,7 @@ export class Player {
             parent: this.frontParts,
             texture: options.hitboxTexture,
             scale: 0.24, anchor: 0.5,// 这里的 scale 只是个临时的值，实际上 scale每帧都会更新
-            filters: this.hue1Filter,
+            filters: this.filters,
             alpha: 0,
         });
 
@@ -243,7 +239,7 @@ export class Player {
             parent: this.frontParts,
             texture: options.invincibleRingTexture,
             scale: 0, anchor: 0.5,
-            filters: this.hue1Filter,
+            filters: this.filters,
             alpha: 0,
             blendMode: "add",
         });
@@ -252,7 +248,7 @@ export class Player {
             parent: this.backParts,
             texture: options.slowModeRingTexture,
             scale: 1.1, anchor: 0.5,
-            filters: this.hue1Filter,
+            filters: this.filters,
             alpha: 0,
             rotation: 0,
             zIndex: 0,

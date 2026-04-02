@@ -28,7 +28,7 @@ export const prefabPlayerFactory = (()=>{
                     parent: player.backParts,
                     texture: prefabTextures.player.drone.simpleDrone,
                     anchor: 0.5,
-                    filters: player.hue1Filter,
+                    filters: player.filters,
                     alpha: 0,
                     zIndex: -10,
                 }),
@@ -152,14 +152,14 @@ export const prefabPlayerFactory = (()=>{
                                 } // MAYDO: 激光如何与其他类型的敌人进行判定……
                             }
                             if (laser.hitEffects.size === 0) {
-                                laser.sprite.filters = player.hue1Filter;
-                                drone.sprite.filters = player.hue1Filter;
+                                laser.sprite.filters = player.filters;
+                                drone.sprite.filters = player.filters;
                             } else {
                                 laser.sprite.filters = null;
                                 drone.sprite.filters = null;
                             }
                         }, { owns: drone.laser, order: 10 }).then(() => {
-                            drone.sprite.filters = player.hue1Filter;
+                            drone.sprite.filters = player.filters;
                         });
                     }
                 } else {
@@ -174,7 +174,7 @@ export const prefabPlayerFactory = (()=>{
                                 scale: 1.2,
                                 rotation: drone.rotation,
                                 alpha: 0.4,
-                                filters: player.hue1Filter,
+                                filters: player.filters,
                                 blendMode: "add",
                             });
                             const head = new pixi.Sprite({
@@ -296,14 +296,14 @@ export const prefabPlayerFactory = (()=>{
             for (const drone of drones) {
                 drone.destroy();
             }
-        }
+        };
         const player = new Player({
             name: "Simple", ...options,
             mainTexture: prefabTextures.avatar.simple,
             hitboxTexture: prefabTextures.player.hitbox,
             slowModeRingTexture: prefabTextures.player.slowMode,
             invincibleRingTexture: prefabTextures.player.invincibleRing,
-            hue1: 208.8,
+            playerFilters: [game.prefabCharInfos.simple.playerHueFilter],
             hitboxRadius: 1, highSpeed: 4, slowSpeed: 1.6,
             dyingBombTime: null, initHpAmount: null, initBombAmount: null, missGainBombType: null,
             maxHpAmount: null, maxBombAmount: null,

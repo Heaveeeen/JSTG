@@ -112,7 +112,6 @@ export const baseMakeSingleBossBattleController = (manualBossBattleOptions: {
             figure: "noFigure",
         } as const;
         const shield = refBoss.makeSpellcardShield({ maxHp: hp, birthProtectDuration });
-        shield.danmaku.sprite.filters = refBoss.hue2Filter;
         const spellcard = baseStartSpellcard({
             game, combat, board,
             title, time, ...opt,

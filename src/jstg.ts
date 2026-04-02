@@ -15,7 +15,8 @@ import { AbstractEnemy } from "./entity/abstractEnemy.js";
 import { prefabEnemyFactory } from "./entity/prefabEnemyFactory.js";
 import { Spellcard } from "./boss/spellcard.js";
 import { baseStartSingleBossBattle, SingleBossSpellOptions } from "./boss/bossBattle.js";
-import { baseMakeBoss, Boss } from "./boss/boss.js";
+import { baseMakeBoss, Boss, NewBossOptions } from "./boss/boss.js";
+import { HslaFilter, HslaColor, PartialHslaColor, makeHsla, HslaOptions } from "./graphics/hslaFilter.js";
 
 
 
@@ -228,23 +229,21 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             })();
             //#endregion enemyRegList
 
-            const makeBoss = (options?: {
+            const makeBoss = (options: {
                 /** @default "JSTG Boss" */name?: string,
                 /** @default 0 */x?: number,
                 /** @default -100 */y?: number,
-                /** @default 0 */hue1?: number,
-                /** @default 0 */hue2?: number,
+                shieldFilters?: pixi.Filter | pixi.Filter[],
                 /** @default "useTheUnknownFigure" */figure?: pixi.Texture | "useTheUnknownFigure",
                 /** @default "useTheUnknownAvatar" */avatar?: pixi.Texture | "useTheUnknownAvatar",
-            }) => baseMakeBoss({
+            } = {}) => baseMakeBoss({
                 game, combat, board,
-                name: options?.name ?? "JSTG Boss",
-                x: options?.x ?? 0,
-                y: options?.y ?? -100,
-                hue1: options?.hue1 ?? 0,
-                hue2: options?.hue2 ?? 0,
-                defaultSpellcardFigure: options?.figure ?? "useTheUnknownFigure",
-                avatar: options?.avatar ?? "useTheUnknownAvatar",
+                name: options.name ?? "JSTG Boss",
+                x: options.x ?? 0,
+                y: options.y ?? -100,
+                shieldFilters: utils.makeElements(options.shieldFilters),
+                defaultSpellcardFigure: options.figure ?? "useTheUnknownFigure",
+                avatar: options.avatar ?? "useTheUnknownAvatar",
             });
 
             const startSingleBossBattle = (options: {
@@ -694,27 +693,68 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         };
     })();
 
+    type CharInfo<TBossName extends string> = {
+        hsla1: HslaColor;
+        hsla2: HslaColor;
+        playerHueFilter: pixi.Filter;
+        shieldHslaFilter: pixi.Filter;
+        // TODO: player
+        boss: {
+            name: TBossName;
+            shieldFilters: pixi.Filter[];
+            figure: pixi.Texture | "useTheUnknownFigure";
+            avatar: pixi.Texture | "useTheUnknownAvatar";
+        };
+    };
+
+    function makeCharInfo<TBossName extends string>(options: {
+        bossName: TBossName,
+        defaultSpellcardFigure?: pixi.Texture | "useTheUnknownFigure",
+        avatar?: pixi.Texture | "useTheUnknownAvatar",
+        color1?: HslaOptions,
+        color2?: HslaOptions,
+        playerHue?: number,
+        shieldHsla?: HslaOptions,
+    }): CharInfo<TBossName> {
+        let { bossName, defaultSpellcardFigure, avatar, color1, color2, playerHue, shieldHsla } = options;
+        defaultSpellcardFigure ??= "useTheUnknownFigure";
+        avatar ??= "useTheUnknownAvatar";
+        color1 ??= "#ff3333";
+        color2 ??= "#ff8080";
+        const hsla1 = makeHsla(color1);
+        const hsla2 = makeHsla(color2);
+        playerHue ??= hsla1.h;
+        shieldHsla ??= hsla2;
+
+        const playerHueFilter = new pixi.ColorMatrixFilter({ resolution: "inherit" });
+        playerHueFilter.hue(playerHue, false);
+        const shieldHslaFilter = new HslaFilter(shieldHsla);
+        return {
+            hsla1, hsla2,
+            playerHueFilter, shieldHslaFilter,
+            boss: {
+                name: bossName, figure: defaultSpellcardFigure, avatar,
+                shieldFilters: [shieldHslaFilter],
+            },
+        };
+    }
+
     const prefabCharInfos = {
-        simple: {
-            name: "Simple", hue1: 208.8, hue2: 201,
-            figure: prefabTextures.charFigure.simple.spellcard,
+        simple: makeCharInfo({
+            bossName: "Simple",
+            defaultSpellcardFigure: prefabTextures.charFigure.simple.spellcard,
             avatar: prefabTextures.avatar.simple,
-        },
-        maple: {
-            name: "Maple Nightfall", hue1: 36, hue2: 48,
-            figure: prefabTextures.charFigure.maple.spellcard,
+            color1: "#80c2ff",
+            color2: "#bfe9ff",
+        }),
+        maple: makeCharInfo({
+            bossName: "Maple Nightfall",
+            defaultSpellcardFigure: prefabTextures.charFigure.maple.spellcard,
             avatar: prefabTextures.avatar.maple,
-        },
-        icu: {
-            name: "Icu Kitasenotogi", hue1: 287, hue2: 290,
-            figure: prefabTextures.charFigure.unknown,// MAYDO: 这俩人的立绘
-            avatar: prefabTextures.avatar.icu,
-        },
-        wriggle: {
-            name: "Wriggle Nightbug", hue1: 162, hue2: 72,
-            figure: prefabTextures.charFigure.unknown,
-            avatar: prefabTextures.avatar.wriggle,
-        },
+            color1: "#ffad33",
+            color2: "#ffd931",
+        }),
+        // TODO: icu, wriggle
         // MAYDO: JSTGDummy
     } as const;
 
@@ -837,4 +877,5 @@ export {
     utils,
     prefabDanmakuHitboxRadius,
     makePauseController,
+    HslaFilter,
 }
