@@ -19,7 +19,7 @@ import * as pixi from "pixi";
 
     const combat = await game.StartCombat()
     const { board } = combat;
-    const { makeDanmaku, makeLaserBeam, prefabPlayers, prefabEnemys, forever, coDo, } = board;
+    const { makeDanmaku, makeFoggyDanmaku, makeLaserBeam, prefabPlayers, prefabEnemys, forever, coDo, } = board;
 
     console.log(game, combat, board);
 
@@ -284,14 +284,17 @@ import * as pixi from "pixi";
                             while (true) {
                                 game.prefabSounds.thse.tan00.play(decibel(-9));
                                 for (let i = 0; i < 5; i++) {
-                                    const dan = makeDanmaku({
+                                    const d2 = d + deg(i / 5 * 360)
+                                    makeFoggyDanmaku({
                                         type: "crystal", color: "h30",
-                                        x: boss.x, y: boss.y,
-                                        rotation: d + deg(i / 5 * 360),
-                                    });
-                                    dan.forever(loop => {
-                                        dan.step(2.5);
-                                        dan.boundaryDelete();
+                                        x: boss.x + Math.cos(d2) * 30, y: boss.y + Math.sin(d2) * 30,
+                                        rotation: d2,
+                                    }).then(dan => {
+                                        if (dan === undefined) { return; }
+                                        dan.forever(loop => {
+                                            dan.step(2.5);
+                                            dan.boundaryDelete();
+                                        });
                                     });
                                 }
                                 d += omega;

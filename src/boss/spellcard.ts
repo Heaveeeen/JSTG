@@ -100,7 +100,7 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
     });
     if (figure !== null) { board.coDo(function*() { // 此处没必要依赖 spellcard ，一个立绘飞过去的动画而已……
         // MAYDO: 写个新的符卡宣言动画，这里直接沿用弹幕引擎的写法……其实我不是特别喜欢这个，但也完全谈不上讨厌，感觉犯不上为了这点破事大动干戈。反正调这玩意得不断编译，非常麻烦。。。
-        for (let t = 20; t <= 140; t += game.timeScale) {
+        for (let t = 20; t < 140; t += game.timeScale) {
             // 这俩变量是弹幕引擎里的局部变量，我也不知道这玩意该叫啥……
             const spde_posX = 100 - 155 * spde_UiGradient;
             const spde_temp = (t/2 - 35) * (Math.abs(t/2 - 35) + 10);

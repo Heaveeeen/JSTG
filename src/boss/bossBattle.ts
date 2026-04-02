@@ -46,7 +46,7 @@ export const baseMakeSingleBossBattleController = (manualBossBattleOptions: {
 
         const stars: pixi.Sprite[] = [];
 
-        const fadeInLoop = board.coDo(function*() { for (let t = 0; t <= 20; t += game.timeScale) {
+        const fadeInLoop = board.coDo(function*() { for (let t = 0; t < 20; t += game.timeScale) {
             root.alpha = t / 20;
             yield;
         } }, { refs: root });
@@ -67,7 +67,7 @@ export const baseMakeSingleBossBattleController = (manualBossBattleOptions: {
             popStar() {
                 const star = stars.pop();
                 if (star === undefined) { return; }
-                board.coDo(function*() { for (let t = 0; t <= 20; t += game.timeScale) {
+                board.coDo(function*() { for (let t = 0; t < 20; t += game.timeScale) {
                     star.alpha = 1 - (t / 20);
                     yield;
                 } }, { refs: star }).then(() => {
@@ -77,7 +77,7 @@ export const baseMakeSingleBossBattleController = (manualBossBattleOptions: {
             kill() {
                 if (this.destroyed) { return; }
                 fadeInLoop.destroy();
-                return board.coDo(function*() { for (let t = 0; t <= 20; t += game.timeScale) {
+                return board.coDo(function*() { for (let t = 0; t < 20; t += game.timeScale) {
                     root.alpha = 1 - (t / 20);
                     yield;
                 } }, { refs: root }).then(() => {

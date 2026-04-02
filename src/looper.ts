@@ -183,7 +183,7 @@ export const makeLooper = (makeLooperOptions: {
         const loop = forever<T>(loop => {
             const result = generator.next();
             if (result.done) {
-                loop.destroy();
+                loop.destroy(result.value);
             }
         }, options);
         const generator = genFn(loop);

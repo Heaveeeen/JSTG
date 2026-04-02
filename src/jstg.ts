@@ -282,9 +282,9 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 /** 自机前半部分所属的图层。 */
                 playerFrontLayer: makeBoardLayer(100),
                 /** 符卡 UI 的图层，包括符卡名称、计时器等等。 */
-                spellcardUiLayer: makeBoardLayer(20),
+                spellcardUiLayer: makeBoardLayer(50),
                 /** 所有普通弹幕节点的图层 */
-                commonDanmakuLayer: makeBoardLayer(0),
+                commonDanmakuLayer: makeBoardLayer(20),
                 /** 自机发射出的所有子弹的图层 */
                 playerBulletLayer: makeBoardLayer(-5),
                 /** 自机扔出的灵击圈（默认 Bomb ）所在的图层 */
@@ -324,13 +324,15 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 // set height(n: number) { height = n; },
                 // MAYDO: 改变场地尺寸
                 /** @readonly JSTG 预置的自机 */
-                prefabPlayers: null as unknown as typeof prefabPlayers, // MAGIC:
+                get prefabPlayers() { return prefabPlayers; },
                 /** @readonly JSTG 预置的敌人 */
-                prefabEnemys: null as unknown as typeof prefabEnemys, // MAGIC:
+                get prefabEnemys() { return prefabEnemys; },
                 /** 创建一个 JSTG 预置的弹幕 */
-                makeDanmaku: null as unknown as typeof makeDanmaku, // MAGIC:
+                get makeDanmaku() { return makeDanmaku; },
+                /** 创建一个弹雾，等弹雾结束后生成一个 JSTG 预置的弹幕 */
+                get makeFoggyDanmaku() { return makeFoggyDanmaku; },
                 /** TODOC: makeLaserBeam */
-                makeLaserBeam: null as unknown as typeof makeLaserBeam, // MAGIC:
+                get makeLaserBeam() { return makeLaserBeam; },
                 /** TODOC: makeBoss */
                 makeBoss,
                 /** TODOC: startSingleBossBattle */
@@ -388,7 +390,6 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     makeSimple,
                 }
             })();
-            board.prefabPlayers = prefabPlayers;
 
             const prefabEnemys = (()=>{
                 const makeYinYangOrb = (options: {
@@ -417,7 +418,6 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     makeYinYangOrb,
                 };
             })();
-            board.prefabEnemys = prefabEnemys;
 
             type MakeDanmakuOptions = {
                 /** @default "smallball" */
@@ -452,10 +452,28 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
                     radius: options.radius ?? null,
                     zIndex: options.zIndex ?? null,
-                    canBeErase: options.canBeErase ?? null
+                    canBeErase: options.canBeErase ?? null,
+                    isFoggy: false,
                 });
             }
-            board.makeDanmaku = makeDanmaku;
+
+            // 此处为复制，要是改了上面，别忘了把下面也改了
+            function makeFoggyDanmaku(/** @default "smallball" */type?: PrefabDanmakuNames, /** @default "red" */color?: DyedTextureColors): LoopController<CommonDanmaku>;
+            function makeFoggyDanmaku(options: MakeDanmakuOptions): LoopController<CommonDanmaku>;
+            function makeFoggyDanmaku(options?: PrefabDanmakuNames | MakeDanmakuOptions, color?: DyedTextureColors) {
+                if (options === undefined || typeof options === "string") {
+                    options = { type: options, color };
+                };
+                return baseMakePrefabDanmaku({
+                    game, combat, board,
+                    type: options.type ?? "smallball", color: options.color ?? "red", parent: options.parent ?? null,
+                    x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
+                    radius: options.radius ?? null,
+                    zIndex: options.zIndex ?? null,
+                    canBeErase: options.canBeErase ?? null,
+                    isFoggy: true,
+                });
+            }
 
             type MakeLaserBeamOptions = {
                 /** @default "laserseg" */
@@ -507,7 +525,6 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     canBeErase: options.canBeErase ?? null,
                 });
             }
-            board.makeLaserBeam = makeLaserBeam;
 
             function clearBoard({ x, y }: utils.Vec2) { board.coDo(function*() {
                 for (let t = 0; t < 60; t += game.timeScale) {

@@ -4,6 +4,7 @@ import { Player } from "../player/player.js";
 import * as utils from "../utils.js";
 import { DyedTextureColors, DyedTextures, makeCommonOrAnimatedSprite, PrefabDanmakuNames } from "../textures.js";
 import { AbstractDanmaku, EraseDanmakuOptions as EraseDanmakuOptions, NewAbstractDanmakuOptions, prefabDanmakuHitboxRadius } from "./abstractDanmaku.js";
+import { LoopController } from "../looper.js";
 
 
 
@@ -215,38 +216,78 @@ export class CommonDanmaku extends AbstractDanmaku {
     }
 }
 
-export const baseMakePrefabDanmaku = (options: {
-    game: Game, combat: Combat, board: Board,
-    type: PrefabDanmakuNames, color: DyedTextureColors,
-    x: number, y: number, rotation: number,
+export interface BaseMakePrefabDanmakuOptions<TIsFoggy extends boolean> {
+    game: Game;
+    combat: Combat;
+    board: Board;
+    type: PrefabDanmakuNames;
+    color: DyedTextureColors;
+    x: number;
+    y: number;
+    rotation: number;
     /** @default board.commonDanmakuLayer */
-    parent: pixi.Container | null,
+    parent: pixi.Container | null;
     /** @default prefabDanmakuHitboxRadius[type] */
-    radius: number | null,
+    radius: number | null;
     /** @default -radius */
-    zIndex: number | null,
+    zIndex: number | null;
     /** @default true */
-    canBeErase: boolean | null,
-}) => {
+    canBeErase: boolean | null;
+    isFoggy: TIsFoggy,
+}
+
+export function baseMakePrefabDanmaku<TIsFoggy extends false>(options: BaseMakePrefabDanmakuOptions<TIsFoggy>): CommonDanmaku;
+export function baseMakePrefabDanmaku<TIsFoggy extends true>(options: BaseMakePrefabDanmakuOptions<TIsFoggy>): LoopController<CommonDanmaku>;
+export function baseMakePrefabDanmaku<TIsFoggy extends boolean>(options: BaseMakePrefabDanmakuOptions<TIsFoggy>) {
     const { type, color, game, combat, board, x, y, rotation } = options;
     const parent = options.parent ?? board.commonDanmakuLayer;
     const hitboxRadius = options.radius ?? prefabDanmakuHitboxRadius[type];
     const texture = game.prefabTextures.danmaku.danmaku[type][color];
     const zIndex = options.zIndex ?? -hitboxRadius;
     const canBeErase = options.canBeErase ?? true;
-    const sprite = makeCommonOrAnimatedSprite({
-        game, combat, board, texture,
-        sprite: new pixi.Sprite({
+    if (options.isFoggy) {
+        const fogSprite = new pixi.Sprite({
             parent, x, y, rotation,
+            texture: game.prefabTextures.danmaku.particle.fog[color],
             anchor: 0.5,
-            scale: hitboxRadius / prefabDanmakuHitboxRadius[type],
+            scale: hitboxRadius / 2.5,
             zIndex,
-        }),
-    });
-    const danmaku = new CommonDanmaku({
-        type, color, game, combat, board,
-        hitboxRadius, sprite,
-    });
-    danmaku.canBeErase = canBeErase;
-    return danmaku;
+        });
+        // 弹雾期间，该循环持有 fogSprite 的所有权；弹雾结束后，把 fogSprite 的所有权连带弹幕移交给外部。
+        return board.coDo<CommonDanmaku>(function*(loop) {
+            for (let t = 0; t < 20; t += game.timeScale) { // TODO: 调整弹雾持续时间
+                fogSprite.scale.x -= hitboxRadius * 0.01 * game.timeScale;
+                fogSprite.scale.y -= hitboxRadius * 0.01 * game.timeScale;
+                yield;
+            }
+            fogSprite.texture = pixi.Texture.EMPTY;
+            fogSprite.scale = hitboxRadius / prefabDanmakuHitboxRadius[type];
+            const danSprite = makeCommonOrAnimatedSprite({
+                game, combat, board, texture, sprite: fogSprite,
+            })
+            const danmaku = new CommonDanmaku({
+                type, color, game, combat, board,
+                hitboxRadius, sprite: danSprite,
+            })
+            return danmaku;
+        }).then(result => { // 如果循环被意外打断，说明 fogSprite 所有权没能移交给外部，则摧毁 fogSprite 。
+            if (result === undefined) { fogSprite.destroy(); }
+        });
+    } else {
+        const sprite = makeCommonOrAnimatedSprite({
+            game, combat, board, texture,
+            sprite: new pixi.Sprite({
+                parent, x, y, rotation,
+                anchor: 0.5,
+                scale: hitboxRadius / prefabDanmakuHitboxRadius[type],
+                zIndex,
+            }),
+        });
+        const danmaku = new CommonDanmaku({
+            type, color, game, combat, board,
+            hitboxRadius, sprite,
+        });
+        danmaku.canBeErase = canBeErase;
+        return danmaku;
+    }
 }
