@@ -123,10 +123,15 @@ void main() {
     float us = uHsla.y;
     float ul = uHsla.z;
     float ua = uHsla.w;
-    vec3 outHsl = vec3(th + uh, ts * us, tl * ul * 2.0);
+    vec3 outHsl = vec3(
+        mod(th + uh, 360.0),
+        clamp(ts * us, 0.0, 1.0),
+        clamp(tl * ul * 2.0, 0.0, 1.0)
+    );
     vec3 outRgb = hsl2rgb(outHsl);
     finalColor = vec4(outRgb, ta * ua);
-}`;// TODO: 这个数值或许会溢出
+}`;
+// TODO: gpuProgram
 
 export type HslaColor = { h: number, s: number, l: number, a: number };
 export type RgbaColor = { r: number, g: number, b: number, a: number };
