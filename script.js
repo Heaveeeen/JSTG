@@ -241,6 +241,7 @@ import * as pixi from "pixi";
 
     //#region 测试 boss
     const fooBoss = () => coDo(function*() {
+        yield* game.Sleep(30);
         const boss = board.makeBoss(game.prefabCharInfos.maple.boss);
         const battle = board.startSingleBossBattle({
             boss,
