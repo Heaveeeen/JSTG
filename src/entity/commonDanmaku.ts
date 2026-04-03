@@ -256,7 +256,7 @@ export function baseMakePrefabDanmaku<TIsFoggy extends boolean>(options: BaseMak
         });
         // 弹雾期间，该循环持有 fogSprite 的所有权；弹雾结束后，把 fogSprite 的所有权连带弹幕移交给外部。
         return board.coDo<CommonDanmaku>(function*(loop) {
-            for (let t = 0; t < 20; t += game.timeScale) { // TODO: 调整弹雾持续时间
+            for (let t = 0; t < 20; t += game.timeScale) {
                 fogSprite.scale.x -= fogSprite.scale.x * 0.03 * game.timeScale;
                 fogSprite.scale.y -= fogSprite.scale.y * 0.03 * game.timeScale;
                 fogSprite.alpha += 0.02 * game.timeScale;
