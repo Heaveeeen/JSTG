@@ -69,24 +69,6 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
     spellcard.coDo = spellcard.coDo.bind(spellcard);
     board._spellcardRegList.push(spellcard);
 
-    const getTimeStr = (time: number) => {
-        const timeCs = Math.round(utils.clamp(time, 0, maxTime) / 60 * 100);
-        if (timeCs >= 1000_00) {
-            return "999.99";
-        } else if (timeCs >= 100_00) {
-            const s = `${timeCs}`;
-            return `${s.substring(0, 3)}.${s.substring(3, 5)}`;
-        } else if (timeCs >= 10_00) {
-            const s = `${timeCs}`;
-            return `${s.substring(0, 2)}.${s.substring(2, 4)}`;
-        } else if (timeCs >= 10) {
-            const s = timeCs >= 1_00 ? `0${timeCs}` : `00${timeCs}`;
-            return `${s.substring(0, 2)}.${s.substring(2, 4)}`
-        } else {
-            return timeCs >= 0 ? `00.0${timeCs}` : "00.00";
-        }
-    };
-
     //#region 立绘
     const figure = spellcardOptions.figure === "noFigure" ? null : new pixi.Sprite({
         parent: board.spellcardFigureLayer,
@@ -143,7 +125,7 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
         timerText.scale.x += (1 - timerText.scale.x) * 0.1 * game.timeScale;
         timerText.scale.y += (1 - timerText.scale.y) * 0.1 * game.timeScale;
         const { timeRemaining } = spellcard;
-        timerText.text = getTimeStr(timeRemaining);
+        timerText.text = (utils.clamp(timeRemaining, 0, maxTime) / 60).toFixed(2).padStart(5, "0");
         if (timeRemaining < 10 * 60) { //MAYDO: 计时器不固定在最后 10 秒内变红，而是在最后一定比例的时间内闪烁。
             timerText.style.fill = timeRemaining > 5 * 60 ? "#ff6666" : "#f43636";
             if (timeRemaining / 60 < lastRingNum) {
@@ -219,7 +201,7 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
         });
         const resultTime = new pixi.Text({
             parent: resultPopup,
-            text: Math.round(utils.clamp(endClockTs - beginClockTs, 0, maxTime) / 60 * 100) / 100,
+            text: (utils.clamp(endClockTs - beginClockTs, 0, maxTime) / 60).toFixed(2) + "s",
             x: 90, y: -16, anchor: { x: 1, y: 0.5 },
             resolution: 4,
             style: {
