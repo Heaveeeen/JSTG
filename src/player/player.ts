@@ -334,7 +334,7 @@ export class Player {
 
         if (this.state.type === "common" || this.state.type === "dying") {
             if (this.bombAmount >= 1 && kd(keyMap.bomb ?? "KeyX") && (
-                this.game.clock - this._bombCd <= 0 || this.state.type !== "common" || this.state.invincibleTime <= 0
+                this._bombCd <= 0 || this.state.type !== "common" || this.state.invincibleTime <= 0
             )) {
                 this.bombFn({});
                 this.bombAmount -= 1;
@@ -421,7 +421,7 @@ export class Player {
                     const missFilterSprites: pixi.Sprite[] = []
                     const makeMissFilterSprite = (dx: number, dy: number) => {
                         const spr = new pixi.Sprite({
-                            parent: this.backParts.parent ?? undefined,
+                            parent: this.board.missFilterLayer,
                             texture: this.game.prefabTextures.player.missFilter,
                             anchor: 0.5,
                             x: this.x + dx, y: this.y + dy,

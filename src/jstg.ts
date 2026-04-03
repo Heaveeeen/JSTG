@@ -279,6 +279,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             const board = {
                 /** 根节点 */
                 root: boardRoot,
+                /** Miss 出来那几个交叉圈的图层。 */
+                missFilterLayer: makeBoardLayer(150),
                 /** 自机前半部分所属的图层。 */
                 playerFrontLayer: makeBoardLayer(100),
                 /** 符卡 UI 的图层，包括符卡名称、计时器等等。 */

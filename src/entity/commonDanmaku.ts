@@ -250,18 +250,21 @@ export function baseMakePrefabDanmaku<TIsFoggy extends boolean>(options: BaseMak
             parent, x, y, rotation,
             texture: game.prefabTextures.danmaku.particle.fog[color],
             anchor: 0.5,
-            scale: hitboxRadius / 2.5,
+            scale: hitboxRadius / 2,
             zIndex,
+            alpha: 0.4,
         });
         // 弹雾期间，该循环持有 fogSprite 的所有权；弹雾结束后，把 fogSprite 的所有权连带弹幕移交给外部。
         return board.coDo<CommonDanmaku>(function*(loop) {
             for (let t = 0; t < 20; t += game.timeScale) { // TODO: 调整弹雾持续时间
-                fogSprite.scale.x -= hitboxRadius * 0.01 * game.timeScale;
-                fogSprite.scale.y -= hitboxRadius * 0.01 * game.timeScale;
+                fogSprite.scale.x -= fogSprite.scale.x * 0.03 * game.timeScale;
+                fogSprite.scale.y -= fogSprite.scale.y * 0.03 * game.timeScale;
+                fogSprite.alpha += 0.02 * game.timeScale;
                 yield;
             }
             fogSprite.texture = pixi.Texture.EMPTY;
             fogSprite.scale = hitboxRadius / prefabDanmakuHitboxRadius[type];
+            fogSprite.alpha = 1;
             const danSprite = makeCommonOrAnimatedSprite({
                 game, combat, board, texture, sprite: fogSprite,
             })
