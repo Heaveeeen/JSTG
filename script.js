@@ -239,6 +239,78 @@ import * as pixi from "pixi";
         }, { refs: dan });
     });*/
 
+    //#region 测试 boss
+    const fooBoss = () => coDo(function*() {
+        const boss = board.makeBoss(game.prefabCharInfos.maple.boss);
+        const battle = board.startSingleBossBattle({
+            boss,
+            spells: [{
+                time: 30 * 60, hp: 3000,
+                fn({ spellcard, shield }) {
+                    spellcard.forever(loop => {
+                        if (loop.clock % 17 === 0) {
+                            game.prefabSounds.thse.tan00.play(decibel(-15));
+                            boss.aimedGun(pl).scatter({ amount: 5, deg: 60 }).forEach(gun => makeFoggyDanmaku({
+                                type: "chain", ...gun, color: "blue", speed: 8,
+                            }).then(dan => dan?.forever(loop => {
+                                dan.step();
+                                dan.speedToK(1.5, 0.05);
+                            })));
+                        }
+                        if (loop.clock % 41 === 10) {
+                            game.prefabSounds.thse.kira00.play(decibel(-3));
+                            const gun = boss.aimedGun(pl);
+                            gun.rotation += deg(180 / 20);
+                            gun.ringBlast(40).forEach(gun => {
+                                gun.step(30);
+                                makeFoggyDanmaku({
+                                    type: "chain", ...gun, color: "pink", speed: 0,
+                                }).then(dan => dan?.forever(loop => {
+                                    dan.step();
+                                    dan.speedToA(8, 0.06);
+                                }));
+                            });
+                        }
+                    });
+                }
+            }, {
+                time: 80 * 60, hp: 4000, title: "你好「波粒海苔」",
+                *gen({ spellcard, shield }) {
+                    spellcard.forever(loop => {
+                        boss.glideTo({
+                            x: 40 * Math.cos(loop.clock * 0.01),
+                            y: 20 * Math.sin(loop.clock * 0.01) - 80,
+                        });
+                    });
+                    let omega = 0;
+                    let d = deg(0);
+                    while (true) {
+                        game.prefabSounds.thse.tan00.play(decibel(-9));
+                        for (let i = 0; i < 3; i++) {
+                            const d2 = d + deg(i / 3 * 360)
+                            makeFoggyDanmaku({
+                                type: "crystal", color: "h30",
+                                x: boss.x + Math.cos(d2) * 30, y: boss.y + Math.sin(d2) * 30,
+                                rotation: d2,
+                            }).then(dan => {
+                                if (dan === undefined) { return; }
+                                dan.forever(loop => {
+                                    dan.step(2.5);
+                                    dan.boundaryDelete();
+                                });
+                            });
+                        }
+                        d += omega;
+                        omega += deg(0.045);
+                        yield;
+                    }
+                },
+            }, { hp: 50 }, { title: "aaaaaaaa", hp: 50, time: 15 * 60 }, { title: "bbbbbbbb", hp: 50, time: 15 * 60}],
+        });
+    });
+    fooBoss();
+    //#endregion
+
     forever(loop => {
         pl.update({input, keyMap: {
             up: ["ArrowUp", "KeyW"],
@@ -263,48 +335,7 @@ import * as pixi from "pixi";
             debug.godMode.isOn = !debug.godMode.isOn;
         }
         if (isDown("KeyM")) {
-            coDo(function*() {
-                const boss = board.makeBoss(game.prefabCharInfos.maple.boss);
-                yield* game.Sleep(30);
-                const battle = board.startSingleBossBattle({
-                    boss,
-                    spells: [{
-                        time: 30 * 60, hp: 300,
-                    }, {
-                        time: 80 * 60, hp: 4000, title: "你好「波粒海苔」",
-                        *gen({ spellcard, shield }) {
-                            spellcard.forever(loop => {
-                                boss.glideTo({
-                                    x: 40 * Math.cos(game.clock * 0.01),
-                                    y: 20 * Math.sin(game.clock * 0.01) - 80,
-                                });
-                            });
-                            let omega = 0;
-                            let d = deg(-60);
-                            while (true) {
-                                game.prefabSounds.thse.tan00.play(decibel(-9));
-                                for (let i = 0; i < 5; i++) {
-                                    const d2 = d + deg(i / 5 * 360)
-                                    makeFoggyDanmaku({
-                                        type: "crystal", color: "h30",
-                                        x: boss.x + Math.cos(d2) * 30, y: boss.y + Math.sin(d2) * 30,
-                                        rotation: d2,
-                                    }).then(dan => {
-                                        if (dan === undefined) { return; }
-                                        dan.forever(loop => {
-                                            dan.step(2.5);
-                                            dan.boundaryDelete();
-                                        });
-                                    });
-                                }
-                                d += omega;
-                                omega += deg(0.09);
-                                yield* game.Sleep(2);
-                            }
-                        },
-                    }, { hp: 50 }, { title: "aaaaaaaa", hp: 50, time: 15 * 60 }, { title: "bbbbbbbb", hp: 50, time: 15 * 60}],
-                });
-            });
+            fooBoss();
         }
     }, { order: 0 });
 

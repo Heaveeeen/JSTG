@@ -142,8 +142,9 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
         // 击破后的收尾
         endClockTs = game.clock;
         ownEnemys.forEach(enemy => enemy.kill());
-        board._playerRegList.forEachAlive(pl => pl.applyInvincible(60));
-        board.clearBoard({ x: 0, y: 80 * 4/3 }); // 此处姑且用一个固定坐标……敌人似了之后再读取坐标，逻辑比较麻烦。
+        const clearBoardDuration = isNonSpell ? 30 : 60;
+        board._playerRegList.forEachAlive(pl => pl.applyInvincible(clearBoardDuration));
+        board.clearBoard({ x: 0, y: 80 * 4/3, duration: clearBoardDuration, permissionType: "force" }); // 此处姑且用一个固定坐标……敌人似了之后再读取坐标，逻辑比较麻烦。
         board.coDo(function*() { // 计时器
             for (let t = 0; t < 40; t += game.timeScale) { // 这里偷个懒复制粘贴
                 timerText.y += (timerTargetY - timerText.y) * 0.05 * game.timeScale;

@@ -188,7 +188,7 @@ export class LaserBeam extends AbstractDanmaku {
             }
         }
         options.effectType ??= "reduce";
-        if (options.effectType !== "none" && this.isInBoundary() && this.visible && this.alpha > 0) {
+        if (options.effectType !== "none" && this.getIsInBoundary() && this.visible && this.alpha > 0) {
             // 如果能看见，则生成消弹特效，之后再删除
             utils.staticAssert<"reduce" | "fog">(options.effectType); // MAYDO: 激光的雾化消弹效果
             this.game.coDo(this._EraseEffectBehaviorGhost.bind(this));
@@ -229,7 +229,7 @@ export class LaserBeam extends AbstractDanmaku {
         eraseEndPoint?.destroy({ children: true });
     }
 
-    isInBoundary() {
+    getIsInBoundary() {
         const cosR = Math.cos(this.rotation);
         const sinR = Math.sin(this.rotation);
         // 把激光装进一个矩形盒子里，判断这个盒子是否完全在版面矩形之外
@@ -266,7 +266,7 @@ export class LaserBeam extends AbstractDanmaku {
 export const baseMakePrefabLaserBeam = (options: {
     game: Game, combat: Combat, board: Board,
     type: PrefabDanmakuNames, color: DyedTextureColors,
-    x: number, y: number, rotation: number,
+    x: number, y: number, rotation: number, speed: number,
     /** @default board.commonDanmakuLayer */
     parent: pixi.Container | null,
     halfWidth: number,
@@ -277,7 +277,7 @@ export const baseMakePrefabLaserBeam = (options: {
     /** @default true */
     canBeErase: boolean | null,
 }) => {
-    const { type, color, game, combat, board, x, y, rotation } = options;
+    const { type, color, game, combat, board, x, y, rotation, speed } = options;
     const parent = options.parent ?? board.commonDanmakuLayer;
     const texture = game.prefabTextures.danmaku.danmaku[type][color];
     const baseHalfWidth = prefabDanmakuHitboxRadius[type];
@@ -338,5 +338,6 @@ export const baseMakePrefabLaserBeam = (options: {
         mainSprite, startPoint, endPoint,
     });
     beam.canBeErase = canBeErase;
+    beam.speed = speed;
     return beam;
 }

@@ -44,10 +44,7 @@ export const deg = (n: number) => n * Math.PI / 180;
 export const makeElements = <T>(input?: T | T[]): T[] =>
     input === undefined ? [] : (Array.isArray(input) ? input : [input]);
 
-export interface Vec2 {
-    x: number,
-    y: number,
-}
+export type Vec2 = { x: number, y: number };
 
 /** 计算点 P 到线段 AB 距离的平方 */
 export const getPointToSegmentDist2 = (AB: Vec2, AP: Vec2) => {

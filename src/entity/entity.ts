@@ -31,6 +31,7 @@ export abstract class Entity {
         this.game.alphaTo(this, dst, speed);
     }
 
+    // TODO: 重载，direction
     /** 向着 this.rotation 的方向前进 dist 步，若 dist 留空则为 this.speed * game.timeScale */
     step(/** @default this.speed * game.timeScale */ dist: number = this.speed * this.game.timeScale) {
         this.x += Math.cos(this.rotation) * dist;
@@ -48,9 +49,13 @@ export abstract class Entity {
         }
     }
 
-    /** 指数衰减地变速至目标速度 */
-    speedToK(/** 目标速度 */ dst: number, /** 每次变速的比 */ k: number) {
-        this.speed += (dst - this.speed * k * this.game.timeScale);
+    /**
+     * 指数衰减地变速至目标速度。  
+     * @param dst 目标速度。
+     * @param k 速度变化量与当前速度的比。例如 0.05 。
+     */
+    speedToK(dst: number, k: number) {
+        this.speed += (dst - this.speed) * k * this.game.timeScale;
     }
 
     /** @internal */
@@ -114,17 +119,80 @@ export abstract class Entity {
             utils.staticAssert<never>(optMode.type);
         }
     }
-    
+
+    get xy() { return { x: this.x, y: this.y }; }
+
+    /** TODOC: scatter */
+    scatter(options: {
+        amount: number, angle: number, deg?: void
+    } | {
+        amount: number, angle?: void, deg: number
+    }): Gun[];
+    scatter(angle: number, amount: number): Gun[];
+    scatter(arg1: {
+        amount: number, angle: number, deg?: void
+    } | {
+        amount: number, angle?: void, deg: number
+    } | number, arg2?: number) {
+        const options = typeof arg1 === "number" ? { amount: arg1, angle: arg2, deg: undefined } : arg1;
+        const { amount } = options;
+        const angle = options.angle ?? utils.deg(options.deg as number);
+        const step = angle / (amount - 1);
+        let r = this.rotation - angle / 2;
+        const result: Gun[] = [];
+        for (let i = 0; i < amount; i++) {
+            result.push(this.board.makeGun({ ...this.xy, rotation: r }));
+            r += step;
+        }
+        return result;
+    }
+
+    /** TODOC: ringBlast */
+    ringBlast(amount: number) {
+        const step = utils.deg(360) / amount;
+        let r = this.rotation;
+        const result: Gun[] = [];
+        for (let i = 0; i < amount; i++) {
+            result.push(this.board.makeGun({ ...this.xy, rotation: r }));
+            r += step;
+        }
+        return result;
+    }
+
+    /**
+     * 旋转并面向一个点。  
+     * @example
+     * danmaku.faceTo({ x: 50, y: -100 });
+     * danmaku.faceTo(player);
+     */
+    faceTo(targetPos: utils.Vec2) {
+        this.rotation = Math.atan2(targetPos.y - this.y, targetPos.x - this.x);
+    }
+
+    /** 原地创建一个发弹点。 */
+    makeGun() {
+        return this.board.makeGun(this);
+    }
+
+    /**
+     * 原地创建一个瞄准目标的发弹点。
+     * @example
+     * makeDanmaku({ type: "smallball", ...boss.aimedGun(player) }); // 从 boss 身上发射一个自机狙小玉
+     */
+    aimedGun(targetPos: utils.Vec2) {
+        return this.board.makeGun({ ...this.xy, rotation: Math.atan2(targetPos.y - this.y, targetPos.x - this.x) });
+    }
+
     /**
      * 判断该实体是否在版面内。  
      * 注意，该判断是必要不充分的。false 则实体一定在版面外，true 则该实体不一定在版面内。  
      * 如果弹幕刚刚离开版面但离得不远，该函数仍然有可能返回 true。  
      */
-    abstract isInBoundary(): boolean;
+    abstract getIsInBoundary(): boolean;
 
     /** 如果该实体超出版面边界，摧毁该实体 */
     boundaryDelete() {
-        if (!this.isInBoundary()) {
+        if (!this.getIsInBoundary) {
             this.destroy();
         }
     }
@@ -148,3 +216,31 @@ export abstract class Entity {
         return loop;
     }
 }
+
+export class Gun extends Entity {
+    x = 0;
+    y = 0;
+    rotation = 0;
+    /** 提示：Gun 自身没有外观 */
+    visible = true;
+    /** 提示：Gun 自身没有外观 */
+    zIndex = 0;
+    /** 提示：Gun 自身没有外观 */
+    alpha = 1;
+
+    getIsInBoundary() { return (Math.abs(this.x) <= this.board.halfWidth) && (Math.abs(this.y) <= this.board.halfHeight); }
+
+    destroy(): void { this.destroyed = true; }
+    destroyed = false;
+}
+
+export const baseMakeGun = (options: {
+    game: Game, combat: Combat, board: Board,
+    x: number, y: number, rotation: number,
+}) => {
+    const gun = new Gun(options);
+    gun.x = options.x;
+    gun.y = options.y;
+    gun.rotation = options.rotation;
+    return gun;
+};

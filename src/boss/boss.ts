@@ -38,7 +38,7 @@ export class Boss extends Entity {
     get y() { return this.sprite.y; }
     set y(v: number) { this.sprite.y = v; }
     get rotation() { return this.sprite.rotation; }
-    set rotation(v: number) { this.sprite.rotation = v; }
+    set rotation(v: number) { this.sprite.rotation = v; }// TODO: 需要考虑一下，要不要让 boss 无法旋转……这样方便发弹
     get visible() { return this.sprite.visible; }
     set visible(v: boolean) { this.sprite.visible = v; }
     get zIndex() { return this.sprite.zIndex; }
@@ -61,7 +61,7 @@ export class Boss extends Entity {
         return this._shield;
     }
 
-    isInBoundary() { return true; }/** MAYDO: 应该没啥用，Boss.isInBoundary */
+    getIsInBoundary() { return true; }/** MAYDO: 应该没啥用，Boss.isInBoundary */
 
     kill() {
         // TODO: 击破特效

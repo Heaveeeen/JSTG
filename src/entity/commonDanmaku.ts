@@ -134,7 +134,7 @@ export class CommonDanmaku extends AbstractDanmaku {
         this._erased = true;
         this.enemy?.destroy();
         options.forEachCorpse?.({ x: this.x, y: this.y });
-        if (options.effectType !== "none" &&this.isInBoundary() && this.visible && this.alpha > 0) {
+        if (options.effectType !== "none" &&this.getIsInBoundary() && this.visible && this.alpha > 0) {
             // 如果能看见，则生成消弹特效，之后再删除
             const eraseEffectType: "fog" | "reduce" = options.effectType ?? (this.type === "bubble" || this.type === "nuclear" ? "reduce" : "fog");
             if (eraseEffectType === "fog") {
@@ -195,7 +195,7 @@ export class CommonDanmaku extends AbstractDanmaku {
         eraseEffectSprite.destroy({ children: true });
     }
 
-    isInBoundary() {
+    getIsInBoundary() {
         const r = this.hitboxRadius * 1.5 + 5;
         return (Math.abs(this.x) - r <= this.board.halfWidth) && (Math.abs(this.y) - r <= this.board.halfHeight);
     }
@@ -225,6 +225,7 @@ export interface BaseMakePrefabDanmakuOptions<TIsFoggy extends boolean> {
     x: number;
     y: number;
     rotation: number;
+    speed: number;
     /** @default board.commonDanmakuLayer */
     parent: pixi.Container | null;
     /** @default prefabDanmakuHitboxRadius[type] */
@@ -239,7 +240,7 @@ export interface BaseMakePrefabDanmakuOptions<TIsFoggy extends boolean> {
 export function baseMakePrefabDanmaku<TIsFoggy extends false>(options: BaseMakePrefabDanmakuOptions<TIsFoggy>): CommonDanmaku;
 export function baseMakePrefabDanmaku<TIsFoggy extends true>(options: BaseMakePrefabDanmakuOptions<TIsFoggy>): LoopController<CommonDanmaku>;
 export function baseMakePrefabDanmaku<TIsFoggy extends boolean>(options: BaseMakePrefabDanmakuOptions<TIsFoggy>) {
-    const { type, color, game, combat, board, x, y, rotation } = options;
+    const { type, color, game, combat, board, x, y, rotation, speed } = options;
     const parent = options.parent ?? board.commonDanmakuLayer;
     const hitboxRadius = options.radius ?? prefabDanmakuHitboxRadius[type];
     const texture = game.prefabTextures.danmaku.danmaku[type][color];
@@ -252,14 +253,14 @@ export function baseMakePrefabDanmaku<TIsFoggy extends boolean>(options: BaseMak
             anchor: 0.5,
             scale: hitboxRadius / 2,
             zIndex,
-            alpha: 0.4,
+            alpha: 0.2,
         });
         // 弹雾期间，该循环持有 fogSprite 的所有权；弹雾结束后，把 fogSprite 的所有权连带弹幕移交给外部。
         return board.coDo<CommonDanmaku>(function*(loop) {
             for (let t = 0; t < 20; t += game.timeScale) {
-                fogSprite.scale.x -= fogSprite.scale.x * 0.03 * game.timeScale;
-                fogSprite.scale.y -= fogSprite.scale.y * 0.03 * game.timeScale;
-                fogSprite.alpha += 0.02 * game.timeScale;
+                fogSprite.scale.x -= fogSprite.scale.x * 0.04 * game.timeScale;
+                fogSprite.scale.y -= fogSprite.scale.y * 0.04 * game.timeScale;
+                fogSprite.alpha += 0.04 * game.timeScale;
                 yield;
             }
             fogSprite.texture = pixi.Texture.EMPTY;
@@ -267,11 +268,13 @@ export function baseMakePrefabDanmaku<TIsFoggy extends boolean>(options: BaseMak
             fogSprite.alpha = 1;
             const danSprite = makeCommonOrAnimatedSprite({
                 game, combat, board, texture, sprite: fogSprite,
-            })
+            });
             const danmaku = new CommonDanmaku({
                 type, color, game, combat, board,
                 hitboxRadius, sprite: danSprite,
-            })
+            });
+            danmaku.speed = speed;
+            danmaku.canBeErase = canBeErase; // TODO: 把这个变成类的构造参数？
             return danmaku;
         }).then(result => { // 如果循环被意外打断，说明 fogSprite 所有权没能移交给外部，则摧毁 fogSprite 。
             if (result === undefined) { fogSprite.destroy(); }
@@ -290,6 +293,7 @@ export function baseMakePrefabDanmaku<TIsFoggy extends boolean>(options: BaseMak
             type, color, game, combat, board,
             hitboxRadius, sprite,
         });
+        danmaku.speed = speed;
         danmaku.canBeErase = canBeErase;
         return danmaku;
     }

@@ -17,6 +17,7 @@ import { Spellcard } from "./boss/spellcard.js";
 import { baseStartSingleBossBattle, SingleBossSpellOptions } from "./boss/bossBattle.js";
 import { baseMakeBoss, Boss, NewBossOptions } from "./boss/boss.js";
 import { HslaFilter, HslaColor, PartialHslaColor, makeHsla, HslaOptions } from "./graphics/hslaFilter.js";
+import { baseMakeGun } from "./entity/entity.js";
 
 
 
@@ -335,6 +336,23 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 get makeFoggyDanmaku() { return makeFoggyDanmaku; },
                 /** TODOC: makeLaserBeam */
                 get makeLaserBeam() { return makeLaserBeam; },
+                /**
+                 * 创建一个发弹点，这个东西可以帮你发射弹幕。  
+                 * 注意：任何实体（弹幕、敌人、Boss 等）都可以当做发弹点来使用。  
+                 */
+                makeGun(options: {
+                    /** @default 0 */
+                    x?: number,
+                    /** @default 0 */
+                    y?: number,
+                    /** @default 0 */
+                    rotation?: number
+                } = {}) {
+                    return baseMakeGun({
+                        game, combat, board,
+                        x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
+                    });
+                },
                 /** TODOC: makeBoss */
                 makeBoss,
                 /** TODOC: startSingleBossBattle */
@@ -434,6 +452,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 y?: number,
                 /** @default 0 */
                 rotation?: number,
+                /** @default 0 */
+                speed?: number,
                 /** 该弹幕的判定半径，默认值请参考 prefabDanmakuHitboxRadius 。 */
                 radius?: number,
                 /** 图层顺序。若不填此参数，则自动根据弹幕尺寸排序，大的在底层、小的在顶层。 */
@@ -452,6 +472,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     game, combat, board,
                     type: options.type ?? "smallball", color: options.color ?? "red", parent: options.parent ?? null,
                     x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
+                    speed: options.speed ?? 0,
                     radius: options.radius ?? null,
                     zIndex: options.zIndex ?? null,
                     canBeErase: options.canBeErase ?? null,
@@ -470,6 +491,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     game, combat, board,
                     type: options.type ?? "smallball", color: options.color ?? "red", parent: options.parent ?? null,
                     x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
+                    speed: options.speed ?? 0,
                     radius: options.radius ?? null,
                     zIndex: options.zIndex ?? null,
                     canBeErase: options.canBeErase ?? null,
@@ -488,6 +510,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 y?: number, 
                 /** @default 0 */
                 rotation?: number
+                /** @default 0 */
+                speed?: number
                 /** @default game.commonDanmakuLayer */
                 parent?: pixi.Container,
                 /** @default 2 */
@@ -520,6 +544,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     game, combat, board,
                     type: options.type ?? "laserseg", color: options.color ?? "red",
                     x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
+                    speed: options.speed ?? 0,
                     parent: options.parent ?? null,
                     halfWidth: options.halfWidth ?? 2, length: options.length ?? 400,
                     startPoint: options.startPoint ?? null, endPoint: options.endPoint ?? null,
@@ -528,18 +553,32 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 });
             }
 
-            function clearBoard({ x, y }: utils.Vec2) { board.coDo(function*() {
-                for (let t = 0; t < 60; t += game.timeScale) {
+            function clearBoard(options: {
+                x: number, y: number,
+                /** @default 60 */
+                duration?: number,
+                /**
+                 * 本次消弹的来源种类。决定本次消弹是否能够生效。
+                 * * "common" - 最低级别的权限，本次消弹会被 canBeErase 拦住。
+                 * * "force" - 本次消弹不会被任何因素阻止。  
+                 * @default "common"
+                 */
+                permissionType?: "common" | "force",
+            }) { board.coDo(function*() {
+                const { x, y } = options;
+                const rate = 60 / (options.duration ?? 60);
+                const permissionType = options.permissionType ?? "common";
+                for (let t = 0; t < 60; t += game.timeScale * rate) {
                     const radius = t * 10;
                     board.danmakuRegList.eraseByRadius({ x, y, radius });
                     // TODO: damage (circle) r=radius, dmg=10*timescale, dmg to boss = 0.2
                     board.enemyRegList.forEachByRadius({ x, y, radius, callback: enemy => enemy.beHurt(
                         // 此处图方便，直接用名称判断是不是 boss ……
-                        (enemy.danmaku.type === "enemySpellcardShield" ? 2 : 10) * game.timeScale
+                        (enemy.danmaku.type === "enemySpellcardShield" ? 2 : 10) * game.timeScale * rate
                     ), });
                     yield;
                 }
-                board.danmakuRegList.forEachAlive(dan => dan.erase());
+                board.danmakuRegList.forEachAlive(dan => dan.erase({ permissionType }));
             }); }
 
             return board;
