@@ -292,7 +292,7 @@ export class Player {
     bombFn: (options: PlayerBombOptions) => void;
     destroyFn: () => void;
 
-    private _lastBombClockTs = -999;
+    private _bombCd = 0;
 
     /** 移动自机，还有 isShooting */
     _updateInputAndMove(options: PlayerUpdateOptions) {
@@ -327,13 +327,15 @@ export class Player {
             }
 
             this.isShooting = kh(keyMap.attack ?? "KeyZ");
+        } else {
+            this.isSlow = false;
+            this.isShooting = false;
         }
 
         if (this.state.type === "common" || this.state.type === "dying") {
             if (this.bombAmount >= 1 && kd(keyMap.bomb ?? "KeyX") && (
-                this.game.clock - this._lastBombClockTs > 150 || this.state.type !== "common" || this.state.invincibleTime <= 0
+                this.game.clock - this._bombCd <= 0 || this.state.type !== "common" || this.state.invincibleTime <= 0
             )) {
-                this._lastBombClockTs = this.game.clock;
                 this.bombFn({});
                 this.bombAmount -= 1;
                 this.board._spellcardRegList.forEachAlive(spell => spell.onBomb({ player: this }));
@@ -343,11 +345,12 @@ export class Player {
 
     _defaultUpdate(options: PlayerUpdateOptions) {
         this._updateInputAndMove(options); // 这玩意不写在生成器里，是因为 options 传不进去。。。傻逼 js 没法获得第一次 next 传进去的东西
-        if (this.state.type !== "common") {
-            this.isSlow = false;
-            this.isShooting = false;
-        }
         this._updateStateGen.next();
+        if (this._bombCd <= this.game.timeScale) {
+            this._bombCd = 0;
+        } else {
+            this._bombCd -= this.game.timeScale;
+        }
     }
 
     /** @internal */
@@ -496,26 +499,44 @@ export class Player {
     }
 
     _defaultReigekiBomb(opt: PlayerBombOptions) {
-        this.applyInvincible(210);
+        this.applyInvincible(330);
+        this.applyBombCd(240);
         this.game.prefabSounds.thse.slash.play();
         makeReigekiRing({
             game: this.game, combat: this.combat, board: this.board,
             x: this.x, y: this.y + 50,
-            maxRadius: null, insideDps: null, outsideDps: null, initSpeed: null,
+            maxRadius: null, insideDps: null, outsideDps: null,
+            initSpeed: 2, speedK: 0.992, duration: 150,
         });
     }
 
-    /** 给予玩家无敌效果。如果玩家处于 Miss 状态，则这些无敌时间会拖到玩家复活后再开始生效。 */
+    /**
+     * 给予玩家无敌效果。  
+     * 如果 time <= 0 ，则什么也不会发生。  
+     * 如果玩家处于 dying 状态，则复活，也就是俗称的决死。  
+     * 如果玩家处于 miss 状态，则这些无敌时间会拖到玩家复活后再开始生效。  
+     */
     applyInvincible(time: number) {
+        if (time <= 0) { return; }
         if (this.state.type === "common") {
             // 新旧无敌时间的叠加方式，不是加算，也不是取最大值，而是两者折中。（用牢zun的话说，很狡猾的机制。）
             this.state.invincibleTime = Math.max(this.state.invincibleTime, time) + Math.min(this.state.invincibleTime, time) / 2;
         } else if (this.state.type === "dying") { // 决死
             this.state = { type: "common", invincibleTime: time };
-        } else {
+        } else if (this.state.type === "miss") {
             const rt = this.state.rebirthInvincibleTime ?? 0;
             this.state.rebirthInvincibleTime = Math.max(rt, time) + Math.min(rt, time) / 2;
+        } else {
+            utils.staticAssert<never>(this.state);
         }
+    }
+
+    /**
+     * 在 time 时间内，不能使用 Bomb 。  
+     * 一般来说，应当在 Bomb 生效时调用此函数，防止玩家手滑连着放出好几个 B 。  
+     */
+    applyBombCd(time: number) {
+        this._bombCd = Math.max(this._bombCd, time);
     }
 
     destroy() {

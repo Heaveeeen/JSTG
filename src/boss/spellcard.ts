@@ -219,7 +219,7 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
         });
         const resultTime = new pixi.Text({
             parent: resultPopup,
-            text: getTimeStr(endClockTs - beginClockTs),
+            text: Math.round(utils.clamp(endClockTs - beginClockTs, 0, maxTime) / 60 * 100) / 100,
             x: 90, y: -16, anchor: { x: 1, y: 0.5 },
             resolution: 4,
             style: {
