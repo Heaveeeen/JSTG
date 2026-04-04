@@ -56,7 +56,7 @@ export class Boss extends Entity {
         this._shield = prefabEnemyFactory.makeSpellcardShield({
             game: this.game, combat: this.combat, board: this.board,
             x: this.x, y: this.y, rotation: 0, parent: null,
-            ...options, hpBarHue: this.hpBarHue,
+            ...options, hpBarHue: this.hpBarHue, isBoss: true,
         });
         this._shield.danmaku.sprite.filters = this.shieldFilters;
         return this._shield;

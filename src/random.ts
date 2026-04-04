@@ -5,7 +5,7 @@ import * as utils from "./utils.js";
  * 构造一个随机数发生器，你可以用它来生成随机数，并且指定种子。  
  * 指定种子有助于稳定复现一局游戏，比如可以做 replay 啥的。  
  * 另外，也可以通过手动填入一些参数，实现一些神奇的“固定随机弹”。  
- */
+ */// TODO: 改成类
 export function makeRng(
     /** 随机种子，可选，留空会自动帮你填上一个随机数 */
     seed = Math.round(Math.random() * 1e8),

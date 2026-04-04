@@ -17,7 +17,7 @@ import { Spellcard } from "./boss/spellcard.js";
 import { baseStartSingleBossBattle, SingleBossSpellOptions, makeSingleBossSpellOptions } from "./boss/bossBattle.js";
 import { baseMakeBoss, Boss, NewBossOptions } from "./boss/boss.js";
 import { HslaFilter, HslaColor, PartialHslaColor, makeHsla, HslaOptions } from "./graphics/hslaFilter.js";
-import { baseMakeGun } from "./entity/entity.js";
+import { baseMakeGun, Gun } from "./entity/entity.js";
 import { AutoInvincibleMode } from "./entity/commonEnemy.js";
 
 
@@ -228,6 +228,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             })();
             //#endregion enemyRegList
 
+            const gunRegList = makeRegList<Gun>({ game });
+
             const makeBoss = (options: {
                 /** @default "JSTG Boss" */name?: string,
                 /** @default 0 */x?: number,
@@ -313,6 +315,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 danmakuRegList,
                 /** TODOC: enemyRegList 理论上讲这里边是所有敌人，包括杂鱼和 boss */
                 enemyRegList,
+                gunRegList,
                 /** @internal */
                 _playerRegList,
                 /** @internal */
@@ -338,19 +341,17 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                  * 创建一个发弹点，这个东西可以帮你发射弹幕。  
                  * 注意：任何实体（弹幕、敌人、Boss 等）都可以当做发弹点来使用。  
                  */
-                makeGun(options: {
+                makeGun: (options: {
                     /** @default 0 */
                     x?: number,
                     /** @default 0 */
                     y?: number,
                     /** @default 0 */
                     rotation?: number
-                } = {}) {
-                    return baseMakeGun({
-                        game, combat, board,
-                        x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
-                    });
-                },
+                } = {}) => baseMakeGun({
+                    game, combat, board,
+                    x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
+                }),
                 /** TODOC: makeBoss */
                 makeBoss,
                 /** TODOC: startSingleBossBattle */
@@ -430,6 +431,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                      * @default "none"
                      */
                     autoInvincibleMode?: AutoInvincibleMode,
+                    /** @default false */
+                    isBoss?: boolean,
                 } = {}) => prefabEnemyFactory.makeYinYangOrb({
                     game, combat, board,
                     maxHp: options.maxHp ?? 30,
@@ -438,6 +441,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     parent: options.parent ?? null,
                     birthProtectDuration: 30,
                     autoInvincibleMode: options.autoInvincibleMode ?? "none",
+                    isBoss: options.isBoss ?? false,
                 });
 
                 return {
@@ -468,8 +472,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 canBeErase?: boolean,
             };
 
-            function makeDanmaku(/** @default "smallball" */type?: PrefabDanmakuNames, /** @default "red" */color?: DyedTextureColors): CommonDanmaku;
             function makeDanmaku(options: MakeDanmakuOptions): CommonDanmaku;
+            function makeDanmaku(/** @default "smallball" */type?: PrefabDanmakuNames, /** @default "red" */color?: DyedTextureColors): CommonDanmaku;
             function makeDanmaku(options?: PrefabDanmakuNames | MakeDanmakuOptions, color?: DyedTextureColors) {
                 if (options === undefined || typeof options === "string") {
                     options = { type: options, color };
@@ -487,8 +491,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             }
 
             // 此处为复制，要是改了上面，别忘了把下面也改了
-            function makeFoggyDanmaku(/** @default "smallball" */type?: PrefabDanmakuNames, /** @default "red" */color?: DyedTextureColors): LoopController<CommonDanmaku>;
             function makeFoggyDanmaku(options: MakeDanmakuOptions): LoopController<CommonDanmaku>;
+            function makeFoggyDanmaku(/** @default "smallball" */type?: PrefabDanmakuNames, /** @default "red" */color?: DyedTextureColors): LoopController<CommonDanmaku>;
             function makeFoggyDanmaku(options?: PrefabDanmakuNames | MakeDanmakuOptions, color?: DyedTextureColors) {
                 if (options === undefined || typeof options === "string") {
                     options = { type: options, color };
@@ -540,8 +544,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 canBeErase?: boolean,
             };
 
-            function makeLaserBeam(/** @default "laserseg" */type?: PrefabDanmakuNames, /** @default "red" */color?: DyedTextureColors): LaserBeam;
             function makeLaserBeam(options: MakeLaserBeamOptions): LaserBeam;
+            function makeLaserBeam(/** @default "laserseg" */type?: PrefabDanmakuNames, /** @default "red" */color?: DyedTextureColors): LaserBeam;
             function makeLaserBeam(options?: PrefabDanmakuNames | MakeLaserBeamOptions, color?: DyedTextureColors) {
                 if (options === undefined || typeof options === "string") {
                     options = { type: options, color };
@@ -577,14 +581,14 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 for (let t = 0; t < 60; t += game.timeScale * rate) {
                     const radius = t * 10;
                     board.danmakuRegList.eraseByRadius({ x, y, radius });
-                    // TODO: damage (circle) r=radius, dmg=10*timescale, dmg to boss = 0.2
+                    board.gunRegList.getAlives().forEach(gun => gun.destroy());
                     board.enemyRegList.getByRadius({ x, y, radius }).forEach(enemy => enemy.beHurt(
-                        // 此处图方便，直接用名称判断是不是 boss ……
-                        (enemy.danmaku.type === "enemySpellcardShield" ? 2 : 10) * game.timeScale * rate
+                        (enemy.isBoss ? 2 : 10) * game.timeScale * rate
                     ));
                     yield;
                 }
                 board.danmakuRegList.getAlives().forEach(dan => dan.erase({ permissionType }));
+                    board.gunRegList.getAlives().forEach(gun => gun.destroy());
             }); }
 
             return board;

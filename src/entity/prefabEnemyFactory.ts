@@ -16,8 +16,9 @@ export const prefabEnemyFactory = (()=>{
         //scale: number,
         // TODO: hitboxRadius, isCanHurt, isTouchingDamage, isCanGraze, hpBarType
         autoInvincibleMode: AutoInvincibleMode,
+        isBoss: boolean,
     }) => {
-        const { game, combat, board, maxHp, color, x, y, rotation, birthProtectDuration, autoInvincibleMode } = options;
+        const { game, combat, board, maxHp, color, x, y, rotation, birthProtectDuration, autoInvincibleMode, isBoss } = options;
         const rootSprite = new pixi.Sprite({
             parent: options.parent ?? board.commonEnemyLayer,
             x, y, rotation, anchor: 0.5,
@@ -51,7 +52,7 @@ export const prefabEnemyFactory = (()=>{
             canBeErase: false,
             birthProtectDuration,
             afterBeHurtCallback: null,
-            hpBar: null, autoInvincibleMode,
+            hpBar: null, autoInvincibleMode, isBoss,
         });
         enemy.forever(loop => {
             outerRing.rotation -= 0.07;
@@ -71,8 +72,9 @@ export const prefabEnemyFactory = (()=>{
         //scale: number, 
         // TODO: hitboxRadius, isCanHurt, isTouchingDamage, isCanGraze, animRotation(?), hpBarType
         autoInvincibleMode: AutoInvincibleMode,
+        isBoss: boolean,
     }) => {
-        const { game, combat, board, maxHp, x, y, rotation, birthProtectDuration, hpBarHue, autoInvincibleMode } = options;
+        const { game, combat, board, maxHp, x, y, rotation, birthProtectDuration, hpBarHue, autoInvincibleMode, isBoss } = options;
         const sprite = new pixi.Sprite({
             parent: options.parent ?? board.bossShieldLayer,
             texture: game.prefabTextures.enemy.shield,
@@ -97,7 +99,7 @@ export const prefabEnemyFactory = (()=>{
                 sprite.alpha = 0.8;
             },
             hpBar: { type: "circle", radius: 50 * 1.1, hue: hpBarHue },
-            autoInvincibleMode,
+            autoInvincibleMode, isBoss,
         });
         enemy.forever(loop => {
             sprite.alpha += (0.2 - sprite.alpha) * 0.05 * game.timeScale;

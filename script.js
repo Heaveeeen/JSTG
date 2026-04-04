@@ -1,4 +1,4 @@
-// @ts-check
+// @ ts-check
 // 如果希望关闭 ts 的类型检查，请修改或删除上方注释。可以在“@ts-check”中间加个空格啥的，方便开关。
 
 /// <reference path="./lib/pixi/pixi.d.ts" />
@@ -13,12 +13,12 @@ import * as pixi from "pixi";
 (async () => {
     const game = await jstg.LaunchGame();
     const { prefabDanmakuHitboxRadius } = jstg;
-    const { input, app, debug } = game;
+    const { input, app, debug, Sleep } = game;
     const { isDown, isUp, isHold, isIdle } = input;
     const { asAny, UntilDestroy, decibel, deg } = jstg.utils;
 
     const combat = await game.StartCombat()
-    const { board } = combat;
+    const { board, rand } = combat;
     const { makeDanmaku, makeFoggyDanmaku, makeLaserBeam, prefabPlayers, prefabEnemys, forever, coDo, } = board;
 
     console.log(game, combat, board);
@@ -82,9 +82,9 @@ import * as pixi from "pixi";
                             dan.boundaryDelete();
                         }, { owns: dan });
                     }
-                    yield* game.Sleep(9);
+                    yield* Sleep(9);
                 }
-                yield* game.Sleep(15);
+                yield* Sleep(15);
             }
         });
 
@@ -104,7 +104,7 @@ import * as pixi from "pixi";
                         dan.boundaryDelete();
                     }, { owns: dan });
                 }
-                yield* game.Sleep(150);
+                yield* Sleep(150);
             }
         });
     }
@@ -242,6 +242,83 @@ import * as pixi from "pixi";
     //#region 测试 boss
     const non1 = jstg.makeSingleBossSpellOptions({
         time: 30 * 60, hp: 3000,
+        *gen({ boss, spellcard, shield }) { while (true) {
+            /** @param {Gun} gun */
+            const foo = (gun, o) => {let r = gun.aimedGun(boss).rotation; gun.forever(loop => {
+                if (loop.clock >= 80) { gun.destroy(); } else {
+                    r += o;
+                    gun.speedToA(9, 0.02);
+                    gun.rotation += o * 0.015;
+                    gun.step();
+                    if (loop.clock % 1 === 0) {
+                        game.prefabSounds.thse.tan00.play(decibel(-15));
+                        makeFoggyDanmaku({
+                            type: rand.select([{ weight: 1, value: "ringball"}, { weight: 1, value: "dot"}, { weight: 1, value: "smallball"}]),
+                            color: rand.select([{ weight: 1, value: "h180"}, { weight: 1, value: "h210"}, { weight: 1, value: "white"}]),
+                            ...gun, speed: 0,
+                        }).then(dan => {
+                            dan.rotation = deg(rand.float(-400, 400)) * rand.float(0,1) ** 3 + r;
+                            const v = rand.float(1, 4);
+                            const a = rand.float(0.008, 0.015);
+                            dan.forever(loop => {
+                                dan.speedToA(v, a);
+                                dan.step();
+                                dan.boundaryDelete();
+                            });
+                        });
+                    }
+                }
+            })};
+            const gunLeft = boss.makeGun();
+            gunLeft.y -= 25;
+            gunLeft.rotation = deg(90 + 50);
+            gunLeft.speed = 2;
+            foo(gunLeft, deg(20));
+            const gunRight = boss.makeGun();
+            gunRight.y -= 25;
+            gunRight.rotation = deg(90 - 50);
+            gunRight.speed = 2;
+            foo(gunRight, deg(-20));
+            yield* Sleep(80);
+            boss.glideTo(rand.float(-60, 60), rand.float(-120, -100));
+            yield* Sleep(30);
+        } },
+    });
+    const 波力海苔 = jstg.makeSingleBossSpellOptions({
+        time: 40 * 60, hp: 4000, title: "你好「波粒海苔」",
+        //autoInvincibleMode: "noDamageWhilePlayerInvincible",
+        *gen({ boss, spellcard, shield }) {
+            spellcard.forever(loop => {
+                boss.glideTo({
+                    x: 40 * Math.cos(loop.clock * 0.01),
+                    y: 20 * Math.sin(loop.clock * 0.01) - 80,
+                });
+            });
+            let omega = 0;
+            let d = deg(0);
+            while (true) {
+                game.prefabSounds.thse.tan00.play(decibel(-9));
+                const gun1 = boss.makeGun();
+                gun1.rotation = d;
+                for (const gun2 of gun1.ringBlast(3)) {
+                    gun2.step(30);
+                    makeFoggyDanmaku({
+                        type: "crystal", color: "h30", ...gun2,
+                    }).then(dan => {
+                        dan?.forever(loop => {
+                            dan.step(2.5);
+                            dan.boundaryDelete();
+                        });
+                    });
+                }
+                d += omega;
+                omega += deg(0.045);
+                yield;
+            }
+        },
+    });
+    const non2 = jstg.makeSingleBossSpellOptions({
+        time: 30 * 60, hp: 3000,
         fn({ boss, spellcard, shield }) {
             spellcard.forever(loop => {
                 if (loop.clock % 17 === 0) {
@@ -274,44 +351,12 @@ import * as pixi from "pixi";
             });
         }
     });
-    const 波力海苔 = jstg.makeSingleBossSpellOptions({
-        time: 800 * 60, hp: 4000, title: "你好「波粒海苔」", autoInvincibleMode: "noDamageWhilePlayerInvincible",
-        *gen({ boss, spellcard, shield }) {
-            spellcard.forever(loop => {
-                boss.glideTo({
-                    x: 40 * Math.cos(loop.clock * 0.01),
-                    y: 20 * Math.sin(loop.clock * 0.01) - 80,
-                });
-            });
-            let omega = 0;
-            let d = deg(0);
-            while (true) {
-                game.prefabSounds.thse.tan00.play(decibel(-9));
-                const gun1 = boss.makeGun();
-                gun1.rotation = d;
-                for (const gun2 of gun1.ringBlast(3)) {
-                    gun2.step(30);
-                    makeFoggyDanmaku({
-                        type: "crystal", color: "h30", ...gun2,
-                    }).then(dan => {
-                        dan?.forever(loop => {
-                            dan.step(2.5);
-                            dan.boundaryDelete();
-                        });
-                    });
-                }
-                d += omega;
-                omega += deg(0.045);
-                yield;
-            }
-        },
-    });
     const fooBoss = () => coDo(function*() {
-        yield* game.Sleep(30);
+        yield* Sleep(30);
         const boss = board.makeBoss(game.prefabCharInfos.maple.boss);
         const battle = board.startSingleBossBattle({
             boss,
-            spells: [non1, 波力海苔, { hp: 50 }, { title: "aaaaaaaa", hp: 50, time: 15 * 60 }, { title: "bbbbbbbb", hp: 50, time: 15 * 60}],
+            spells: [non1, 波力海苔, non2, { title: "aaaaaaaa", hp: 50, time: 15 * 60 }, { title: "bbbbbbbb", hp: 50, time: 15 * 60}],
         });
     });
     fooBoss();

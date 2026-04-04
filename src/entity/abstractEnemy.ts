@@ -5,6 +5,7 @@ import * as utils from "../utils.js";
 
 export interface newAbstractEnemyOptions<T extends AbstractDanmaku> {
     danmaku: T,
+    isBoss: boolean,
 }
 
 export type EnemyBeHurtOptions = {
@@ -16,11 +17,13 @@ export type EnemyBeHurtOptions = {
 export abstract class AbstractEnemy<T extends AbstractDanmaku = AbstractDanmaku> {
     /** 敌人的本体其实是一个 danmaku */
     danmaku: T;
+    isBoss: boolean;
 
     constructor(options: newAbstractEnemyOptions<T>) {
         this.danmaku = options.danmaku;
         this.danmaku.enemy = this;
         this.danmaku.board.enemyRegList.push(this);
+        this.isBoss = options.isBoss;
     }
 
     get x() { return this.danmaku.x; }

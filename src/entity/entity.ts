@@ -3,6 +3,23 @@ import { CoDoGenFn, LoopController, LooperFn, LoopOptions } from "../looper.js";
 import * as utils from "../utils.js";
 
 
+// MAYDO: 更多缓动模式
+type GlideToMode = {
+    type: "jstgExp";
+    /**
+     * @default 0.04
+     * 弹幕引擎中，这个值默认为 0.05
+     */
+    minK?: number;
+};
+
+type GlideToOptions = {
+    x: number;
+    y: number;
+    /** @default{ type: "jstgExp" } */
+    mode?: GlideToMode;
+};
+
 export abstract class Entity {
     readonly game: Game;
     readonly combat: Combat;
@@ -89,9 +106,7 @@ export abstract class Entity {
     glideState: {
         isGliding: true,
         x: number, y: number,
-        mode: {// MAYDO: 更多缓动模式
-            type: "jstgExp", minK: number,
-        }
+        mode: Required<GlideToMode>,
     } | { isGliding: false } = { isGliding: false };
 
     stopGlide() {
@@ -100,18 +115,10 @@ export abstract class Entity {
 
     /** TODO: 封装出一个类似 LoopController 的结构 */
     /** TODOC: glideTo */
-    glideTo(options: {
-        x: number, y: number,
-        /** @default{ type: "jstgExp" } */
-        mode?: {// MAYDO: 更多缓动模式
-            type: "jstgExp",
-            /**
-             * @default 0.04
-             * 弹幕引擎中，这个值默认为 0.05
-             */
-            minK?: number,
-        }
-    }) {
+    glideTo(x: number, y: number, mode?: GlideToMode): void;
+    glideTo(options: GlideToOptions): void;
+    glideTo(arg1: GlideToOptions | number, arg2?: number, arg3?: GlideToMode) {
+        const options: GlideToOptions = typeof arg1 === "number" ? { x: arg1, y: arg2 as number, mode: arg3 } : arg1;
         // 能够允许 glideTo 并发吗……？从逻辑上就不太可能。
         const { x, y } = options;
         const optMode = options.mode ?? { type: "jstgExp" };
@@ -233,6 +240,13 @@ export class Gun extends Entity {
     zIndex = 0;
     /** 提示：Gun 自身没有外观 */
     alpha = 1;
+
+    constructor(options: {
+        game: Game, combat: Combat, board: Board
+    }) {
+        super(options);
+        this.board.gunRegList.push(this);
+    }
 
     getIsInBoundary() { return (Math.abs(this.x) <= this.board.halfWidth) && (Math.abs(this.y) <= this.board.halfHeight); }
 
