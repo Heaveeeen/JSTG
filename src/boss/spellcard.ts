@@ -15,14 +15,13 @@ export interface StartSpellcardOptions {
     title: string,
     time: number,
     isPlayStartSound: boolean,
-    startupDuration: number, // 这个不太优雅……但暂时来看够用。
     isNonSpell: boolean,
     isSurvival: boolean,
 }
 
 export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
     const { game, combat, board, title: titleString, time: maxTime, ownEnemys, isNonSpell, isSurvival } = spellcardOptions;
-    const beginClockTs = game.clock + spellcardOptions.startupDuration;
+    const beginClockTs = game.clock;
     let endClockTs: number | null = null;
     if (spellcardOptions.isPlayStartSound) { game.prefabSounds.thse.cat00.play(); }
 

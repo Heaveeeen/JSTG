@@ -123,7 +123,6 @@ export const baseMakeSingleBossBattleController = (manualBossBattleOptions: {
             game, combat, board,
             title, time, ...opt,
             ownEnemys: [shield],
-            startupDuration: _startupDuration,
             isNonSpell: !isShowFigureAndTitle,
             isSurvival: false,
         });
@@ -161,7 +160,6 @@ export const baseMakeSingleBossBattleController = (manualBossBattleOptions: {
             game, combat, board,
             title, time, ...opt,
             ownEnemys: [],
-            startupDuration: _startupDuration,
             isNonSpell: !isShowFigureAndTitle,
             isSurvival: false,
         });
