@@ -71,6 +71,7 @@ export const makeLooper = (makeLooperOptions: {
 
     const { getTimescale, mainPauseController, isDebugBlame } = makeLooperOptions;
 
+    // MAYDO: 把这个东西跟 loopController 合并
     type ThreadItem = { fn: (() => void) | null, debugBlameTag?: any };
     type Thread = ThreadItem[];
 
