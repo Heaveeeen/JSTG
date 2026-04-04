@@ -247,6 +247,8 @@ export abstract class Entity {
         return this.board.makeGun({ ...this.xy, rotation: Math.atan2(targetPos.y - this.y, targetPos.x - this.x) });
     } // 这个方法没必要删，感觉还挺方便的。
 
+    // TODO: boss 随机移动
+
     /**
      * 判断该实体是否在版面内。  
      * 注意，该判断是必要不充分的。false 则实体一定在版面外，true 则该实体不一定在版面内。  

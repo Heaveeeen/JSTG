@@ -592,7 +592,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             }); }
 
             return board;
-        })();
+        })();// TODO: 粒子效果
         //#endregion board
 
         //#region boardFrameUi
@@ -729,7 +729,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
     const fpsCounterLoop = forever(() => {
         const now = performance.now();
         timeRecords.push(now);
-        if (timeRecords.length > 10) {// MAYDO: 现在这个帧率测试器容易看不出来长期的平均帧率，跳得太快了
+        if (timeRecords.length > 10) {// TODO: 现在这个帧率测试器容易看不出来长期的平均帧率，跳得太快了
             fps = Math.round(1000000 / (now - (timeRecords.shift() as number))) / 100;
         }
         fpsMonitor.text = `FPS:${fps}`;
@@ -843,7 +843,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             playerHue: null, shieldHsla: null, bossHpBarHue: null,
         }),
         // TODO: icu, wriggle
-        // MAYDO: JSTGDummy
+        // TODO: JSTGDummy
     } as const;
 
     const game = {
