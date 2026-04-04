@@ -338,7 +338,7 @@ export class Player {
             )) {
                 this.bombFn({});
                 this.bombAmount -= 1;
-                this.board._spellcardRegList.forEachAlive(spell => spell.onBomb({ player: this }));
+                this.board._spellcardRegList.getAlives().forEach(spell => spell.onBomb({ player: this }));
             }
         }
     }
@@ -491,7 +491,7 @@ export class Player {
                 } else {
                     // TODO: 两种受伤行为，一种普通的，一种原地爆炸的
                     this.state = { type: "dying", timeSinceDying: 0 };
-                    this.board._spellcardRegList.forEachAlive(spell => spell.onMiss({ player: this }));
+                    this.board._spellcardRegList.getAlives().forEach(spell => spell.onMiss({ player: this }));
                 }
             }
             if (this._isNeedEraseHitDanmaku) { options.danmaku?.erase(); }

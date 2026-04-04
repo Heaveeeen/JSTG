@@ -1,6 +1,4 @@
 import * as pixi from "pixi";
-import { Combat, Board, Game, Destroyable } from "../jstg.js";
-import { DyedTextureColors } from "../textures.js";
 import { AbstractEnemy, EnemyBeHurtOptions, newAbstractEnemyOptions } from "./abstractEnemy.js";
 import { CommonDanmaku } from "./commonDanmaku.js";
 import * as utils from "../utils.js";
@@ -9,6 +7,8 @@ import { LoopController } from "../looper.js";
 import { PlaySoundOptions } from "../sounds.js";
 
 
+
+export type AutoInvincibleMode = "none" | "noDamageWhilePlayerInvincible" | "ghostWhilePlayerInvincible";
 
 interface NewCommonEnemyOptions extends newAbstractEnemyOptions<CommonDanmaku> {
     /** @default danmaku.hitboxRadius */
@@ -27,11 +27,17 @@ interface NewCommonEnemyOptions extends newAbstractEnemyOptions<CommonDanmaku> {
      * 这个参数是出生保护减伤持续的帧数。
      */
     birthProtectDuration: number,
+    /**
+     * 这个参数可以用来让敌人不吃 Bomb 。  
+     * "noDamageWhilePlayerInvincible" - 一旦玩家获得无敌帧或 Miss ，这个敌人也会随之进入无敌状态，免疫所有伤害。  
+     * "ghostWhilePlayerInvincible" - 一旦玩家获得无敌帧或 Miss ，这个敌人会随之进入无法选中的虚化状态，无法受到任何伤害，并且不会被诱导弹索敌等等。  
+     */
+    autoInvincibleMode: AutoInvincibleMode,
 }
 
 let lastPlayDamageSoundClockTs = -999;
 let damageSoundLoop: LoopController<void> | null = null;
-const damageSoundQueue: { play(options?: PlaySoundOptions): void }[] = [];
+const damageSoundQueue: (()=>{})[] = [];
 
 export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
     hurtHitboxRadius: number;
@@ -41,7 +47,7 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
     /** @internal */
     private _birthProtectDuration: number;
     /** @internal */
-    get _birthProtectCoef() {
+    private get _birthProtectCoef() {
         if (this._birthProtectDuration <= 0) { return 1; }
         const t = (this.danmaku.game.clock - this._birthClockTS) / this._birthProtectDuration - 1;
         if (t >= 0) {
@@ -50,6 +56,10 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
             return (this._birthProtectDuration * 0.2 + 20) ** t;
         }
     }
+
+    /** @internal */
+    private _lastInvincibleClockTs: number = -999;
+    private get isInvincible() { return this.danmaku.game.clock - this._lastInvincibleClockTs < 30; }
 
     /** @internal */
     private _hp: number;
@@ -119,13 +129,26 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
         }
         if (damageSoundLoop === null || damageSoundLoop.destroyed) { damageSoundLoop = this.danmaku.game.forever(loop => {
             if (this.danmaku.game.clock >= lastPlayDamageSoundClockTs + 3) {
-                const sound = damageSoundQueue.pop();
-                if (sound) {
+                const fn = damageSoundQueue.shift();
+                if (fn) {
                     lastPlayDamageSoundClockTs = this.danmaku.game.clock;
-                    sound.play();
+                    fn();
                 }
             }
         }); }
+        if (options.autoInvincibleMode === "noDamageWhilePlayerInvincible") {
+            this.forever(loop => {
+                for (const player of this.danmaku.board._playerRegList.getAlives()) {
+                    if (player.state.type !== "common" || player.state.invincibleTime > 10) {
+                        this._lastInvincibleClockTs = this.danmaku.game.clock + 10;
+                    }
+                }
+            });
+        } else if (options.autoInvincibleMode === "ghostWhilePlayerInvincible") {
+            // TODO: ghostWhilePlayerInvincible
+        } else {
+            utils.staticAssert<"none">(options.autoInvincibleMode);
+        }
     }
 
     drawDebugHitbox(): void {
@@ -138,17 +161,19 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
     private _afterBeHurtCallback: NewCommonEnemyOptions["afterBeHurtCallback"];
 
     beHurt(value: number, options: EnemyBeHurtOptions = {}) {
-        if (options.isEffectByBirthProtect ?? true) {
-            value *= this._birthProtectCoef;
+        if (!this.isInvincible) {
+            if (options.isEffectByBirthProtect ?? true) {
+                value *= this._birthProtectCoef;
+            }
+            this.hp -= value;
         }
-        this.hp -= value;
-        const { damage00, damage01 } = this.danmaku.game.prefabSounds.thse;
-        const sound = this.hp <= Math.min(this.maxHp * 0.1, 500) ? damage01 : damage00;
+        const { damage00, damage01, nodamage } = this.danmaku.game.prefabSounds.thse;
+        const play = this.isInvincible ? () => nodamage.play(utils.decibel(-6)) : this.hp <= Math.min(this.maxHp * 0.1, 500) ? damage01.play : damage00.play;
         if (this.danmaku.game.clock >= lastPlayDamageSoundClockTs + 3) {
             lastPlayDamageSoundClockTs = this.danmaku.game.clock;
-            sound.play();
+            play();
         } else if (this.danmaku.game.clock >= lastPlayDamageSoundClockTs + 1) {
-            if (damageSoundQueue.length < 2) { damageSoundQueue.push(sound); }
+            if (damageSoundQueue.length < 2) { damageSoundQueue.push(play); }
         }
         this._afterBeHurtCallback?.(options);
     }

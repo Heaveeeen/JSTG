@@ -14,8 +14,6 @@ export abstract class Entity {
         this.game = options.game;
         this.combat = options.combat;
         this.board = options.board;
-        this.stopGlide = this.stopGlide.bind(this);
-        this.forever(this._updateGlide.bind(this));
     }
 
     abstract x: number;
@@ -59,8 +57,15 @@ export abstract class Entity {
     }
 
     /** @internal */
+    private _glideLoop: LoopController<void> | null = null;
+
+    /** @internal */
     private _updateGlide() {
-        if (!this.glideState.isGliding) { return; }
+        if (!this.glideState.isGliding) {
+            this._glideLoop?.destroy();
+            this._glideLoop = null;
+            return;
+        }
         const { x: tx, y: ty, mode } = this.glideState;
         if (mode.type === "jstgExp") {
             const { minK } = mode;
@@ -118,6 +123,7 @@ export abstract class Entity {
         } else {
             utils.staticAssert<never>(optMode.type);
         }
+        if (this._glideLoop === null) { this._glideLoop = this.forever(this._updateGlide.bind(this)); }
     }
 
     get xy() { return { x: this.x, y: this.y }; }
@@ -192,7 +198,7 @@ export abstract class Entity {
 
     /** 如果该实体超出版面边界，摧毁该实体 */
     boundaryDelete() {
-        if (!this.getIsInBoundary) {
+        if (!this.getIsInBoundary()) {
             this.destroy();
         }
     }

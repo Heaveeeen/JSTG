@@ -4,6 +4,7 @@ import { DyedTextureColors, DyedTextures } from "../textures.js";
 import { AbstractEnemy } from "./abstractEnemy.js";
 import * as utils from "../utils.js";
 import { Entity } from "./entity.js";
+import { LooperFn, LoopOptions, LoopController, CoDoGenFn } from "../looper.js";
 
 
 export interface NewAbstractDanmakuOptions {
@@ -128,6 +129,16 @@ export abstract class AbstractDanmaku extends Entity {
     abstract update(player: Player): void;
 
     abstract getIsCrossCircle(circle: { x: number, y: number, radius: number }): boolean;
+
+    /**
+     * @example
+     * danmaku.loopBoundaryDelete();
+     * // -- 等同于 --
+     * danmaku.forever(() => danmaku.boundaryDelete());
+     */
+    loopBoundaryDelete(options: LoopOptions) {
+        return this.forever(() => this.boundaryDelete(), options);
+    }
 }
 
 /** 此处的数值与弹幕引擎有所不同 */

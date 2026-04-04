@@ -32,8 +32,6 @@ export const makeRegList = <T extends Destroyable>(options: {
 
     const getAlives = () => objects.filter(obj => !obj.destroyed);
 
-    const forEachAlive = (callback: (obj: T) => void) => getAlives().forEach(callback);
-
     let destroyed = false;
     const destroy = () => {
         if (destroyed) { return; }
@@ -46,7 +44,6 @@ export const makeRegList = <T extends Destroyable>(options: {
         push,
         clean,
         getAlives,
-        forEachAlive,
         get _validCount() { return validCount; },
         destroy,
         get destroyed() { return destroyed; }

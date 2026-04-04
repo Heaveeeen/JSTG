@@ -14,10 +14,11 @@ import { CoDoGenFn, LoopController, LooperFn, LoopOptions, makeLooper, makePause
 import { AbstractEnemy } from "./entity/abstractEnemy.js";
 import { prefabEnemyFactory } from "./entity/prefabEnemyFactory.js";
 import { Spellcard } from "./boss/spellcard.js";
-import { baseStartSingleBossBattle, SingleBossSpellOptions } from "./boss/bossBattle.js";
+import { baseStartSingleBossBattle, SingleBossSpellOptions, makeSingleBossSpellOptions } from "./boss/bossBattle.js";
 import { baseMakeBoss, Boss, NewBossOptions } from "./boss/boss.js";
 import { HslaFilter, HslaColor, PartialHslaColor, makeHsla, HslaOptions } from "./graphics/hslaFilter.js";
 import { baseMakeGun } from "./entity/entity.js";
+import { AutoInvincibleMode } from "./entity/commonEnemy.js";
 
 
 
@@ -54,6 +55,11 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
     loadPrefabSoundsOptions?: LoadPrefabSoundsOptions,
     /** @default 60 */
     standardFps?: number,
+    /**
+     * 我感觉这玩意开了关了对性能影响不是很大，建议常年开着
+     * @default true
+     */
+    isLooperDebugBlame?: boolean,
 } = {}) {
 
     const standardFps = gameOptions.standardFps ?? 60;
@@ -113,7 +119,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
     const mainPauseController = makePauseController();
 
-    const looper = makeLooper({ getTimescale: () => timeScale, mainPauseController });
+    const looper = makeLooper({ getTimescale: () => timeScale, mainPauseController, isDebugBlame: gameOptions.isLooperDebugBlame ?? true });
 
     const { forever, coDo } = looper;
 
@@ -147,7 +153,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             //#region danmakuRegList
             const danmakuRegList = (() => {
                 const regList = makeRegList<AbstractDanmaku>({ game });
-                const { objects, push, clean, forEachAlive, getAlives, destroy } = regList;
+                const { objects, push, clean, getAlives, destroy } = regList;
 
                 const update = (player: Player) => {
                     if (player.state.type === "common") {
@@ -159,15 +165,13 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     player._lastY = player.y;
                 };
 
-                const forEachByRadius = (options: { x: number, y: number, radius: number, callback: (danmaku: AbstractDanmaku) => void }) => {
-                    const { x, y, radius, callback } = options;
-                    forEachAlive(ent => {
-                        if (ent.getIsCrossCircle({ x, y, radius })) { callback(ent); }
-                    });
+                const getByRadius = (options: { x: number, y: number, radius: number }) => {
+                    const { x, y, radius } = options;
+                    return getAlives().filter(dan => dan.getIsCrossCircle({ x, y, radius }));
                 };
 
                 const eraseByRadius = (options: { x: number, y: number, radius: number, eraseOptions?: EraseDanmakuOptions }) =>
-                    forEachByRadius({...options, callback: ent => ent.erase(options.eraseOptions) });
+                    getByRadius(options).forEach(dan => dan.erase(options.eraseOptions));
 
                 return {
                     /** @readonly 所有接受判定的弹幕，⚠️可能含有已经摧毁的无效弹幕 */
@@ -178,12 +182,10 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     update,
                     /** 立即清理弹幕列表，一般不用管这个东西 */
                     clean,
-                    /** 遍历所有未被摧毁的弹幕，可以用来消弹 */
-                    forEachAlive,
                     /** 获取所有未被摧毁的弹幕 */
                     getAlives,
-                    /** 遍历一个圆形范围内的所有弹幕 */
-                    forEachByRadius,
+                    /** 获取所有碰到给定圆的弹幕 */
+                    getByRadius,
                     /** 消除一个圆形范围内的所有弹幕 */
                     eraseByRadius,
                     /** @readonly @internal 当前场上的弹幕数量（⚠️包含无效弹幕） */
@@ -197,13 +199,11 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             //#region enemyRegList
             const enemyRegList = (() => {
                 const reglist = makeRegList<AbstractEnemy<AbstractDanmaku>>({ game });
-                const { objects, push, clean, forEachAlive, getAlives, destroy } = reglist;
+                const { objects, push, clean, getAlives, destroy } = reglist;
 
-                const forEachByRadius = (options: { x: number, y: number, radius: number, callback: (enemy: AbstractEnemy<AbstractDanmaku>) => void }) => {
-                    const { x, y, radius, callback } = options;
-                    forEachAlive(enemy => {
-                        if (enemy.danmaku.getIsCrossCircle({ x, y, radius })) { callback(enemy); }
-                    });
+                const getByRadius = (options: { x: number, y: number, radius: number }) => {
+                    const { x, y, radius } = options;
+                    return getAlives().filter(enemy => enemy.danmaku.getIsCrossCircle({ x, y, radius }));
                 };
 
                 // TODO: getAttackable
@@ -215,12 +215,10 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     push,
                     /** 立即清理敌人列表，一般不用管这个东西 */
                     clean,
-                    /** 遍历所有活着的敌人，可以用来全屏攻击啥的 */
-                    forEachAlive,
                     /** 获取所有活着的敌人 */
                     getAlives,
-                    /** 遍历所有碰到给定圆的敌人 */
-                    forEachByRadius,
+                    /** 获取所有碰到给定圆的敌人 */
+                    getByRadius,
                     // TODO: damageByRadius, killByRadius
                     /** @readonly @internal 当前场上的敌人数量（⚠️包含无效敌人） */
                     get _validCount() { return reglist._validCount; },
@@ -425,6 +423,13 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     rotation?: number,
                     /** @default board.commonEnemyLayer */
                     parent?: pixi.Container,
+                    /**
+                     * 这个参数可以用来让敌人不吃 Bomb 。  
+                     * "noDamageWhilePlayerInvincible" - 一旦玩家获得无敌帧或 Miss ，这个敌人也会随之进入无敌状态，免疫所有伤害。  
+                     * "ghostWhilePlayerInvincible" - 一旦玩家获得无敌帧或 Miss ，这个敌人会随之进入无法选中的虚化状态，无法受到任何伤害，并且不会被诱导弹索敌等等。  
+                     * @default "none"
+                     */
+                    autoInvincibleMode?: AutoInvincibleMode,
                 } = {}) => prefabEnemyFactory.makeYinYangOrb({
                     game, combat, board,
                     maxHp: options.maxHp ?? 30,
@@ -432,6 +437,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
                     parent: options.parent ?? null,
                     birthProtectDuration: 30,
+                    autoInvincibleMode: options.autoInvincibleMode ?? "none",
                 });
 
                 return {
@@ -572,13 +578,13 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     const radius = t * 10;
                     board.danmakuRegList.eraseByRadius({ x, y, radius });
                     // TODO: damage (circle) r=radius, dmg=10*timescale, dmg to boss = 0.2
-                    board.enemyRegList.forEachByRadius({ x, y, radius, callback: enemy => enemy.beHurt(
+                    board.enemyRegList.getByRadius({ x, y, radius }).forEach(enemy => enemy.beHurt(
                         // 此处图方便，直接用名称判断是不是 boss ……
                         (enemy.danmaku.type === "enemySpellcardShield" ? 2 : 10) * game.timeScale * rate
-                    ), });
+                    ));
                     yield;
                 }
-                board.danmakuRegList.forEachAlive(dan => dan.erase({ permissionType }));
+                board.danmakuRegList.getAlives().forEach(dan => dan.erase({ permissionType }));
             }); }
 
             return board;
@@ -881,6 +887,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
          * });
          */
         coDo,
+        _looper: looper,
         /**
          * @readonly
          * 用来获取用户输入，例如检测键盘上的某个键是否按下  
@@ -956,4 +963,5 @@ export {
     prefabDanmakuHitboxRadius,
     makePauseController,
     HslaFilter,
+    makeSingleBossSpellOptions,
 }

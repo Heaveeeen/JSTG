@@ -30,6 +30,7 @@ export interface LoopController<T> {
     addOwns(...objs: Destroyable[]): void,
     addPauseController(...controllers: PauseController[]): void,
     [Symbol.iterator](): CoDoGenerator<T>,
+    debugBlameTag?: any,
 }
 
 type LoopOrder = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
@@ -59,16 +60,19 @@ export interface LoopOptions {
     owns?: Destroyable | Destroyable[],
     /** TODOC: LoopOptions.pauseController */
     pauseController?: PauseController | PauseController[] | "none",
+    debugBlameTag?: any,
 }
 
 export const makeLooper = (makeLooperOptions: {
     getTimescale: () => number,
     mainPauseController: PauseController,
+    isDebugBlame: boolean,
 }) => {
 
-    const { getTimescale, mainPauseController } = makeLooperOptions;
+    const { getTimescale, mainPauseController, isDebugBlame } = makeLooperOptions;
 
-    type Thread = ((() => void) | null)[];
+    type ThreadItem = { fn: (() => void) | null, debugBlameTag?: any };
+    type Thread = ThreadItem[];
 
     const threads: [
         Thread, Thread, Thread, Thread, Thread,
@@ -81,24 +85,24 @@ export const makeLooper = (makeLooperOptions: {
     const cleanThreads = () => {
         fnTotalCount = 0;
         threads.forEach(thread => {
-            let fnCount = 0;
+            let threadFnCount = 0;
             const len = thread.length;
             for (let i = 0; i < len; i++) {
-                if (thread[i] !== null) {
-                    thread[fnCount++] = thread[i];
+                if (thread[i].fn !== null) {
+                    thread[threadFnCount++] = thread[i];
                 }
             }
-            thread.length = fnCount;
-            fnTotalCount += fnCount;
+            thread.length = threadFnCount;
+            fnTotalCount += threadFnCount;
         });
         fnLastCleanCount = fnTotalCount;
     };
 
     const stepThreads = () => {
         threads.forEach(thread => {
-            for (let i = 0; i < thread.length; i++) { thread[i]?.(); }
+            for (let i = 0; i < thread.length; i++) { thread[i].fn?.(); }
         });
-        if (fnTotalCount > fnLastCleanCount * 2) cleanThreads();
+        if (fnTotalCount > fnLastCleanCount * 2) { cleanThreads(); }
     };
 
     
@@ -141,7 +145,7 @@ export const makeLooper = (makeLooperOptions: {
                 return loopResult;
             },
         };
-        const looperFn = () => {
+        const threadItem: ThreadItem = { fn: () => {
             if (refs.some(r => r.destroyed)) {
                 destroy();
             } else if (pauseControllers.every(ctrlr => ctrlr.isRun)) {
@@ -151,13 +155,17 @@ export const makeLooper = (makeLooperOptions: {
                 }
                 clock += getTimescale();
             }
-        };
-        let idx = thread.length;
-        thread.push(looperFn);
+        } };
+        if (isDebugBlame && options.debugBlameTag !== undefined) {
+            threadItem.debugBlameTag = options.debugBlameTag;
+            loop.debugBlameTag = options.debugBlameTag;
+        }
+        thread.push(threadItem);
+        fnTotalCount ++;
         function destroy(result?: T) {
             if (destroyed) { return; }
             destroyed = true;
-            thread[idx] = null;
+            threadItem.fn = null;
             destroys.forEach(d => d.destroy({ children: true }));
             callbacks.forEach(callback => callback(result));
             loopResult = result;

@@ -22,6 +22,8 @@ export class CommonDanmaku extends AbstractDanmaku {
     set hitboxRadius(n: number) {
         this._hitboxRadius = n;
         this.clearHitboxGraphics();
+        // @ts-ignore fuck
+        //if (window.CHGCount1 === undefined) { window.CHGCount1 = 1 } else { window.CHGCount1 ++; }
     }
 
     /** @private 弹幕在上一次判定时的 x */
@@ -43,6 +45,8 @@ export class CommonDanmaku extends AbstractDanmaku {
     updateDebugHitbox(player: Player) {
         if (!this.isDamageToPlayer) {
             this.clearHitboxGraphics();
+            // @ts-ignore fuck
+            //if (window.CHGCount2 === undefined) { window.CHGCount2 = 1 } else { window.CHGCount2 ++; }
         }
         const { showHitbox } = this.game.debug;
         if (showHitbox.isOn) {
@@ -64,6 +68,8 @@ export class CommonDanmaku extends AbstractDanmaku {
             this.visible = showHitbox.isShowDanmakuBoth;
         } else {
             this.clearHitboxGraphics();
+            // @ts-ignore fuck
+            //if (window.CHGCount3 === undefined) { window.CHGCount3 = 1 } else { window.CHGCount3 ++; }
             this.visible = true;
         }
     }

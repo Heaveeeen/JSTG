@@ -1,7 +1,7 @@
 import * as pixi from "pixi";
 import { Game, Combat, Board } from "../jstg.js";
 import { baseStartSpellcard, spde_UiGradient, Spellcard } from "./spellcard.js";
-import { CommonEnemy } from "../entity/commonEnemy.js";
+import { AutoInvincibleMode, CommonEnemy } from "../entity/commonEnemy.js";
 import { LooperFn, LoopOptions, CoDoGenFn, CoDoGenerator, LoopController } from "../looper.js";
 import { Boss } from "./boss.js";
 
@@ -100,6 +100,13 @@ export const baseMakeSingleBossBattleController = (manualBossBattleOptions: {
         birthProtectDuration?: number,
         /** @default true */
         isShowFigureAndTitle?: boolean,
+        /**
+         * 这个参数可以用来让敌人不吃 Bomb 。  
+         * "noDamageWhilePlayerInvincible" - 一旦玩家获得无敌帧或 Miss ，这个敌人也会随之进入无敌状态，免疫所有伤害。  
+         * "ghostWhilePlayerInvincible" - 一旦玩家获得无敌帧或 Miss ，这个敌人会随之进入无法选中的虚化状态，无法受到任何伤害，并且不会被诱导弹索敌等等。  
+         * @default "none"
+         */
+        autoInvincibleMode?: AutoInvincibleMode,
     }) => {
         const { time, title, hp, figure } = options;
         const isShowFigureAndTitle = options.isShowFigureAndTitle ?? true;
@@ -111,7 +118,7 @@ export const baseMakeSingleBossBattleController = (manualBossBattleOptions: {
             isPlayStartSound: false,
             figure: "noFigure",
         } as const;
-        const shield = refBoss.makeSpellcardShield({ maxHp: hp, birthProtectDuration });
+        const shield = refBoss.makeSpellcardShield({ maxHp: hp, birthProtectDuration, autoInvincibleMode: options.autoInvincibleMode ?? "none" });
         const spellcard = baseStartSpellcard({
             game, combat, board,
             title, time, ...opt,
@@ -224,6 +231,13 @@ interface CommonSpellOptions extends BaseSpellOptions {
     hp?: number,
     /** @default 250 */
     birthProtectDuration?: number,
+    /**
+     * 这个参数可以用来让敌人不吃 Bomb 。  
+     * "noDamageWhilePlayerInvincible" - 一旦玩家获得无敌帧或 Miss ，这个敌人也会随之进入无敌状态，免疫所有伤害。  
+     * "ghostWhilePlayerInvincible" - 一旦玩家获得无敌帧或 Miss ，这个敌人会随之进入无法选中的虚化状态，无法受到任何伤害，并且不会被诱导弹索敌等等。  
+     * @default "none"
+     */
+    autoInvincibleMode?: AutoInvincibleMode,
     fn?: ({ boss, spellcard, shield }: { boss: Boss, spellcard: Spellcard, shield: CommonEnemy }) => void,
     gen?: ({ boss, spellcard, shield }: { boss: Boss, spellcard: Spellcard, shield: CommonEnemy }, loop: LoopController<unknown>) => CoDoGenerator<unknown>,
 }
@@ -235,6 +249,8 @@ interface SurvivalSpellOptions extends BaseSpellOptions {
 }
 
 export type SingleBossSpellOptions = CommonSpellOptions | SurvivalSpellOptions;
+
+export const makeSingleBossSpellOptions = (options: SingleBossSpellOptions) => options;
 //#endregion
 
 export const baseStartSingleBossBattle = (bossBattleOptions: {
@@ -278,7 +294,8 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
                 const spellController = battle.startCommonSpellcard({
                     title, time, figure, isShowFigureAndTitle,
                     hp: info.hp ?? 3000,
-                    birthProtectDuration: info.birthProtectDuration, 
+                    birthProtectDuration: info.birthProtectDuration,
+                    autoInvincibleMode: info.autoInvincibleMode,
                 })
                 yield* spellController.startupLoop;
                 const { fn, gen } = info;

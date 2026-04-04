@@ -3,7 +3,7 @@ import { Game, Combat, Board } from "../jstg.js";
 import { prefabEnemyFactory } from "../entity/prefabEnemyFactory.js";
 import * as utils from "../utils.js";
 import { Entity } from "../entity/entity.js";
-import { CommonEnemy } from "../entity/commonEnemy.js";
+import { AutoInvincibleMode, CommonEnemy } from "../entity/commonEnemy.js";
 
 
 export interface NewBossOptions {
@@ -48,6 +48,7 @@ export class Boss extends Entity {
 
     makeSpellcardShield(options: {
         maxHp: number, birthProtectDuration: number,
+        autoInvincibleMode: AutoInvincibleMode,
     }) {
         if (this._shield !== null) {
             this._shield.destroy();

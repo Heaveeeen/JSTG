@@ -1,7 +1,7 @@
 import * as pixi from "pixi";
 import { Game, Combat, Board } from "../jstg.js";
 import { DyedTextureColors } from "../textures.js";
-import { CommonEnemy } from "./commonEnemy.js";
+import { AutoInvincibleMode, CommonEnemy } from "./commonEnemy.js";
 import { CommonDanmaku } from "./commonDanmaku.js";
 
 export const prefabEnemyFactory = (()=>{
@@ -15,8 +15,9 @@ export const prefabEnemyFactory = (()=>{
         birthProtectDuration: number,
         //scale: number,
         // TODO: hitboxRadius, isCanHurt, isTouchingDamage, isCanGraze, hpBarType
+        autoInvincibleMode: AutoInvincibleMode,
     }) => {
-        const { game, combat, board, maxHp, color, x, y, rotation, birthProtectDuration } = options;
+        const { game, combat, board, maxHp, color, x, y, rotation, birthProtectDuration, autoInvincibleMode } = options;
         const rootSprite = new pixi.Sprite({
             parent: options.parent ?? board.commonEnemyLayer,
             x, y, rotation, anchor: 0.5,
@@ -50,7 +51,7 @@ export const prefabEnemyFactory = (()=>{
             canBeErase: false,
             birthProtectDuration,
             afterBeHurtCallback: null,
-            hpBar: null,
+            hpBar: null, autoInvincibleMode,
         });
         enemy.forever(loop => {
             outerRing.rotation -= 0.07;
@@ -69,8 +70,9 @@ export const prefabEnemyFactory = (()=>{
         hpBarHue: number,
         //scale: number, 
         // TODO: hitboxRadius, isCanHurt, isTouchingDamage, isCanGraze, animRotation(?), hpBarType
+        autoInvincibleMode: AutoInvincibleMode,
     }) => {
-        const { game, combat, board, maxHp, x, y, rotation, birthProtectDuration, hpBarHue } = options;
+        const { game, combat, board, maxHp, x, y, rotation, birthProtectDuration, hpBarHue, autoInvincibleMode } = options;
         const sprite = new pixi.Sprite({
             parent: options.parent ?? board.bossShieldLayer,
             texture: game.prefabTextures.enemy.shield,
@@ -95,6 +97,7 @@ export const prefabEnemyFactory = (()=>{
                 sprite.alpha = 0.8;
             },
             hpBar: { type: "circle", radius: 50 * 1.1, hue: hpBarHue },
+            autoInvincibleMode,
         });
         enemy.forever(loop => {
             sprite.alpha += (0.2 - sprite.alpha) * 0.05 * game.timeScale;
