@@ -47,14 +47,28 @@ export abstract class Entity {
     }
 
     // TODO: 重载，direction
-    /** 向着 this.rotation 的方向前进 dist 步，若 dist 留空则为 this.speed * game.timeScale */
-    step(/** @default this.speed * game.timeScale */ dist: number = this.speed * this.game.timeScale) {
+    /**
+     * 向着 rotation 的方向前进 dist 步。  
+     * 默认为向 this.rotation 方向前进 this.speed * game.timeScale 步。  
+     * ⚠️注意，第一个参数是前进的距离，第二个参数是前进的方向，不要搞混了！  
+     * 为防止搞混，建议使用 `step({ dist: xxx, rotation: xxx })` 这样的风格。  
+     */
+    step(options: {
+        /** @default this.speed * game.timeScale */dist?: number,
+        /** @default this.rotation */rotation?: number,
+    }): void;
+    step(dist: number, rotation?: number): void;
+    step(dist: number | { dist?: number, rotation?: number } = {}, rotation?: number) {
+        if (typeof dist !== "number") {
+            rotation = dist.rotation ?? this.rotation;
+            dist = dist.dist ?? this.speed * this.game.timeScale;
+        }
         this.x += Math.cos(this.rotation) * dist;
         this.y += Math.sin(this.rotation) * dist;
     }
 
-    /** 匀变速至目标速度 */
-    speedToA(/** 目标速度 */ dst: number, /** 加速度 */ a: number) {
+    /** 匀变速至目标速度。 */
+    speedToA(dst: number, a: number) {
         if (Math.abs(dst - this.speed) < a * this.game.timeScale) {
             this.speed = dst;
         } else if (dst > this.speed) {
@@ -172,19 +186,56 @@ export abstract class Entity {
         return result;
     }
 
+    // MAYDO: 弹链发射器？弹链日文叫 ワインダー ，好像是 winder ？这个貌似没有现成的英文词汇。
+
     /**
      * 旋转并面向一个点。  
      * @example
-     * danmaku.faceTo({ x: 50, y: -100 });
-     * danmaku.faceTo(player);
+     * danmaku.aimTo(50, -100);
+     * danmaku.aimTo({ x: 50, y: -100 });
+     * danmaku.aimTo(player);
      */
-    faceTo(targetPos: utils.Vec2) {
-        this.rotation = Math.atan2(targetPos.y - this.y, targetPos.x - this.x);
+    aimTo(targetPos: utils.Vec2): void;
+    aimTo(x: number, y: number): void;
+    aimTo(arg1: utils.Vec2 | number, arg2?: number) {
+        const { x, y } = typeof arg1 === "number" ? { x: arg1, y: arg2 as number } : arg1;
+        this.rotation = Math.atan2(y - this.y, x - this.x);
     }
 
-    /** 原地创建一个发弹点。 */
-    makeGun() {
-        return this.board.makeGun(this);
+    /**
+     * 原地创建一个发弹点。
+     * @example
+     * boss.makeGun(); // 在 boss 脸上原地创建一个发弹点。
+     * boss.makeGun({ sr: utils.deg(90) }); // 在 boss 脸上原地创建一个发弹点，指向正下方。
+     * boss.makeGun({ ox: -40, oy: -40 }); // 在 boss 左上方创建一个发弹点。
+     * boss.makeGun({ aim: player }); // 在 boss 脸上原地创建一个发弹点，指向玩家。
+     * boss.makeGun({ aim: { x: 0, y: 240 } }); // 在 boss 脸上原地创建一个发弹点，指向版底正中间。
+     */
+    makeGun(options: {
+        /** 新的 x 坐标。 */
+        sx?: number,
+        /** 偏移的 x 坐标。 */
+        ox?: number,
+        /** 新的 y 坐标。 */
+        sy?: number,
+        /** 偏移的 y 坐标。 */
+        oy?: number,
+        /** 新的方向。 */
+        sr?: number,
+        /** 偏移的方向。 */
+        or?: number,
+        /** 面向的方向。 */
+        aim?: utils.Vec2,
+    } = {}) {
+        const gun = this.board.makeGun(this);
+        if (options.sx) { gun.x = options.sx; }
+        if (options.sy) { gun.y = options.sy; }
+        if (options.sr) { gun.rotation = options.sr; }
+        if (options.aim) { gun.aimTo(options.aim); }
+        if (options.ox) { gun.x += options.ox; }
+        if (options.oy) { gun.y += options.oy; }
+        if (options.or) { gun.rotation += options.or; }
+        return gun;
     }
 
     /**
@@ -194,7 +245,7 @@ export abstract class Entity {
      */
     aimedGun(targetPos: utils.Vec2) {
         return this.board.makeGun({ ...this.xy, rotation: Math.atan2(targetPos.y - this.y, targetPos.x - this.x) });
-    }
+    } // 这个方法没必要删，感觉还挺方便的。
 
     /**
      * 判断该实体是否在版面内。  
