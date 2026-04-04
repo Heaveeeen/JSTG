@@ -262,99 +262,97 @@ export type KeyName = "Backquote" | "Backslash" | "BracketLeft" | "BracketRight"
 
 // TODO: 支持鼠标
 
-export type Input = ReturnType<typeof makeInput>;
-
-export function makeInput() {
+export class Input {
 
     // 注意：如果按住一个键，突然松开极短的时间，然后再次按住，有可能忽视这次抬手，视为一直按住。
     // ↑ 这条注释是我好久之前留下的了，我只记得这玩意仅存在于理论分析中，对实际使用应该没啥影响。。
 
-    /** 所有按键的状态，初始为0，按住则从1开始每帧加1，松开的一帧变为相反数，之后归0。 */
-    const states: Record<string, number | undefined> = {};
-    /** 在两次更新之间累积起来的按键事件 */
-    const keyEvents: Record<string, KeyEventType> = {};
+    /** @internal 所有按键的状态，初始为0，按住则从1开始每帧加1，松开的一帧变为相反数，之后归0。 */
+    private _states: Record<string, number | undefined> = {};
+    /** @internal 在两次更新之间累积起来的按键事件 */
+    private _keyEvents: Record<string, KeyEventType> = {};
 
-    document.addEventListener("keydown", ev => keyEvents[ev.code] = KeyEventType.down);
-    document.addEventListener("keyup", ev => {
-        if (keyEvents[ev.code] === KeyEventType.none) {
-            keyEvents[ev.code] = KeyEventType.up;
-        } else if (keyEvents[ev.code] === KeyEventType.down) {
-            keyEvents[ev.code] = KeyEventType.downAndUp;
-        }
-    });
+    constructor() {
+        document.addEventListener("keydown", ev => this._keyEvents[ev.code] = KeyEventType.down);
+        document.addEventListener("keyup", ev => {
+            if (this._keyEvents[ev.code] === KeyEventType.none) {
+                this._keyEvents[ev.code] = KeyEventType.up;
+            } else if (this._keyEvents[ev.code] === KeyEventType.down) {
+                this._keyEvents[ev.code] = KeyEventType.downAndUp;
+            }
+        });
+        this.getState = this.getState.bind(this);
+        this.isDown = this.isDown.bind(this);
+        this.isUp = this.isUp.bind(this);
+        this.isHold = this.isHold.bind(this);
+        this.isIdle = this.isIdle.bind(this);
+        this.isShortClick = this.isShortClick.bind(this);
+        this.isLongRelease = this.isLongRelease.bind(this);
+    }
 
-    const _update = (timeScale: number = 1) => {
-        for (const [ key, eventType ] of Object.entries(keyEvents)) {
-            if (states[key] === undefined) states[key] = 0;
+    /**
+     * TODOC: input._update
+     * 此函数用于更新按键状态，须在每帧最开始时调用该函数。  
+     * 启动游戏时默认会自动帮你做这一步，所以一般不用管这个。
+     * @example
+     * game.forever(() => game.input._update(), 1000); // 使用一个较高的优先级，确保每帧最先执行
+     * 
+     * game.forever(() => game.input._update(game.timeScale), 1000);
+     * // ↑ timeScale 是可选的，这样写游戏在减速时按键统计时间也会减速。
+     * // 但这么写不太可靠，原因懒得解释，我个人不推荐
+     */
+    _update(timeScale: number = 1) {
+        for (const [ key, eventType ] of Object.entries(this._keyEvents)) {
+            if (this._states[key] === undefined) this._states[key] = 0;
             if (eventType === KeyEventType.none) {
-                if (states[key] > 0) {
-                    states[key] += timeScale;
+                if (this._states[key] > 0) {
+                    this._states[key] += timeScale;
                 } else {
-                    states[key] = 0;
+                    this._states[key] = 0;
                 }
             } else if (eventType === KeyEventType.up) {
-                if (states[key] > 0) {
-                    states[key] *= -1;
+                if (this._states[key] > 0) {
+                    this._states[key] *= -1;
                 } else {
-                    states[key] = 0
+                    this._states[key] = 0
                 }
             } else { // down | DownAndUp
-                if (states[key] < 0) {
-                    states[key] = timeScale;
+                if (this._states[key] < 0) {
+                    this._states[key] = timeScale;
                 } else {
-                    states[key] += timeScale;
+                    this._states[key] += timeScale;
                 }
             }
             if (eventType == KeyEventType.downAndUp) {
-                keyEvents[key] = KeyEventType.up;
+                this._keyEvents[key] = KeyEventType.up;
             } else {
-                keyEvents[key] = KeyEventType.none;
+                this._keyEvents[key] = KeyEventType.none;
             }
         }
     }
 
-    const getState = (button: KeyName) => states[button] ?? 0;
-    const isDown = (button: KeyName) => getState(button) == 1;
-    const isUp = (button: KeyName) => getState(button) < 0;
-    const isHold = (button: KeyName) => getState(button) > 0;
-    const isIdle = (button: KeyName) => getState(button) <= 0;
+    /** 获取一个按键的状态，初始为0，按住则从1开始每帧加1，松开的一帧变为相反数，之后归0 */
+    getState(button: KeyName) { return this._states[button] ?? 0; }
+    /** 按键被按下的一瞬间，返回 true */
+    isDown(button: KeyName) { return this.getState(button) == 1; }
+    /** 按键松开的一瞬间，返回 true */
+    isUp(button: KeyName) { return this.getState(button) < 0; }
+    /** 如果按键被按住，返回 true */
+    isHold(button: KeyName) { return this.getState(button) > 0; }
+    /** 如果按键闲置，返回 true */
+    isIdle(button: KeyName) { return this.getState(button) <= 0; }
 
-    const isShortClick = (button: KeyName,
+    /** 如果轻敲按键并立即松开，在松开的那一帧返回 true */
+    isShortClick(button: KeyName,
         /** 容许按住的最大持续帧数，若按住的时长超过此值则不会判定为轻敲 */
         maxHoldTime: number = 10
-    ) => isUp(button) && getState(button) >= -maxHoldTime;
+    ) { return this.isUp(button) && this.getState(button) >= -maxHoldTime; }
 
-    const isLongRelease = (button: KeyName,
+    /** 如果长按按键并松开，在松开的那一帧返回 true */
+    isLongRelease(button: KeyName,
         /** 容许按住的最小持续帧数，若按住的时长低于此值则不会判定为长按 */
         minHoldTime: number = 12
-    ) => getState(button) <= -minHoldTime;
-
-    return {
-        /** 获取一个按键的状态，初始为0，按住则从1开始每帧加1，松开的一帧变为相反数，之后归0 */
-        getState,
-        /** 按键被按下的一瞬间，返回 true */
-        isDown,
-        /** 按键松开的一瞬间，返回 true */
-        isUp,
-        /** 如果按键被按住，返回 true */
-        isHold,
-        /** 如果按键闲置，返回 true */
-        isIdle,
-        /** 如果轻敲按键并立即松开，在松开的那一帧返回 true */
-        isShortClick,
-        /** 如果长按按键并松开，在松开的那一帧返回 true */
-        isLongRelease,
-        /**
-         * TODOC: input._update
-         * 此函数用于更新按键状态，须在每帧最开始时调用该函数。  
-         * 启动游戏时默认会自动帮你做这一步，所以一般不用管这个。
-         * @example
-         * game.forever(() => game.input._update(), 1000); // 使用一个较高的优先级，确保每帧最先执行
-         * 
-         * game.forever(() => game.input._update(game.timeScale), 1000);
-         * // ↑ timeScale 是可选的，这样写游戏在减速时按键统计时间也会减速。
-         * // 但这么写不太可靠，原因懒得解释，我个人不推荐
-         */
-        _update,
-    };
+    ) { return this.getState(button) <= -minHoldTime; }
 }
+
+export const makeInput = () => new Input();

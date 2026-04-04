@@ -247,18 +247,18 @@ import * as pixi from "pixi";
             const foo = (gun, o) => {let r = gun.aimedGun(boss).rotation; gun.forever(loop => {
                 if (loop.clock >= 80) { gun.destroy(); } else {
                     r += o;
-                    gun.speedToA(9, 0.02);
-                    gun.rotation += o * 0.015;
+                    gun.speedToA(9, 0.03);
+                    gun.rotation += o * 0.018;
                     gun.step();
                     if (loop.clock % 1 === 0) {
                         game.prefabSounds.thse.tan00.play(decibel(-15));
                         makeFoggyDanmaku({
-                            type: rand.select([{ weight: 1, value: "ringball"}, { weight: 1, value: "dot"}, { weight: 1, value: "smallball"}]),
-                            color: rand.select([{ weight: 1, value: "h180"}, { weight: 1, value: "h210"}, { weight: 1, value: "white"}]),
+                            type: rand.select(["ringball", "dot", "smallball"]),
+                            color: rand.select(["h180", "h210", "white"]),
                             ...gun, speed: 0,
                         }).then(dan => {
-                            dan.rotation = deg(rand.float(-400, 400)) * rand.float(0,1) ** 3 + r;
-                            const v = rand.float(1, 4);
+                            dan.rotation = deg(rand.float(-100, 100)) * rand.float(0,1) ** 3 + r;
+                            const v = rand.float(0.8, 3.2);
                             const a = rand.float(0.008, 0.015);
                             dan.forever(loop => {
                                 dan.speedToA(v, a);
@@ -271,16 +271,16 @@ import * as pixi from "pixi";
             })};
             const gunLeft = boss.makeGun();
             gunLeft.y -= 25;
-            gunLeft.rotation = deg(90 + 50);
+            gunLeft.rotation = deg(90 + 40);
             gunLeft.speed = 2;
             foo(gunLeft, deg(20));
             const gunRight = boss.makeGun();
             gunRight.y -= 25;
-            gunRight.rotation = deg(90 - 50);
+            gunRight.rotation = deg(90 - 40);
             gunRight.speed = 2;
             foo(gunRight, deg(-20));
-            yield* Sleep(80);
-            boss.glideTo(rand.float(-60, 60), rand.float(-120, -100));
+            yield* Sleep(75);
+            boss.glideTo(rand.float(-60, 60), rand.float(-120, -90));
             yield* Sleep(30);
         } },
     });
