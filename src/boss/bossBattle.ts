@@ -213,7 +213,10 @@ export type SingleBossBattle = ReturnType<typeof baseMakeSingleBossBattleControl
 
 //#region SpellOptions
 interface BaseSpellOptions {
-    /** @default false */
+    /**
+     * 是否为时符。  
+     * @default false
+     */
     isSurvival?: boolean,
     /** @default 2400 */
     time?: number,
@@ -236,14 +239,22 @@ interface CommonSpellOptions extends BaseSpellOptions {
      * @default "none"
      */
     autoInvincibleMode?: AutoInvincibleMode,
+    /** 符卡开始时，执行一次这个函数。 */
     fn?: ({ boss, spellcard, shield }: { boss: Boss, spellcard: Spellcard, shield: CommonEnemy }) => void,
-    gen?: ({ boss, spellcard, shield }: { boss: Boss, spellcard: Spellcard, shield: CommonEnemy }, loop: LoopController<unknown>) => CoDoGenerator<unknown>,
+    /** 符卡开始时，启动这个循环函数。（即`forever`） */
+    loopFn?: ({ boss, spellcard, shield, loop }: { boss: Boss, spellcard: Spellcard, shield: CommonEnemy, loop: LoopController<unknown> }) => void,
+    /** 符卡开始时，启动这个生成器函数。（即`coDo`） */
+    gen?: ({ boss, spellcard, shield, loop }: { boss: Boss, spellcard: Spellcard, shield: CommonEnemy, loop: LoopController<unknown> }) => CoDoGenerator<unknown>,
 }
 
 interface SurvivalSpellOptions extends BaseSpellOptions {
     isSurvival: true,
+    /** 符卡开始时，执行一次这个函数。 */
     fn?: ({ boss, spellcard }: { boss: Boss, spellcard: Spellcard }) => void,
-    gen?: ({ boss, spellcard }: { boss: Boss, spellcard: Spellcard }, loop: LoopController<unknown>) => CoDoGenerator<unknown>,
+    /** 符卡开始时，启动这个循环函数。（即`forever`） */
+    loopFn?: ({ boss, spellcard, loop }: { boss: Boss, spellcard: Spellcard, loop: LoopController<unknown> }) => void,
+    /** 符卡开始时，启动这个生成器函数。（即`coDo`） */
+    gen?: ({ boss, spellcard, loop }: { boss: Boss, spellcard: Spellcard, loop: LoopController<unknown> }) => CoDoGenerator<unknown>,
 }
 
 export type SingleBossSpellOptions = CommonSpellOptions | SurvivalSpellOptions;
@@ -284,9 +295,10 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
                     title, time, figure, isShowFigureAndTitle,
                 })
                 yield* spellController.startupLoop;
-                const { fn, gen } = info;
+                const { fn, loopFn, gen } = info;
                 fn?.({ ...spellController, boss: ownBoss });
-                if (gen !== undefined) { spellController.spellcard.coDo(loop => gen({ ...spellController, boss: ownBoss }, loop)); }
+                if (loopFn !== undefined) { spellController.spellcard.forever(loop => loopFn({ ...spellController, boss: ownBoss, loop })); }
+                if (gen !== undefined) { spellController.spellcard.coDo(loop => gen({ ...spellController, boss: ownBoss, loop })); }
                 yield* spellController.spellcard.mainLoop;
             } else {
                 const spellController = battle.startCommonSpellcard({
@@ -296,9 +308,10 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
                     autoInvincibleMode: info.autoInvincibleMode,
                 })
                 yield* spellController.startupLoop;
-                const { fn, gen } = info;
+                const { fn, loopFn, gen } = info;
                 fn?.({ ...spellController, boss: ownBoss });
-                if (gen !== undefined) { spellController.spellcard.coDo(loop => gen({ ...spellController, boss: ownBoss }, loop)); }
+                if (loopFn !== undefined) { spellController.spellcard.forever(loop => loopFn({ ...spellController, boss: ownBoss, loop })); }
+                if (gen !== undefined) { spellController.spellcard.coDo(loop => gen({ ...spellController, boss: ownBoss, loop })); }
                 yield* spellController.spellcard.mainLoop;
             }
             battle.scCounterBar.popStar();
