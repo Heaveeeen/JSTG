@@ -83,6 +83,14 @@ export class Rng {
         let r = this.float(0, totalWeight);
         return utils.select(r, results);
     }
+    /** 返回随机洗牌后的新数组。不改变原先的数组。 */
+    shuffled<T extends Readonly<[]>>(array: T): T {
+        const result: any[] = [];
+        for (const item of array) {
+            result.splice(this.int(0, result.length + 1), 0, item);
+        }
+        return result as any;
+    }
 }
 
 export const makeRng = (options: NewRngOptions = {}) => new Rng(options);
