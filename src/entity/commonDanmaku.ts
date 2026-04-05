@@ -237,8 +237,14 @@ export interface BaseMakePrefabDanmakuOptions<TIsFoggy extends boolean> {
     isFoggy: TIsFoggy,
 }
 
+export interface MakeFoggyDanmakuResult {
+    loop: LoopController<CommonDanmaku>;
+    fogSprite: pixi.Sprite;
+    then: LoopController<CommonDanmaku>["then"];
+}
+
 export function baseMakePrefabDanmaku<TIsFoggy extends false>(options: BaseMakePrefabDanmakuOptions<TIsFoggy>): CommonDanmaku;
-export function baseMakePrefabDanmaku<TIsFoggy extends true>(options: BaseMakePrefabDanmakuOptions<TIsFoggy>): LoopController<CommonDanmaku>;
+export function baseMakePrefabDanmaku<TIsFoggy extends true>(options: BaseMakePrefabDanmakuOptions<TIsFoggy>): MakeFoggyDanmakuResult;
 export function baseMakePrefabDanmaku<TIsFoggy extends boolean>(options: BaseMakePrefabDanmakuOptions<TIsFoggy>) {
     const { type, color, game, combat, board, x, y, rotation, speed } = options;
     const parent = options.parent ?? board.commonDanmakuLayer;
@@ -256,7 +262,7 @@ export function baseMakePrefabDanmaku<TIsFoggy extends boolean>(options: BaseMak
             alpha: 0.2,
         });
         // 弹雾期间，该循环持有 fogSprite 的所有权；弹雾结束后，把 fogSprite 的所有权连带弹幕移交给外部。
-        return board.coDo<CommonDanmaku>(function*(loop) {
+        const loop = board.coDo<CommonDanmaku>(function*(loop) {
             for (let t = 0; t < 20; t += game.timeScale) {
                 fogSprite.scale.x -= fogSprite.scale.x * 0.04 * game.timeScale;
                 fogSprite.scale.y -= fogSprite.scale.y * 0.04 * game.timeScale;
@@ -279,6 +285,10 @@ export function baseMakePrefabDanmaku<TIsFoggy extends boolean>(options: BaseMak
         }).then(result => { // 如果循环被意外打断，说明 fogSprite 所有权没能移交给外部，则摧毁 fogSprite 。
             if (result === undefined) { fogSprite.destroy(); }
         });
+        return {
+            loop, fogSprite,
+            then: (callback: (result?: CommonDanmaku) => void) => loop.then(callback),
+        };
     } else {
         const sprite = makeCommonOrAnimatedSprite({
             game, combat, board, texture,

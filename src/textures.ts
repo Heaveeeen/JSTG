@@ -135,7 +135,7 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
     return {
         danmaku: {
             danmaku: {
-                smallball: await lsdye(`danmaku/danmaku/smallball.svg`), // 这里断言一下是为了折叠悬停提示
+                smallball: await lsdye(`danmaku/danmaku/smallball.svg`),
                 ringball: await lsdye(`danmaku/danmaku/ringball.svg`),
                 glowball: await lsdye(`danmaku/danmaku/glowball.svg`),
                 fireball: makeDyedFrames({ app, redFrames: [

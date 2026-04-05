@@ -4,7 +4,7 @@ import { KeyName, KeyEnum, makeInput } from "./input.js";
 import { prefabPlayerFactory } from "./player/prefabPlayerFactory.js";
 import { makeRng } from "./random.js";
 import * as utils from './utils.js';
-import { CommonDanmaku, baseMakePrefabDanmaku } from "./entity/commonDanmaku.js";
+import { CommonDanmaku, MakeFoggyDanmakuResult, baseMakePrefabDanmaku } from "./entity/commonDanmaku.js";
 import { AbstractDanmaku, EraseDanmakuOptions, prefabDanmakuHitboxRadius } from "./entity/abstractDanmaku.js";
 import { makeRegList } from "./regList.js";
 import { LoadPrefabSounds, LoadPrefabSoundsOptions, LoadSound } from "./sounds.js";
@@ -491,8 +491,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             }
 
             // 此处为复制，要是改了上面，别忘了把下面也改了
-            function makeFoggyDanmaku(options: MakeDanmakuOptions): LoopController<CommonDanmaku>;
-            function makeFoggyDanmaku(/** @default "smallball" */type?: PrefabDanmakuNames, /** @default "red" */color?: DyedTextureColors): LoopController<CommonDanmaku>;
+            function makeFoggyDanmaku(options: MakeDanmakuOptions): MakeFoggyDanmakuResult;
+            function makeFoggyDanmaku(/** @default "smallball" */type?: PrefabDanmakuNames, /** @default "red" */color?: DyedTextureColors): MakeFoggyDanmakuResult;
             function makeFoggyDanmaku(options?: PrefabDanmakuNames | MakeDanmakuOptions, color?: DyedTextureColors) {
                 if (options === undefined || typeof options === "string") {
                     options = { type: options, color };
