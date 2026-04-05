@@ -11,10 +11,11 @@ import * as pixi from "pixi";
 // 启动游戏
 (async () => {
     const game = await jstg.LaunchGame();
-    const { prefabDanmakuHitboxRadius } = jstg;
-    const { input, app, debug, Sleep } = game;
+    const { prefabDanmakuHitboxRadius, utils } = jstg;
+    const { input, app, debug, Sleep, prefabSounds, prefabTextures } = game;
+    const { thse } = prefabSounds;
     const { isDown, isUp, isHold, isIdle } = input;
-    const { asAny, UntilDestroy, decibel, deg } = jstg.utils;
+    const { asAny, UntilDestroy, decibel, deg, lerp, lerpAngle } = utils;
 
     const combat = await game.StartCombat()
     const { board, rand } = combat;
@@ -35,10 +36,10 @@ import * as pixi from "pixi";
         anchor: 0.5,
         style: {
             fontSize: 16,
-            fill: "#000000",
+            fill: "#000",
             align: "center",
             stroke: {
-                color: "#888888",
+                color: "#333",
                 width: 3,
                 join: "round",
             }
@@ -283,6 +284,52 @@ import * as pixi from "pixi";
             yield* Sleep(30);
         } },
     });
+    const 暴风雪 = jstg.makeSingleBossSpellOptions({
+        time: 60 * 60, hp: 4500, title: "冬符「暴风雪」",
+        *gen({ boss, spellcard, shield, loop }) { let count = 0; let lastSoundCount = 0; while (true) {
+            const danPerFrame = 1.3;
+            const speedMul = 0.8;
+            const s = Math.sin(deg(loop.clock / 2));
+            const dir = deg(90 + 30 * s * Math.abs(s));
+            const danTypes = rand.shuffled([
+                "smallball", "smallball", "smallball",
+                "dot", "dot", "dot", "dot",
+                "grain",
+                "ringball", "ringball", "ringball",
+            ]);
+            let xList = [];
+            for (let i = 0; i < danTypes.length; i++) { xList.push(lerp(-600, 600, (i + rand.float(0, 1)) / danTypes.length)); }
+            xList = rand.shuffled(xList);
+            for (let i = 0; i < danTypes.length; i++) {
+                while (count > loop.clock * danPerFrame) {
+                    if (count - lastSoundCount >= 10) {
+                        lastSoundCount += 10;
+                        thse.kira00.play(decibel(-3));
+                    }
+                    yield;
+                };
+                const dan = makeDanmaku({
+                    type: danTypes[i],
+                    color: rand.select(["h180", "h180", "h210", "h240", "white", "white", "white"]),
+                    x: xList[i],
+                    y: rand.float(-260, -250),
+                });
+                const vx = Math.cos(dir) * rand.float(4, 6) * speedMul;
+                if ((dan.x < -210 && vx <= 0) || (dan.x > 210 && vx >= 0)) {
+                    dan.destroy();
+                } else {
+                    const vy = rand.float(2, 3) * speedMul;
+                    dan.rotation = Math.atan2(vy, vx);
+                    dan.forever(loop => {
+                        dan.x += vx;
+                        dan.y += vy;
+                    });
+                    dan.loopBoundaryDelete(300);
+                }
+                count ++;
+            }
+        } },
+    });
     const 波力海苔 = jstg.makeSingleBossSpellOptions({
         time: 40 * 60, hp: 4000, title: "你好「波粒海苔」",
         //autoInvincibleMode: "noDamageWhilePlayerInvincible",
@@ -355,10 +402,13 @@ import * as pixi from "pixi";
         const boss = board.makeBoss(game.prefabCharInfos.maple.boss);
         const battle = board.startSingleBossBattle({
             boss,
-            spells: [non1, 波力海苔, non2, { title: "aaaaaaaa", hp: 50, time: 15 * 60 }, { title: "bbbbbbbb", hp: 50, time: 15 * 60}],
+            spells: [
+                //non1,
+                暴风雪,
+                non2, { title: "aaaaaaaa", hp: 50, time: 15 * 60 }, { title: "bbbbbbbb", hp: 50, time: 15 * 60}],
         });
     });
-    //fooBoss();
+    fooBoss();
     //#endregion
 
     forever(loop => {
