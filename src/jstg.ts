@@ -8,7 +8,7 @@ import { CommonDanmaku, MakeFoggyDanmakuResult, baseMakePrefabDanmaku } from "./
 import { AbstractDanmaku, EraseDanmakuOptions, prefabDanmakuHitboxRadius } from "./entity/abstractDanmaku.js";
 import { makeRegList } from "./regList.js";
 import { LoadPrefabSounds, LoadPrefabSoundsOptions, LoadSound } from "./sounds.js";
-import { LaserBeam, baseMakePrefabLaserBeam } from "./entity/laserBeam.js";
+import { LaserBeam, MakeGrowingLaserBeamResult, baseMakeGrowingLaserBeam, baseMakePrefabLaserBeam } from "./entity/laserBeam.js";
 import { Player } from "./player/player.js";
 import { CoDoGenFn, LoopController, LooperFn, LoopOptions, makeLooper, makePauseController } from "./looper.js";
 import { AbstractEnemy } from "./entity/abstractEnemy.js";
@@ -332,11 +332,12 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 /** @readonly JSTG 预置的敌人 */
                 get prefabEnemys() { return prefabEnemys; },
                 /** 创建一个 JSTG 预置的弹幕 */
-                get makeDanmaku() { return makeDanmaku; },
+                makeDanmaku,
                 /** 创建一个弹雾，等弹雾结束后生成一个 JSTG 预置的弹幕 */
-                get makeFoggyDanmaku() { return makeFoggyDanmaku; },
+                makeFoggyDanmaku,
                 /** TODOC: makeLaserBeam */
-                get makeLaserBeam() { return makeLaserBeam; },
+                makeLaserBeam,
+                makeGrowingLaserBeam,
                 /**
                  * 创建一个发弹点，这个东西可以帮你发射弹幕。  
                  * 注意：任何实体（弹幕、敌人、Boss 等）都可以当做发弹点来使用。  
@@ -515,13 +516,13 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 /** @default red */
                 color?: DyedTextureColors,
                 /** @default 0 */
-                x?: number, 
+                x?: number,
                 /** @default 0 */
-                y?: number, 
+                y?: number,
                 /** @default 0 */
-                rotation?: number
+                rotation?: number,
                 /** @default 0 */
-                speed?: number
+                speed?: number,
                 /** @default game.commonDanmakuLayer */
                 parent?: pixi.Container,
                 /** @default 2 */
@@ -560,6 +561,65 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     tailPoint: options.tailPoint ?? null, headPoint: options.headPoint ?? null,
                     zIndex: options.zIndex ?? null,
                     canBeErase: options.canBeErase ?? null,
+                });
+            }
+
+            type MakeGrowingLaserBeamOptions = {
+                /** @default "laserseg" */
+                type?: PrefabDanmakuNames;
+                /** @default red */
+                color?: DyedTextureColors;
+                /** @default 0 */
+                x?: number;
+                /** @default 0 */
+                y?: number;
+                /** @default 0 */
+                rotation?: number;
+                /** @default 4 */
+                speed?: number;
+                /** @default speed */
+                growSpeed?: number;
+                /** @default game.commonDanmakuLayer */
+                parent?: pixi.Container;
+                /** @default 2 */
+                halfWidth?: number;
+                /** @default 0 */
+                initLength?: number;
+                /** @default 400 */
+                targetLength?: number;
+                /**
+                 * 如果不填写此参数，则激光没有起始端点。
+                 * 若填写`startPoint: {}`，则默认为`{ type: "nova", pos: -1 }`
+                 */
+                tailPoint?: {
+                    type?: PrefabDanmakuNames;
+                    pos?: number;
+                };
+                /**
+                 * 如果不填写此参数，则激光没有末尾端点。
+                 * 若填写`endPoint: {}`，则默认为`{ type: "nova", pos: 0 }`
+                 */
+                headPoint?: {
+                    type?: PrefabDanmakuNames;
+                    pos?: number;
+                };
+                /** 图层顺序。若不填此参数，则自动根据弹幕尺寸排序，大的在底层、小的在顶层。 */
+                zIndex?: number;
+                /** @default true */
+                canBeErase?: boolean;
+            };
+
+            function makeGrowingLaserBeam(options: MakeGrowingLaserBeamOptions): MakeGrowingLaserBeamResult;
+            function makeGrowingLaserBeam(/** @default "laserseg" */type?: PrefabDanmakuNames, /** @default "red" */color?: DyedTextureColors): MakeGrowingLaserBeamResult;
+            function makeGrowingLaserBeam(arg1: MakeGrowingLaserBeamOptions | PrefabDanmakuNames = {}, arg2?: DyedTextureColors) {
+                const options = typeof arg1 === "string" ? { type: arg1, color: arg2 } : arg1;
+                const beam = makeLaserBeam({
+                    ...options, speed: options.speed ?? 4, length: options.initLength ?? 0,
+                });
+                return baseMakeGrowingLaserBeam({
+                    beam,
+                    targetLength: options.targetLength ?? 400,
+                    growSpeed: options.growSpeed ?? beam.speed,
                 });
             }
 

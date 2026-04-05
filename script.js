@@ -18,7 +18,7 @@ import * as pixi from "pixi";
 
     const combat = await game.StartCombat()
     const { board, rand } = combat;
-    const { makeDanmaku, makeFoggyDanmaku, makeLaserBeam, prefabPlayers, prefabEnemys, forever, coDo, } = board;
+    const { makeDanmaku, makeFoggyDanmaku, makeLaserBeam, makeGrowingLaserBeam, prefabPlayers, prefabEnemys, forever, coDo, } = board;
 
     console.log(game, combat, board);
 
@@ -190,12 +190,12 @@ import * as pixi from "pixi";
             }
         }
         makeFooExsibits(-165, ()=>65, ()=>0, ["bigyinyang"], ["h0", "h60", "h120", "h180", "h240", "h300"]);
-        makeDanmaku({ type: "nuclear", x: 115, y: -10 }).canBeErase = false;
-        makeLaserBeam({ type: "laserseg", color: "h0", x: 180, y: 50, halfWidth: 1, length: 120, tailPoint: {}, headPoint: {} }).canBeErase = false;
-        makeLaserBeam({ type: "laserseg", color: "h60", x: 170, y: 70, halfWidth: 3, length: 100, tailPoint: {}, headPoint: {} }).canBeErase = false;
-        makeLaserBeam({ type: "laserseg", color: "h120", x: 160, y: 110, halfWidth: 5, length: 80, tailPoint: {}, headPoint: {} }).canBeErase = false;
-        makeLaserBeam({ type: "smallball", color: "h180", x: 180, y: 150, halfWidth: 3, length: 140, tailPoint: {}, headPoint: {} }).canBeErase = false;
-        makeLaserBeam({ type: "scale", color: "h240", x: 180, y: 180, halfWidth: 3, length: 120 }).canBeErase = false;
+        makeDanmaku({ type: "nuclear", x: 115, y: -10, canBeErase: false });
+        makeGrowingLaserBeam({ type: "laserseg", color: "h0", x: 180, y: 50, halfWidth: 1, targetLength: 120, tailPoint: {}, headPoint: {}, canBeErase: false });
+        makeGrowingLaserBeam({ type: "laserseg", color: "h60", x: 170, y: 70, halfWidth: 3, targetLength: 100, tailPoint: {}, headPoint: {}, canBeErase: false });
+        makeGrowingLaserBeam({ type: "laserseg", color: "h120", x: 160, y: 110, halfWidth: 5, targetLength: 80, tailPoint: {}, headPoint: {}, canBeErase: false });
+        makeGrowingLaserBeam({ type: "smallball", color: "h180", x: 180, y: 150, halfWidth: 3, targetLength: 140, tailPoint: {}, headPoint: {}, canBeErase: false });
+        makeGrowingLaserBeam({ type: "scale", color: "h240", x: 180, y: 180, halfWidth: 3, targetLength: 120, canBeErase: false });
     }
     makeFooMuseum2();
 

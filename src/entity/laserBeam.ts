@@ -20,10 +20,8 @@ export interface NewLaserBeamOptions extends NewAbstractDanmakuOptions {
     foldedLength: number;
     /** 激光本体所对应的 Sprite */
     mainSprite: pixi.Sprite;
-    /** 激光起点 */
-    tailPoint: LaserPoint | null;
-    /** 激光终点 */
-    headPoint: LaserPoint | null;
+    baseHalfLength: number;
+    baseHalfWidth: number;
 }
 
 /**
@@ -36,11 +34,17 @@ export interface NewLaserBeamOptions extends NewAbstractDanmakuOptions {
 export class LaserBeam extends AbstractDanmaku {
 
     /** @internal */
+    private _baseHalfLength: number;
+    /** @internal */
+    private _baseHalfWidth: number;
+
+    /** @internal */
     private _hitboxHalfWidth: number;
     /* 激光的判定宽度的一半 */
     get hitboxHalfWidth() { return this._hitboxHalfWidth; }
     set hitboxHalfWidth(n: number) {
         this._hitboxHalfWidth = n;
+        this.mainSprite.scale.y = this.hitboxHalfWidth / this._baseHalfWidth;
         this.clearHitboxGraphics();
     }
 
@@ -50,27 +54,36 @@ export class LaserBeam extends AbstractDanmaku {
     get hitboxLength() { return this._hitboxLength; }
     set hitboxLength(n: number) {
         this._hitboxLength = n;
+        this.mainSprite.scale.x = this._hitboxLength * 0.5 / this._baseHalfLength;
         this.clearHitboxGraphics();
     }
 
     /** @internal */
-    _foldedLength: number;
+    _totalLength: number;
 
     /** 激光本体所对应的 Sprite */
     readonly mainSprite: pixi.Sprite;
     /** 激光末端（屁股上）的端点所对应的 Sprite */
-    readonly tailPoint: LaserPoint | null;
+    tailPoint: LaserPoint | null = null;
+    makeTailPoint(point: { type?: PrefabDanmakuNames, scale?: number, pos?: number } | null) {
+        this.tailPoint?.sprite.destroy();
+        this.tailPoint = makeLaserPoint(this, point, -1);
+    }
     /** 激光头部（本体）的端点所对应的 Sprite */
-    readonly headPoint: LaserPoint | null;
+    headPoint: LaserPoint | null = null;
+    makeHeadPoint(point: { type?: PrefabDanmakuNames, scale?: number, pos?: number } | null) {
+        this.headPoint?.sprite.destroy();
+        this.headPoint = makeLaserPoint(this, point, 0);
+    }
 
     constructor(options: NewLaserBeamOptions) {
         super(options);
         this._hitboxHalfWidth = options.hitboxHalfWidth;
         this._hitboxLength = options.hitboxLength;
-        this._foldedLength = options.foldedLength;
+        this._totalLength = options.foldedLength;
         this.mainSprite = options.mainSprite;
-        this.tailPoint = options.tailPoint;
-        this.headPoint = options.headPoint;
+        this._baseHalfLength = options.baseHalfLength;
+        this._baseHalfWidth = options.baseHalfWidth;
         this.updateLaserPoints();
     }
 
@@ -191,7 +204,7 @@ export class LaserBeam extends AbstractDanmaku {
         this.enemy?.destroy();
         if (options.forEachCorpse !== undefined) {
             const stepPerCorpse = options.stepPerCorpse ?? 10;
-            for (let pos = 0; pos <= this.hitboxLength + this._foldedLength; pos += stepPerCorpse) {
+            for (let pos = 0; pos <= Math.max(this.hitboxLength, this._totalLength); pos += stepPerCorpse) {
                 options.forEachCorpse({
                     x: this.x + pos * Math.cos(this.rotation),
                     y: this.y + pos * Math.sin(this.rotation),
@@ -274,7 +287,36 @@ export class LaserBeam extends AbstractDanmaku {
     }
 }
 
-type BaseMakePrefabLaserBeamOptions = {
+const makeLaserPoint = (options: {
+    game: Game, combat: Combat, board: Board,
+    color: DyedTextureColors | "noColor",
+    hitboxHalfWidth: number,
+    mainSprite: pixi.Sprite,
+}, point: { type?: PrefabDanmakuNames, scale?: number, pos?: number, } | null, defaultPos: number) => {
+    if (point === null) {
+        return null;
+    } else {
+        const type = point.type ?? "nova";
+        const color = options.color === "noColor" ? "red" : options.color;
+        const texture = options.game.prefabTextures.danmaku.danmaku[type][color];
+        const pointBaseRadius = prefabDanmakuHitboxRadius[type];
+        const pos = point.pos ?? defaultPos;
+        const scale = point.scale ?? (1 * options.hitboxHalfWidth / pointBaseRadius) + 0.3;// 这里可以考虑加个sqrt，防止端点大的太大、小的太小；另外，这个尺寸应当能够随激光尺寸的变化而变化0
+        return {
+            sprite: makeCommonOrAnimatedSprite({
+                game: options.game, combat: options.combat, board: options.board, texture,
+                sprite: new pixi.Sprite({
+                    parent: options.mainSprite.parent ?? undefined,
+                    anchor: 0.5,
+                    scale, zIndex: options.mainSprite.zIndex,
+                    blendMode: "add",
+                }),
+            }), pos
+        };
+    }
+}
+
+export interface BaseMakePrefabLaserBeamOptions {
     game: Game;
     combat: Combat;
     board: Board;
@@ -315,29 +357,6 @@ export const baseMakePrefabLaserBeam = (options: BaseMakePrefabLaserBeamOptions)
     const zIndex = options.zIndex ?? -(hitboxHalfWidth + 0.5 * hitboxLength);
     const canBeErase = options.canBeErase ?? true;
 
-    const makeLaserPoint = (point: { type?: PrefabDanmakuNames, scale?: number, pos?: number, } | null, defaultPos: number) => {
-        if (point === null) {
-            return null;
-        } else {
-            const type = point.type ?? "nova";
-            const texture = game.prefabTextures.danmaku.danmaku[type][color];
-            const pointBaseRadius = prefabDanmakuHitboxRadius[type];
-            const pos = point.pos ?? defaultPos;
-            const scale = point.scale ?? (1 * hitboxHalfWidth / pointBaseRadius) + 0.3;// 这里可以考虑加个sqrt，防止端点大的太大、小的太小；另外，这个尺寸应当能够随激光尺寸的变化而变化0
-            return {
-                sprite: makeCommonOrAnimatedSprite({
-                    game, combat, board, texture,
-                    sprite: new pixi.Sprite({
-                        parent,
-                        anchor: 0.5,
-                        scale, zIndex,
-                        blendMode: "add",
-                    })
-                }), pos
-            };
-        }
-    };
-
     // 这里明确三者的构造顺序，因为这玩意图层是有讲究的，后来居上
     let anchor: pixi.PointData;
     if (texture instanceof pixi.Texture) {
@@ -356,26 +375,40 @@ export const baseMakePrefabLaserBeam = (options: BaseMakePrefabLaserBeamOptions)
             zIndex,
         })
     });
-    let tailPoint = makeLaserPoint(options.tailPoint, -1);
-    let headPoint = makeLaserPoint(options.headPoint, 0);
 
     const beam = new LaserBeam({
         type, color, game, combat, board,
         hitboxHalfWidth: hitboxHalfWidth, hitboxLength,
-        mainSprite, tailPoint, headPoint, foldedLength: 0,
+        mainSprite, foldedLength: 0, baseHalfLength, baseHalfWidth,
     });
+    beam.makeTailPoint(options.tailPoint);
+    beam.makeHeadPoint(options.headPoint);
     beam.canBeErase = canBeErase;
     beam.speed = speed;
     return beam;
 }
 
-/*
-export const baseMakeFoggyLaserBeam = (options: {
-    beamOptions: BaseMakePrefabLaserBeamOptions,
+export const baseMakeGrowingLaserBeam = (options: {
+    beam: LaserBeam,
     targetLength: number,
-    speed: number,
+    growSpeed: number,
 }) => {
-    const { beamOptions, targetLength } = options;
-    const beam = baseMakePrefabLaserBeam(beamOptions);
-    beam._foldedLength = targetLength - beam.hitboxLength;
-};*/
+    const { beam, targetLength, growSpeed } = options;
+    beam._totalLength = targetLength;
+    const initLength = beam.hitboxLength;
+    const dur = (targetLength - initLength) / growSpeed;
+    const loop = beam.forever(loop => {
+        if (loop.clock < dur) {
+            beam.hitboxLength = utils.lerp(initLength, targetLength, loop.clock / dur);
+        } else {
+            beam.hitboxLength = targetLength;
+            loop.destroy();
+        }
+    });
+    return {
+        beam, loop,
+        then: (callback: () => void) => loop.then(callback),
+    };
+};
+
+export type MakeGrowingLaserBeamResult = ReturnType<typeof baseMakeGrowingLaserBeam>;

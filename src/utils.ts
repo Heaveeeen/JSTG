@@ -12,6 +12,8 @@ export const clamp = (n: number, a: number, b: number) => Math.min(Math.max(a, n
 
 /** TODOC: lerp */
 export const lerp = (a: number, b: number, t: number) => a * (1 - t) + b * t;
+/** 类似 lerp ，但会在两角的夹角（较小角）中插值 */
+export const lerpAngle = (a: number, b: number, t: number) => a + (((b - a + Math.PI) % (2 * Math.PI)) - Math.PI) * t;
 
 /**
  * 弹幕引擎 ghost to 同款  
