@@ -647,8 +647,10 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     ));
                     yield;
                 }
-                board.danmakuRegList.getAlives().forEach(dan => dan.erase({ permissionType }));
-                    board.gunRegList.getAlives().forEach(gun => gun.destroy());
+                board.danmakuRegList.getAlives().forEach(dan => {
+                    if (dan.enemy === null || !dan.enemy.isBoss) { dan.erase({ permissionType }); }
+                });
+                board.gunRegList.getAlives().forEach(gun => gun.destroy());
             }); }
 
             return board;

@@ -197,7 +197,7 @@ import * as pixi from "pixi";
         makeGrowingLaserBeam({ type: "smallball", color: "h180", x: 180, y: 150, halfWidth: 3, targetLength: 140, tailPoint: {}, headPoint: {}, canBeErase: false });
         makeGrowingLaserBeam({ type: "scale", color: "h240", x: 180, y: 180, halfWidth: 3, targetLength: 120, canBeErase: false });
     }
-    makeFooMuseum2();
+    //makeFooMuseum2();
 
     const colors = ["h0", "h30", "h60", "h90", "h120", "h150", "h180", "h210", "h240", "h270", "h300", "h330", "black", "white"];
     function makeFooYinYangOrbs() { for (let i = 0; i < 30; i++) {
