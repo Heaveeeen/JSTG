@@ -1,5 +1,4 @@
 // @ ts-check
-// 如果希望关闭 ts 的类型检查，请修改或删除上方注释。可以在“@ts-check”中间加个空格啥的，方便开关。
 
 /// <reference path="./lib/pixi/pixi.d.ts" />
 // ↑ 上面这行用来联动 pixi 的类型注释
@@ -192,13 +191,13 @@ import * as pixi from "pixi";
         }
         makeFooExsibits(-165, ()=>65, ()=>0, ["bigyinyang"], ["h0", "h60", "h120", "h180", "h240", "h300"]);
         makeDanmaku({ type: "nuclear", x: 115, y: -10 }).canBeErase = false;
-        makeLaserBeam({ type: "laserseg", color: "h0", x: 60, y: 50, halfWidth: 1, length: 120, startPoint: {}, endPoint: {} }).canBeErase = false;
-        makeLaserBeam({ type: "laserseg", color: "h60", x: 70, y: 70, halfWidth: 3, length: 100, startPoint: {}, endPoint: {} }).canBeErase = false;
-        makeLaserBeam({ type: "laserseg", color: "h120", x: 80, y: 110, halfWidth: 5, length: 80, startPoint: {}, endPoint: {} }).canBeErase = false;
-        makeLaserBeam({ type: "smallball", color: "h180", x: 40, y: 150, halfWidth: 3, length: 140, startPoint: {}, endPoint: {} }).canBeErase = false;
-        makeLaserBeam({ type: "scale", color: "h240", x: 60, y: 180, halfWidth: 3, length: 120 }).canBeErase = false;
+        makeLaserBeam({ type: "laserseg", color: "h0", x: 180, y: 50, halfWidth: 1, length: 120, tailPoint: {}, headPoint: {} }).canBeErase = false;
+        makeLaserBeam({ type: "laserseg", color: "h60", x: 170, y: 70, halfWidth: 3, length: 100, tailPoint: {}, headPoint: {} }).canBeErase = false;
+        makeLaserBeam({ type: "laserseg", color: "h120", x: 160, y: 110, halfWidth: 5, length: 80, tailPoint: {}, headPoint: {} }).canBeErase = false;
+        makeLaserBeam({ type: "smallball", color: "h180", x: 180, y: 150, halfWidth: 3, length: 140, tailPoint: {}, headPoint: {} }).canBeErase = false;
+        makeLaserBeam({ type: "scale", color: "h240", x: 180, y: 180, halfWidth: 3, length: 120 }).canBeErase = false;
     }
-    //makeFooMuseum();
+    makeFooMuseum2();
 
     const colors = ["h0", "h30", "h60", "h90", "h120", "h150", "h180", "h210", "h240", "h270", "h300", "h330", "black", "white"];
     function makeFooYinYangOrbs() { for (let i = 0; i < 30; i++) {
@@ -359,7 +358,7 @@ import * as pixi from "pixi";
             spells: [non1, 波力海苔, non2, { title: "aaaaaaaa", hp: 50, time: 15 * 60 }, { title: "bbbbbbbb", hp: 50, time: 15 * 60}],
         });
     });
-    fooBoss();
+    //fooBoss();
     //#endregion
 
     forever(loop => {

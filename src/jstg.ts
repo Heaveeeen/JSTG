@@ -530,14 +530,14 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 length?: number,
                 /**
                  * 如果不填写此参数，则激光没有起始端点。  
-                 * 若填写`startPoint: {}`，则默认为`{ type: "nova", pos: 0 }`
+                 * 若填写`startPoint: {}`，则默认为`{ type: "nova", pos: -1 }`
                  */
-                startPoint?: { type?: PrefabDanmakuNames, pos?: number, },
+                tailPoint?: { type?: PrefabDanmakuNames, pos?: number, },
                 /**
                  * 如果不填写此参数，则激光没有末尾端点。  
-                 * 若填写`endPoint: {}`，则默认为`{ type: "nova", pos: 1 }`
+                 * 若填写`endPoint: {}`，则默认为`{ type: "nova", pos: 0 }`
                  */
-                endPoint?: { type?: PrefabDanmakuNames, pos?: number, },
+                headPoint?: { type?: PrefabDanmakuNames, pos?: number, },
                 /** 图层顺序。若不填此参数，则自动根据弹幕尺寸排序，大的在底层、小的在顶层。 */
                 zIndex?: number,
                 /** @default true */
@@ -557,7 +557,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     speed: options.speed ?? 0,
                     parent: options.parent ?? null,
                     halfWidth: options.halfWidth ?? 2, length: options.length ?? 400,
-                    startPoint: options.startPoint ?? null, endPoint: options.endPoint ?? null,
+                    tailPoint: options.tailPoint ?? null, headPoint: options.headPoint ?? null,
                     zIndex: options.zIndex ?? null,
                     canBeErase: options.canBeErase ?? null,
                 });
@@ -912,7 +912,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         input,
         /** 游戏的时间流速，可以用来做慢镜头啥的 */
         get timeScale() { return timeScale; },
-        set timeScale(v: number) { timeScale = v; },
+        set timeScale(v: number) { timeScale = v; },// TODO: 原子化 timeScale
         /** 每秒帧数的估算值 */
         get fps() { return fps; },
         /** @readonly @generator 等待 timeFrame 帧 */

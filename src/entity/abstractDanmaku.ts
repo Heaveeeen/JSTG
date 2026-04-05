@@ -176,6 +176,6 @@ export const prefabDanmakuHitboxRadius = {
     nuclear: 46.6,
     laserseg: 4,
     yinyang: 9.5,
-    bigyinyang: 27,
+    bigyinyang: 26.5,
     // MAYDO: 休止符（英文名rest），宝珠（大水滴？），岩石（木糖醇）
 } as const;
