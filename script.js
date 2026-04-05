@@ -262,8 +262,8 @@ import * as pixi from "pixi";
                             dan.forever(loop => {
                                 dan.speedToA(v, a);
                                 dan.step();
-                                dan.boundaryDelete();
                             });
+                            dan.loopBoundaryDelete(300);
                         });
                     }
                 }

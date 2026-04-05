@@ -135,9 +135,15 @@ export abstract class AbstractDanmaku extends Entity {
      * danmaku.loopBoundaryDelete();
      * // -- 等同于 --
      * danmaku.forever(() => danmaku.boundaryDelete());
+     * 
+     * danmaku.loopBoundaryDelete(120);
+     * // -- 等同于 --
+     * danmaku.forever(loop => { if (loop.clock >= 120) danmaku.boundaryDelete(); });
      */
-    loopBoundaryDelete(options: LoopOptions) {
-        return this.forever(() => this.boundaryDelete(), options);
+    loopBoundaryDelete(afterTime = 0) {
+        return this.forever(loop => {
+            if (loop.clock >= afterTime) { this.boundaryDelete(); }
+        });
     }
 }
 
