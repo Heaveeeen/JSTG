@@ -205,7 +205,7 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
         const summaryTypeText = new pixi.Text({
             parent: summaryPopup,
             text: {
-                godMode: `调试（撞${summary.godModeDieCount}次）`,
+                godMode: `调试 ${summary.missCount}+${summary.godModeDieCount}m${summary.bombCount}b`,
                 pass: "通过",
                 dodge: "全避",
                 get: "收取",

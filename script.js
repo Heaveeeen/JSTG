@@ -280,14 +280,23 @@ import * as pixi from "pixi";
             gunRight.rotation = deg(90 - 40);
             gunRight.speed = 2;
             foo(gunRight, deg(-20));
-            yield* Sleep(75);
-            boss.glideTo(rand.float(-60, 60), rand.float(-120, -90));
+            yield* Sleep(80);
+            boss.glideTo(boss.wander.getStepd());
             yield* Sleep(30);
         } },
     });
     const 暴风雪 = jstg.makeSingleBossSpellOptions({
         time: 60 * 60, hp: 4500, title: "冬符「暴风雪」",
+        loopFn({ boss, loop }) {
+            if (loop.clock % 300 === 250) { boss.glideTo(boss.wander.getStepd()); }
+        },
         *gen({ boss, spellcard, shield, loop }) { let count = 0; let lastSoundCount = 0; while (true) {
+            // const danPerFrame = 0.4;
+            // const speedMul = 0.55;
+            // const danPerFrame = 0.65;
+            // const speedMul = 0.6;
+            // const danPerFrame = 1;
+            // const speedMul = 0.7;
             const danPerFrame = 1.4;
             const speedMul = 0.8;
             const s = Math.sin(deg(loop.clock / 2));
@@ -303,8 +312,8 @@ import * as pixi from "pixi";
             xList = rand.shuffled(xList);
             for (let i = 0; i < danTypes.length; i++) {
                 while (count > loop.clock * danPerFrame) {
-                    if (count - lastSoundCount >= 10) {
-                        lastSoundCount += 10;
+                    if (count - lastSoundCount >= 9) {
+                        lastSoundCount += 9;
                         thse.kira00.play(decibel(-3));
                     }
                     yield;

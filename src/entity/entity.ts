@@ -46,7 +46,6 @@ export abstract class Entity {
         this.game.alphaTo(this, dst, speed);
     }
 
-    // TODO: 重载，direction
     /**
      * 向着 rotation 的方向前进 dist 步。  
      * 默认为向 this.rotation 方向前进 this.speed * game.timeScale 步。  
@@ -117,6 +116,29 @@ export abstract class Entity {
         }
     }
 
+    /**
+     * 可以利用这个东西，让 boss 随机游荡。  
+     * @example
+     * // 让 boss 每 4 秒就在一定范围内随机移动一小步。
+     * spellcard.forever(loop => {
+     *     if (loop.clock % 240 === 200) { boss.glideTo(boss.wander.getStepd()); }
+     * });
+     * 
+     * boss.wander.limit.center = { x: 0, y: -50 }; // 重设的游荡中心点。
+     * boss.wander.limit.halfRange = { x: 120, y: 10 }; // 重设游荡的范围。
+     * boss.wander.limit.center.y = -60; // 当然这样写也是可以的。
+     * 
+     * // 横向随机移动 ±20~50 ，纵向随机移动 ±0~10 ，返回移动后的新坐标，但不会改变 boss 当前的坐标。
+     * const pos1 = boss.wander.getMoved(rand.float(20, 50), rand.float(0, 10));
+     * boss.glideTo(pos1); // 移动到刚才获取的这个位置。
+     * 
+     * // 获取向随机方向随机移动 10~30 步后的坐标。这个“随机方向”不是均匀随机，而是跟范围的形状有关。
+     * // 例如：限制在一个扁胖的范围内（默认情况下）就更容易横向移动。
+     * const pos2 = boss.wander.getStepd(rand.float(10, 30));
+     * boss.x = pos2.x; boss.y = pos2.y; // 瞬移到刚才获取的这个位置。
+     */
+    readonly wander = new Wanderer(this);
+
     glideState: {
         isGliding: true,
         x: number, y: number,
@@ -125,7 +147,7 @@ export abstract class Entity {
 
     stopGlide() {
         this.glideState = { isGliding: false };
-    };
+    }
 
     /** TODO: 封装出一个类似 LoopController 的结构 */
     /** TODOC: glideTo */
@@ -248,8 +270,6 @@ export abstract class Entity {
         return this.board.makeGun({ ...this.xy, rotation: Math.atan2(targetPos.y - this.y, targetPos.x - this.x) });
     } // 这个方法没必要删，感觉还挺方便的。
 
-    // TODO: boss 随机移动
-
     /**
      * 判断该实体是否在版面内。  
      * 注意，该判断是必要不充分的。false 则实体一定在版面外，true 则该实体不一定在版面内。  
@@ -281,6 +301,49 @@ export abstract class Entity {
         const loop = this.board.coDo(genFn, options);
         loop.addRefs(this);
         return loop;
+    }
+}
+
+class Wanderer {
+
+    constructor(readonly entity: Entity) {}
+
+    limit = {
+        center: { x: 0, y: -110 },
+        halfRange: { x: 90, y: 20 },
+    };
+
+    // RAND: wander
+
+    getMoved({ x, y }: utils.Vec2): void;
+    getMoved(x: number, y: number): void;
+    getMoved(arg1: utils.Vec2 | number, arg2?: number) {
+        let { x: dx, y: dy } = typeof arg1 === "number" ? { x: arg1, y: arg2 as number } : arg1;
+        const { glideState, combat } = this.entity;
+        const { center, halfRange } = this.limit;
+        const target = glideState.isGliding ? glideState : this.entity.xy;
+        // 弹幕引擎中 boss 随机移动的逻辑
+        dx *= combat.rand.select([-1, 1]);
+        dy *= combat.rand.select([-1, 1]);
+        if (Math.abs(target.x + dx - center.x) > halfRange.x) { dx *= -1; }
+        if (Math.abs(target.y + dy - center.y) > halfRange.y) { dy *= -1; }
+        // 弹幕引擎里没有这个，所以移动距离过长会导致 boss 跑出范围
+        target.x = utils.clamp(target.x + dx, center.x - halfRange.x, center.x + halfRange.x);
+        target.y = utils.clamp(target.y + dy, center.y - halfRange.y, center.y + halfRange.y);
+        return target;
+    }
+
+    getStepd(dist?: number) {
+        const { glideState, combat } = this.entity;
+        const { center, halfRange } = this.limit;
+        const { x, y } = glideState.isGliding ? glideState : this.entity.xy;
+        dist ??= combat.rand.float(20, 50);
+        let tx = combat.rand.float(center.x - halfRange.x, center.x + halfRange.x) - x;
+        let ty = combat.rand.float(center.y - halfRange.y, center.y + halfRange.y) - y;
+        const scale = dist / Math.sqrt(tx * tx + ty * ty);
+        tx *= scale;
+        ty *= scale;
+        return this.getMoved({ x: tx, y: ty });
     }
 }
 
