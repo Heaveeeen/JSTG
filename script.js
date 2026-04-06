@@ -288,7 +288,7 @@ import * as pixi from "pixi";
     const 暴风雪 = jstg.makeSingleBossSpellOptions({
         time: 60 * 60, hp: 4500, title: "冬符「暴风雪」",
         *gen({ boss, spellcard, shield, loop }) { let count = 0; let lastSoundCount = 0; while (true) {
-            const danPerFrame = 1.3;
+            const danPerFrame = 1.4;
             const speedMul = 0.8;
             const s = Math.sin(deg(loop.clock / 2));
             const dir = deg(90 + 30 * s * Math.abs(s));

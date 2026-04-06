@@ -16,13 +16,13 @@ export const makeReigekiRing = (options: {
      * 《风神录》中，粗略换算过来约为 300 。  
      * @default 300
      */
-    insideDps: number | null,
+    outsideDps: number | null,
     /**
      * 弹幕引擎中，此值为 300 ；  
      * 《风神录》中，粗略换算过来约为 600 。  
      * @default 600
      */
-    outsideDps: number | null,
+    insideDps: number | null,
     /**
      * 弹幕引擎中，此值为 2 。  
      * @default 3
@@ -44,8 +44,8 @@ export const makeReigekiRing = (options: {
 }) => {
     const { game, combat, board, x: x0, y: y0 } = options;
     const maxRadius = options.maxRadius ?? 140;
-    const insideDamage = (options.insideDps ?? 300) / 60;
-    const outsideDamage = (options.outsideDps ?? 600) / 60;
+    const outsideDamage = (options.outsideDps ?? 300) / 60;
+    const insideDamage = (options.insideDps ?? 600) / 60;
     let speed = options.initSpeed ?? 3;
     const speedDK = 1 - (options.speedK ?? 0.99);
     const duration = options.duration ?? 90;

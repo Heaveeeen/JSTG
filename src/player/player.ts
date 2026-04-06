@@ -506,8 +506,8 @@ export class Player {
         makeReigekiRing({
             game: this.game, combat: this.combat, board: this.board,
             x: this.x, y: this.y + 50,
-            maxRadius: null, insideDps: 250, outsideDps: 500,
-            initSpeed: 2, speedK: 0.992, duration: 150,
+            maxRadius: null, outsideDps: 250, insideDps: 500,
+            initSpeed: 2, speedK: 0.992, duration: 180,
         });
     }
 

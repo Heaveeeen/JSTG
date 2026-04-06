@@ -671,20 +671,26 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 /** @default 60 */
                 duration?: number,
                 /**
-                 * 本次消弹的来源种类。决定本次消弹是否能够生效。
-                 * * "common" - 最低级别的权限，本次消弹会被 canBeErase 拦住。
+                 * 本次消弹的来源种类。决定本次消弹是否能够生效。  
+                 * * "common" - 最低级别的权限，本次消弹会被 canBeErase 拦住。  
                  * * "force" - 本次消弹不会被任何因素阻止。  
                  * @default "common"
                  */
                 permissionType?: "common" | "force",
+                /**
+                 * 是否摧毁所有发弹点（`Gun`）。
+                 * @default false
+                 */
+                isDestroyGun?: boolean,
             }) { board.coDo(function*() {
                 const { x, y } = options;
                 const rate = 60 / (options.duration ?? 60);
                 const permissionType = options.permissionType ?? "common";
+                const isDestroyGun = options.isDestroyGun ?? false;
                 for (let t = 0; t < 60; t += game.timeScale * rate) {
                     const radius = t * 10;
-                    board.danmakuRegList.eraseByRadius({ x, y, radius });
-                    board.gunRegList.getAlives().forEach(gun => gun.destroy());
+                    board.danmakuRegList.eraseByRadius({ x, y, radius }); 
+                    if (isDestroyGun) { board.gunRegList.getAlives().forEach(gun => gun.destroy()); }
                     board.enemyRegList.getByRadius({ x, y, radius }).forEach(enemy => enemy.beHurt(
                         (enemy.isBoss ? 2 : 10) * game.timeScale * rate
                     ));
@@ -693,7 +699,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 board.danmakuRegList.getAlives().forEach(dan => {
                     if (dan.enemy === null || !dan.enemy.isBoss) { dan.erase({ permissionType }); }
                 });
-                board.gunRegList.getAlives().forEach(gun => gun.destroy());
+                if (isDestroyGun) { board.gunRegList.getAlives().forEach(gun => gun.destroy()); }
             }); }
 
             return board;

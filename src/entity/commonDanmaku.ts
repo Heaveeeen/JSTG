@@ -257,7 +257,7 @@ export function baseMakePrefabDanmaku<TIsFoggy extends boolean>(options: BaseMak
             parent, x, y, rotation,
             texture: game.prefabTextures.danmaku.particle.fog[color],
             anchor: 0.5,
-            scale: hitboxRadius / 2,
+            scale: hitboxRadius * 0.6,
             zIndex,
             alpha: 0.2,
         });
