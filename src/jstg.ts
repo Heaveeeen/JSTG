@@ -10,7 +10,7 @@ import { makeRegList } from "./regList.js";
 import { LoadPrefabSounds, LoadPrefabSoundsOptions, LoadSound } from "./sounds.js";
 import { LaserBeam, MakeGrowingLaserBeamResult, baseMakeGrowingLaserBeam, baseMakePrefabLaserBeam } from "./entity/laserBeam.js";
 import { Player } from "./player/player.js";
-import { CoDoGenFn, LoopController, LooperFn, LoopOptions, makeLooper, makePauseController } from "./looper.js";
+import { CoDoGenFn, LoopController, LooperFn, LoopOptions, makeLooper, makePauseController, CoDoGenerator } from "./looper.js";
 import { AbstractEnemy } from "./entity/abstractEnemy.js";
 import { prefabEnemyFactory } from "./entity/prefabEnemyFactory.js";
 import { Spellcard } from "./boss/spellcard.js";
@@ -26,8 +26,6 @@ export interface Destroyable {
     destroy(options?: { children: boolean }): void;
     readonly destroyed: boolean;
 }
-
-export type CoDoGenerator = Generator<void, void, void>;
 
 // TODO: 这堆基于类型推导的东西，类型注释全都会自动展开。等以后架构稳定下来了，要把类型单独声明出来，写成接口或者类。
 type ExtractPromiseType<U> = U extends Promise<infer T> ? T : never
@@ -126,7 +124,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
     function* Sleep(
         /** 要等待的时间（帧） */
         timeFrame: number
-    ): CoDoGenerator {
+    ) {
         while (timeFrame > 0) {
             timeFrame -= timeScale;
             yield;
@@ -476,6 +474,12 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 isAutoZIndex?: boolean,
                 /** @default true */
                 canBeErase?: boolean,
+                /** 在弹幕生成之后，执行一次这个回调函数。 */
+                fn?: ({ danmaku, dan, loop }: { danmaku: CommonDanmaku, dan: CommonDanmaku, loop: LoopController<unknown> }) => void,
+                /** 在弹幕生成之后，启动这个循环函数。（即`forever`） */
+                loopFn?: ({ danmaku, dan, loop }: { danmaku: CommonDanmaku, dan: CommonDanmaku, loop: LoopController<unknown> }) => void,
+                /** 在弹幕生成之后，启动这个生成器函数。（即`coDo`） */
+                gen?: ({ danmaku, dan, loop }: { danmaku: CommonDanmaku, dan: CommonDanmaku, loop: LoopController<unknown> }) => CoDoGenerator<unknown>,
             };
 
             function makeDanmaku(options: MakeDanmakuOptions): CommonDanmaku;
@@ -487,7 +491,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 if (options.isAutoZIndex ?? true) {
                     options.zIndex = undefined;
                 }
-                return baseMakePrefabDanmaku({
+                const danmaku = baseMakePrefabDanmaku({
                     game, combat, board,
                     type: options.type ?? "smallball", color: options.color ?? "red", parent: options.parent ?? null,
                     x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
@@ -497,6 +501,12 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     canBeErase: options.canBeErase ?? null,
                     isFoggy: false,
                 });
+                const { fn, loopFn, gen } = options;
+                const dan = danmaku;
+                if (fn !== undefined) { danmaku.forever(loop => fn({ danmaku, dan, loop })); }
+                if (loopFn !== undefined) { danmaku.forever(loop => loopFn({ danmaku, dan, loop })); }
+                if (gen !== undefined) { danmaku.coDo(loop => gen({ danmaku, dan, loop })); }
+                return danmaku;
             }
 
             // 此处为复制，要是改了上面，别忘了把下面也改了
@@ -509,7 +519,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 if (options.isAutoZIndex ?? true) {
                     options.zIndex = undefined;
                 }
-                return baseMakePrefabDanmaku({
+                const fogResult = baseMakePrefabDanmaku({
                     game, combat, board,
                     type: options.type ?? "smallball", color: options.color ?? "red", parent: options.parent ?? null,
                     x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
@@ -519,6 +529,15 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     canBeErase: options.canBeErase ?? null,
                     isFoggy: true,
                 });
+                fogResult.then(danmaku => {
+                    if (danmaku === undefined) { return; }
+                    const { fn, loopFn, gen } = options;
+                    const dan = danmaku;
+                    if (fn !== undefined) { danmaku.forever(loop => fn({ danmaku, dan, loop })); }
+                    if (loopFn !== undefined) { danmaku.forever(loop => loopFn({ danmaku, dan, loop })); }
+                    if (gen !== undefined) { danmaku.coDo(loop => gen({ danmaku, dan, loop })); }
+                });
+                return fogResult;
             }
 
             type MakeLaserBeamOptions = {
@@ -554,6 +573,12 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 zIndex?: number,
                 /** @default true */
                 canBeErase?: boolean,
+                /** 在激光生成之后，执行一次这个回调函数。 */
+                fn?: ({ laserBeam, beam, loop }: { laserBeam: LaserBeam, beam: LaserBeam, loop: LoopController<unknown> }) => void,
+                /** 在激光生成之后，启动这个循环函数。（即`forever`） */
+                loopFn?: ({ laserBeam, beam, loop }: { laserBeam: LaserBeam, beam: LaserBeam, loop: LoopController<unknown> }) => void,
+                /** 在激光生成之后，启动这个生成器函数。（即`coDo`） */
+                gen?: ({ laserBeam, beam, loop }: { laserBeam: LaserBeam, beam: LaserBeam, loop: LoopController<unknown> }) => CoDoGenerator<unknown>,
             };
 
             function makeLaserBeam(options: MakeLaserBeamOptions): LaserBeam;
@@ -562,7 +587,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 if (options === undefined || typeof options === "string") {
                     options = { type: options, color };
                 };
-                return baseMakePrefabLaserBeam({
+                const laserBeam = baseMakePrefabLaserBeam({
                     game, combat, board,
                     type: options.type ?? "laserseg", color: options.color ?? "red",
                     x: options.x ?? 0, y: options.y ?? 0, rotation: options.rotation ?? 0,
@@ -573,6 +598,12 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     zIndex: options.zIndex ?? null,
                     canBeErase: options.canBeErase ?? null,
                 });
+                const { fn, loopFn, gen } = options;
+                const beam = laserBeam;
+                if (fn !== undefined) { laserBeam.forever(loop => fn({ laserBeam, beam, loop })); }
+                if (loopFn !== undefined) { laserBeam.forever(loop => loopFn({ laserBeam, beam, loop })); }
+                if (gen !== undefined) { laserBeam.coDo(loop => gen({ laserBeam, beam, loop })); }
+                return laserBeam;
             }
 
             type MakeGrowingLaserBeamOptions = {
@@ -618,6 +649,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 zIndex?: number;
                 /** @default true */
                 canBeErase?: boolean;
+                // 这里写 fn loopFn gen 会有点语义模糊，故不写
             };
 
             function makeGrowingLaserBeam(options: MakeGrowingLaserBeamOptions): MakeGrowingLaserBeamResult;

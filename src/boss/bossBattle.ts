@@ -230,7 +230,10 @@ interface CommonSpellOptions extends BaseSpellOptions {
     isSurvival?: false,
     /** @default 3000 */
     hp?: number,
-    /** @default 250 */
+    /**
+     * 对于符卡，250 的出生保护近似等效于 3 秒无敌。《风神录》中的符卡保护差不多就是这个数。
+     * @default 250
+     */
     birthProtectDuration?: number,
     /**
      * 这个参数可以用来让敌人不吃 Bomb 。  

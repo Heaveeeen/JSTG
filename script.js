@@ -254,19 +254,18 @@ import * as pixi from "pixi";
                     gun.step();
                     if (loop.clock % 1 === 0) {
                         game.prefabSounds.thse.tan00.play(decibel(-15));
+                        const v = rand.float(0.8, 3.2);
+                        const a = rand.float(0.008, 0.015);
                         makeFoggyDanmaku({
                             type: rand.select(["ringball", "dot", "smallball"]),
                             color: rand.select(["h180", "h210", "white"]),
                             ...gun, speed: 0,
-                        }).then(dan => {
-                            dan.rotation = deg(rand.float(-100, 100)) * rand.float(0,1) ** 3 + r;
-                            const v = rand.float(0.8, 3.2);
-                            const a = rand.float(0.008, 0.015);
-                            dan.forever(loop => {
+                            rotation: deg(rand.float(-100, 100)) * rand.float(0,1) ** 3 + r,
+                            fn({ dan }) { dan.loopBoundaryDelete(300); },
+                            loopFn({ dan }) {
                                 dan.speedToA(v, a);
                                 dan.step();
-                            });
-                            dan.loopBoundaryDelete(300);
+                            },
                         });
                     }
                 }
