@@ -148,6 +148,7 @@ export abstract class Entity {
     }
 
     get xy() { return { x: this.x, y: this.y }; }
+    get xyr() { return { x: this.x, y: this.y, rotation: this.rotation }; }
 
     /** TODOC: scatter */
     scatter(options: {

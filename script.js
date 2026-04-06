@@ -3,7 +3,10 @@
 /// <reference path="./lib/pixi/pixi.d.ts" />
 // ↑ 上面这行用来联动 pixi 的类型注释
 
-import * as jstg from "./dist/jstg.js";
+// ↓ 在编辑时，把这行注释掉，可以与 .ts 源码联动，对语法服务可能有些帮助。注意在运行时要导入 .js 。
+import * as jstg from "./dist/jstg.js";/*
+import * as jstg from "./src/jstg.ts";/**/
+
 import * as pixi from "pixi";
 
 
@@ -241,9 +244,8 @@ import * as pixi from "pixi";
 
     //#region 测试 boss
     const non1 = jstg.makeSingleBossSpellOptions({
-        time: 30 * 60, hp: 3000,
+        time: 30 * 60, hp: 2500,
         *gen({ boss, spellcard, shield }) { while (true) {
-            /** @param {Gun} gun */
             const foo = (gun, o) => {let r = gun.aimedGun(boss).rotation; gun.forever(loop => {
                 if (loop.clock >= 80) { gun.destroy(); } else {
                     r += o;
@@ -331,7 +333,7 @@ import * as pixi from "pixi";
         } },
     });
     const 波力海苔 = jstg.makeSingleBossSpellOptions({
-        time: 40 * 60, hp: 4000, title: "你好「波粒海苔」",
+        time: 50 * 60, hp: 4000, title: "你好「波粒海苔」",
         //autoInvincibleMode: "noDamageWhilePlayerInvincible",
         *gen({ boss, spellcard, shield }) {
             spellcard.forever(loop => {
@@ -399,13 +401,14 @@ import * as pixi from "pixi";
     });
     const fooBoss = () => coDo(function*() {
         yield* Sleep(30);
-        const boss = board.makeBoss(game.prefabCharInfos.maple.boss);
+        const boss = board.makeBoss(game.prefabCharInfos.jstgDummyUnknown.boss);
         const battle = board.startSingleBossBattle({
             boss,
             spells: [
-                //non1,
+                non1,
                 暴风雪,
-                non2, { title: "aaaaaaaa", hp: 50, time: 15 * 60 }, { title: "bbbbbbbb", hp: 50, time: 15 * 60}],
+                //non2, { title: "aaaaaaaa", hp: 50, time: 15 * 60 }, { title: "bbbbbbbb", hp: 50, time: 15 * 60}
+            ],
         });
     });
     fooBoss();

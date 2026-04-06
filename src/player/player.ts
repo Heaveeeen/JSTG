@@ -499,14 +499,15 @@ export class Player {
     }
 
     _defaultReigekiBomb(opt: PlayerBombOptions) {
-        this.applyInvincible(300);
-        this.applyBombCd(210);
+        this.applyInvincible(330);
+        this.applyBombCd(240);
         this.game.prefabSounds.thse.slash.play();
+        this.game.prefabSounds.thse.nep00.play();
         makeReigekiRing({
             game: this.game, combat: this.combat, board: this.board,
             x: this.x, y: this.y + 50,
-            maxRadius: null, insideDps: null, outsideDps: null,
-            initSpeed: 2, speedK: 0.992, duration: 120,
+            maxRadius: null, insideDps: 250, outsideDps: 500,
+            initSpeed: 2, speedK: 0.992, duration: 150,
         });
     }
 

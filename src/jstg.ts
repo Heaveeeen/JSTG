@@ -467,8 +467,13 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 speed?: number,
                 /** 该弹幕的判定半径，默认值请参考 prefabDanmakuHitboxRadius 。 */
                 radius?: number,
-                /** 图层顺序。若不填此参数，则自动根据弹幕尺寸排序，大的在底层、小的在顶层。 */
+                /**
+                 * ⚠️此参数只有设定了 isAutoZIndex: false 的情况下才能生效。  
+                 * 图层顺序。默认情况下，自动根据弹幕尺寸排序，大的在底层、小的在顶层。  
+                 */
                 zIndex?: number,
+                /** @default true */
+                isAutoZIndex?: boolean,
                 /** @default true */
                 canBeErase?: boolean,
             };
@@ -478,7 +483,10 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             function makeDanmaku(options?: PrefabDanmakuNames | MakeDanmakuOptions, color?: DyedTextureColors) {
                 if (options === undefined || typeof options === "string") {
                     options = { type: options, color };
-                };
+                }
+                if (options.isAutoZIndex ?? true) {
+                    options.zIndex = undefined;
+                }
                 return baseMakePrefabDanmaku({
                     game, combat, board,
                     type: options.type ?? "smallball", color: options.color ?? "red", parent: options.parent ?? null,
@@ -497,7 +505,10 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             function makeFoggyDanmaku(options?: PrefabDanmakuNames | MakeDanmakuOptions, color?: DyedTextureColors) {
                 if (options === undefined || typeof options === "string") {
                     options = { type: options, color };
-                };
+                }
+                if (options.isAutoZIndex ?? true) {
+                    options.zIndex = undefined;
+                }
                 return baseMakePrefabDanmaku({
                     game, combat, board,
                     type: options.type ?? "smallball", color: options.color ?? "red", parent: options.parent ?? null,
@@ -905,7 +916,15 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             playerHue: null, shieldHsla: null, bossHpBarHue: null,
         }),
         // TODO: icu, wriggle
-        // TODO: JSTGDummy
+        jstgDummyUnknown: makeJstgCharInfo({
+            playerName: "jstg dummy unknown",
+            bossName: "JSTG Dummy Unknown",
+            defaultSpellcardFigure: prefabTextures.charFigure.unknown,
+            avatar: prefabTextures.avatar.unknown,
+            color1: "#ff3333",
+            color2: "#ff8080",
+            playerHue: null, shieldHsla: null, bossHpBarHue: null,
+        }),
     } as const;
 
     const game = {
