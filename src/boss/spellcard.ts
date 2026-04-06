@@ -24,8 +24,13 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
     const beginClockTs = game.clock;
     let endClockTs: number | null = null;
     if (spellcardOptions.isPlayStartSound) { game.prefabSounds.thse.cat00.play(); }
+    game.debug.godMode.dieCount = 0;
 
     let isMissOrBomb = false;
+    let missCount = 0;
+    let bombCount = 0;
+    let isUsedGodMode = false;
+
     let isSpellcardDestroyed = false;
     const spellcard = {
         get clock() { return game.clock - beginClockTs; },
@@ -42,14 +47,14 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
             figure?.destroy({ children: true });
             timerText.destroy();
             title?.root.destroy({ children: true });
-            resultPopup?.destroy({ children: true });
+            summaryPopup?.destroy({ children: true });
         },
         get destroyed() {
             return ownEnemys.some(enemy => enemy.destroyed) || isSpellcardDestroyed || this.timeRemaining <= 0;
         },
 
-        onMiss(options: { player: Player }) { isMissOrBomb = true; },
-        onBomb(options: { player: Player }) { isMissOrBomb = true; },
+        onMiss(options: { player: Player }) { missCount++; },
+        onBomb(options: { player: Player }) { bombCount++; },
 
         forever<T>(fn: LooperFn<T>, options: LoopOptions = {}) {
             const loop = board.forever(fn, options);
@@ -80,7 +85,7 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
         alpha: 0,
     });
     if (figure !== null) { board.coDo(function*() { // 此处没必要依赖 spellcard ，一个立绘飞过去的动画而已……
-        // MAYDO: 写个新的符卡宣言动画，这里直接沿用弹幕引擎的写法……其实我不是特别喜欢这个，但也完全谈不上讨厌，感觉犯不上为了这点破事大动干戈。反正调这玩意得不断编译，非常麻烦。。。
+        // MAYDO: 写个新的符卡宣言动画，这里直接沿用弹幕引擎的写法……其实我不是特别喜欢这个（我更喜欢车万原作那种快节奏的），但也完全谈不上讨厌，感觉犯不上为了这点破事大动干戈。反正调这玩意得不断编译，非常麻烦。。。
         for (let t = 20; t < 140; t += game.timeScale) {
             // 这俩变量是弹幕引擎里的局部变量，我也不知道这玩意该叫啥……
             const spde_posX = 100 - 155 * spde_UiGradient;
@@ -133,9 +138,9 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
                 timerText.scale = 1.2;
             }
         }
-        if (game.debug.godMode.isOn) { isMissOrBomb = true; }
+        if (game.debug.godMode.isOn) { isUsedGodMode = true; }
     }, { order: 0 });
-    let resultPopup: pixi.Sprite | null = null;
+    let summaryPopup: pixi.Sprite | null = null;
     const mainLoop = board.coDo(function*() {
         yield* liveLoop;
         // 击破后的收尾
@@ -162,24 +167,33 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
             }
         }, { owns: timerText, order: 0 });
         // 收卡提示
-        const resultType = (()=>{
-            if (isMissOrBomb) {
+        const summary: SpellcardSummary = (()=>{
+            let type: SpellcardSummary["type"];
+            if (isUsedGodMode) {
+                type = "godMode";
+            } else if (missCount > 0 || bombCount > 0) {
                 // 通过
-                return "pass";
+                type = "pass";
             } else if (!isSurvival && endClockTs - beginClockTs >= maxTime) {
                 // 全避（NN & 未击破）
                 timerText.text = "00.00";
                 timerText.style.fill = "#f43636";
                 game.prefabSounds.thse.fault.play();
-                return "dodge";
+                type = "dodge";
             } else {
                 // 收取（NN & 击破，或者全避时符）
                 if (!isNonSpell) { game.prefabSounds.thse.cardget.play(); }
-                return "get";
+                type = "get";
             }
+            return {
+                type, missCount, bombCount,
+                godModeDieCount: game.debug.godMode.dieCount,
+                time: utils.clamp(endClockTs - beginClockTs, 0, maxTime),
+            };
         })();
-        const resultTexture = game.prefabTextures.spellcardUi.result[resultType];
-        resultPopup = new pixi.Sprite({
+        game.debug.godMode.dieCount = 0;
+        const resultTexture = game.prefabTextures.spellcardUi.summaryPopup[summary.type];
+        summaryPopup = new pixi.Sprite({
             parent: board.spellcardUiLayer,
             texture: resultTexture,
             anchor: 0.5,
@@ -187,9 +201,26 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
             // 弹幕引擎里，这东西的尺寸是 0.8
             scale: 1,
             alpha: 0,
-        })
-        const resultTitle = new pixi.Text({
-            parent: resultPopup,
+        });
+        const summaryTypeText = new pixi.Text({
+            parent: summaryPopup,
+            text: {
+                godMode: `调试（撞${summary.godModeDieCount}次）`,
+                pass: "通过",
+                dodge: "全避",
+                get: "收取",
+            }[summary.type],
+            x: -62, y: -15, anchor: { x: 0, y: 0.5 },
+            resolution: 4,
+            style: {
+                fontSize: 16,
+                align: "center",
+                fill: "#eee",
+            },
+            zIndex: 10,
+        });
+        const summaryTitle = new pixi.Text({
+            parent: summaryPopup,
             text: titleString,
             x: -64, y: 15, anchor: { x: 0, y: 0.5 },
             resolution: 4,
@@ -200,9 +231,9 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
             },
             zIndex: 10,
         });
-        const resultTime = new pixi.Text({
-            parent: resultPopup,
-            text: (utils.clamp(endClockTs - beginClockTs, 0, maxTime) / 60).toFixed(2) + "s",
+        const summaryTime = new pixi.Text({
+            parent: summaryPopup,
+            text: (summary.time / 60).toFixed(2) + "s",
             x: 90, y: -16, anchor: { x: 1, y: 0.5 },
             resolution: 4,
             style: {
@@ -218,17 +249,17 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
             let t = 0;
             const popupBaseY = -20 * 4/3;
             board.forever(loop => {
-                if (resultPopup === null) { return loop.destroy(); }
+                if (summaryPopup === null) { return loop.destroy(); }
                 // 这里的动画比弹幕引擎稍快一点
                 let tf = t < 30 ? (t - 30) / 30 : t < 90 ? 0 : (t - 90) / 30;
                 tf *= tf ** 2;
-                resultPopup.y = popupBaseY - tf * 30;
-                resultPopup.alpha = utils.clamp(1 - Math.abs(tf), 0, 1);
-                if (t > 90 && resultPopup.alpha <= 0) {
+                summaryPopup.y = popupBaseY - tf * 30;
+                summaryPopup.alpha = utils.clamp(1 - Math.abs(tf), 0, 1);
+                if (t > 90 && summaryPopup.alpha <= 0) {
                     return loop.destroy();
                 }
                 t += game.timeScale;
-            }, { owns: resultPopup });
+            }, { owns: summaryPopup });
             yield* game.Sleep(60);
         }
     });
@@ -337,3 +368,11 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
 }
 
 export type Spellcard = ReturnType<typeof baseStartSpellcard>;
+
+export type SpellcardSummary = {
+    type: "godMode" | "pass" | "dodge" | "get",
+    missCount: number,
+    bombCount: number,
+    godModeDieCount: number,
+    time: number,
+};

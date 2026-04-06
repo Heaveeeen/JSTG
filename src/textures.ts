@@ -132,7 +132,7 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
     const resScale = options.resolutionScale ?? 1;
     const lsvg = async (url: string, res = 2) => await LoadSvg(base + url, res * resScale);
     const lsdye = async (url: string, res = 2) => makeDyedTextures({ redTexture: await lsvg(url, res), app });
-    return {
+    return { // MAYDO: 改用 Promise.all
         danmaku: {
             danmaku: {
                 smallball: await lsdye(`danmaku/danmaku/smallball.svg`),
@@ -248,10 +248,11 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
                 nonSpellcard: await lsvg(`spellcardUi/scCounterIcon/nonSpellcard.svg`),
                 spellcard: await lsvg(`spellcardUi/scCounterIcon/spellcard.svg`),
             },
-            result: {
-                get: await lsvg(`spellcardUi/result/get.svg`),
-                pass: await lsvg(`spellcardUi/result/pass.svg`),
-                dodge: await lsvg(`spellcardUi/result/dodge.svg`),
+            summaryPopup: {
+                get: await lsvg(`spellcardUi/summaryPopup/get.svg`),
+                pass: await lsvg(`spellcardUi/summaryPopup/pass.svg`),
+                dodge: await lsvg(`spellcardUi/summaryPopup/dodge.svg`),
+                godMode: await lsvg(`spellcardUi/summaryPopup/godMode.svg`),
             },
         }
     }
