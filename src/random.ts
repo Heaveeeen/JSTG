@@ -16,10 +16,10 @@ type NewRngOptions = {
  * 构造一个随机数发生器，你可以用它来生成随机数，并且指定种子。  
  * 指定种子有助于稳定复现一局游戏，比如可以做 replay 啥的。  
  * 另外，也可以通过手动填入一些参数，实现一些神奇的“固定随机弹”。  
- */// TODO: 改成类
+ */
 export class Rng {
 
-    /** @readonly 随机种子 */
+    /** @readonly 起始的随机种子 */
     readonly seed: number;
     readonly a: number;
     readonly c: number;
