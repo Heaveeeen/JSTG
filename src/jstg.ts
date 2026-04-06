@@ -475,7 +475,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 /** @default true */
                 canBeErase?: boolean,
                 /** 在弹幕生成之后，执行一次这个回调函数。 */
-                fn?: ({ danmaku, dan, loop }: { danmaku: CommonDanmaku, dan: CommonDanmaku, loop: LoopController<unknown> }) => void,
+                fn?: ({ danmaku, dan }: { danmaku: CommonDanmaku, dan: CommonDanmaku }) => void,
                 /** 在弹幕生成之后，启动这个循环函数。（即`forever`） */
                 loopFn?: ({ danmaku, dan, loop }: { danmaku: CommonDanmaku, dan: CommonDanmaku, loop: LoopController<unknown> }) => void,
                 /** 在弹幕生成之后，启动这个生成器函数。（即`coDo`） */
@@ -503,7 +503,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 });
                 const { fn, loopFn, gen } = options;
                 const dan = danmaku;
-                if (fn !== undefined) { danmaku.forever(loop => fn({ danmaku, dan, loop })); }
+                if (fn !== undefined) { fn({ danmaku, dan }); }
                 if (loopFn !== undefined) { danmaku.forever(loop => loopFn({ danmaku, dan, loop })); }
                 if (gen !== undefined) { danmaku.coDo(loop => gen({ danmaku, dan, loop })); }
                 return danmaku;
@@ -533,7 +533,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     if (danmaku === undefined) { return; }
                     const { fn, loopFn, gen } = options;
                     const dan = danmaku;
-                    if (fn !== undefined) { danmaku.forever(loop => fn({ danmaku, dan, loop })); }
+                    if (fn !== undefined) { fn({ danmaku, dan }); }
                     if (loopFn !== undefined) { danmaku.forever(loop => loopFn({ danmaku, dan, loop })); }
                     if (gen !== undefined) { danmaku.coDo(loop => gen({ danmaku, dan, loop })); }
                 });
@@ -574,7 +574,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 /** @default true */
                 canBeErase?: boolean,
                 /** 在激光生成之后，执行一次这个回调函数。 */
-                fn?: ({ laserBeam, beam, loop }: { laserBeam: LaserBeam, beam: LaserBeam, loop: LoopController<unknown> }) => void,
+                fn?: ({ laserBeam, beam }: { laserBeam: LaserBeam, beam: LaserBeam }) => void,
                 /** 在激光生成之后，启动这个循环函数。（即`forever`） */
                 loopFn?: ({ laserBeam, beam, loop }: { laserBeam: LaserBeam, beam: LaserBeam, loop: LoopController<unknown> }) => void,
                 /** 在激光生成之后，启动这个生成器函数。（即`coDo`） */
@@ -600,7 +600,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 });
                 const { fn, loopFn, gen } = options;
                 const beam = laserBeam;
-                if (fn !== undefined) { laserBeam.forever(loop => fn({ laserBeam, beam, loop })); }
+                if (fn !== undefined) { fn({ laserBeam, beam }); }
                 if (loopFn !== undefined) { laserBeam.forever(loop => loopFn({ laserBeam, beam, loop })); }
                 if (gen !== undefined) { laserBeam.coDo(loop => gen({ laserBeam, beam, loop })); }
                 return laserBeam;
