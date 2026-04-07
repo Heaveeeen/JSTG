@@ -425,6 +425,8 @@ import * as pixi from "pixi";
     //#endregion
 
     forever(loop => {
+        const { x: mx, y: my } = input.getMouseXy(board);
+        txt.text = `${mx.toFixed(2)}, ${my.toFixed(2)}`;
         pl.update({ input, keyMap: {
             up: ["ArrowUp", "KeyW"],
             down: ["ArrowDown", "KeyS"],

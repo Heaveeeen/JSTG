@@ -133,7 +133,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
     const alphaTo: typeof utils.alphaTo = (spr, dst, speed) => utils.alphaTo(spr, dst, speed * timeScale);
 
-    const input = makeInput();
+    const input = makeInput({ app });
     if (gameOptions.autoUpdateInput ?? true) { forever(() => input._update(), { order: 0, pauseController: "none" }); }
 
     //#region combat
@@ -357,6 +357,9 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 startSingleBossBattle,
                 /** TODOC: clearBoard */
                 clearBoard,
+                toLocal(pos: utils.Vec2) {
+                    return boardRoot.toLocal(pos);
+                },
                 destroy() {
                     if (this.destroyed) { return; }
                     boardRoot.destroy({ children: true });

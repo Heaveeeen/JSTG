@@ -2,7 +2,10 @@
 
 // 这个文件是从我以前的项目里摘出来的，不是专为 JSTG 写的，所以风格跟 JSTG 不太一样。
 
-const enum KeyEventType {
+import * as pixi from "pixi";
+import * as utils from "./utils.js";
+
+const enum ButtonEventType {
     none = 0,
     down = 1,
     up = 2,
@@ -260,7 +263,15 @@ export type KeyName = "Backquote" | "Backslash" | "BracketLeft" | "BracketRight"
     "Escape" | "F1" | "F2" | "F3" | "F4" | "F5" | "F6" | "F7" | "F8" | "F9" | "F10" | "F11" | "F12" |
     "PrintScreen" | "ScrollLock" | "Pause" ;
 
-// TODO: 支持鼠标
+export type MouseName = "MouseLeft" | "MouseMiddle" | "MouseRight" | "MouseForth" | "MouseFifth" ;
+
+const mouseCodeNameMap = ["MouseLeft", "MouseMiddle", "MouseRight", "MouseForth", "MouseFifth"];
+
+export type ButtonName = KeyName | MouseName;
+
+interface RelativableNode {
+    toLocal(pos: utils.Vec2): utils.Vec2,
+}
 
 export class Input {
 
@@ -268,26 +279,63 @@ export class Input {
     // ↑ 这条注释是我好久之前留下的了，我只记得这玩意仅存在于理论分析中，对实际使用应该没啥影响。。
 
     /** @internal 所有按键的状态，初始为0，按住则从1开始每帧加1，松开的一帧变为相反数，之后归0。 */
-    private _states: Record<string, number | undefined> = {};
+    private _buttonStates: Record<string, number | undefined> = {};
     /** @internal 在两次更新之间累积起来的按键事件 */
-    private _keyEvents: Record<string, KeyEventType> = {};
+    private _buttonEvents: Record<string, ButtonEventType> = {};
 
-    constructor() {
-        document.addEventListener("keydown", ev => this._keyEvents[ev.code] = KeyEventType.down);
-        document.addEventListener("keyup", ev => {
-            if (this._keyEvents[ev.code] === KeyEventType.none) {
-                this._keyEvents[ev.code] = KeyEventType.up;
-            } else if (this._keyEvents[ev.code] === KeyEventType.down) {
-                this._keyEvents[ev.code] = KeyEventType.downAndUp;
-            }
-        });
-        this.getState = this.getState.bind(this);
-        this.isDown = this.isDown.bind(this);
-        this.isUp = this.isUp.bind(this);
-        this.isHold = this.isHold.bind(this);
-        this.isIdle = this.isIdle.bind(this);
-        this.isShortClick = this.isShortClick.bind(this);
-        this.isLongRelease = this.isLongRelease.bind(this);
+    /** @internal */
+    _onBtnDown(button: string) { this._buttonEvents[button] = ButtonEventType.down; }
+    /** @internal */
+    _onBtnUp(button: string) {
+        if (this._buttonEvents[button] === ButtonEventType.none) {
+            this._buttonEvents[button] = ButtonEventType.up;
+        } else if (this._buttonEvents[button] === ButtonEventType.down) {
+            this._buttonEvents[button] = ButtonEventType.downAndUp;
+        }
+    }
+
+    /** @internal */
+    private _mouseLastPos: utils.Vec2;
+    /** @internal */
+    private _mouseNowPos: utils.Vec2;
+    /** @internal */
+    private _mouseNextPos: utils.Vec2;
+    /** @internal */
+    _onMouseMove({ x, y }: utils.Vec2) { this._mouseNextPos = { x, y }; }
+
+    /** TODOC: getMouseXy */
+    getMouseXy(relativeNode?: RelativableNode) { 
+        let pos = { ...this._mouseNowPos };
+        if (relativeNode) { pos = relativeNode.toLocal(pos); }
+        return pos;
+    }
+    getMouseMotion(relativeNode?: RelativableNode) {
+        let lastPos = this._mouseLastPos;
+        let nowPos = this._mouseNowPos;
+        if (relativeNode) {
+            lastPos = relativeNode.toLocal(lastPos);
+            nowPos = relativeNode.toLocal(nowPos);
+        }
+        return {
+            x: nowPos.x - lastPos.x,
+            y: nowPos.y - lastPos.y,
+        };
+    }
+
+    // TODO: 滚轮
+
+    constructor(options: {
+        buttonStates: Record<string, number | undefined>,
+        buttonEvents: Record<string, ButtonEventType>,
+        mouseLastPos: utils.Vec2,
+        mouseNowPos: utils.Vec2,
+        mouseNewPos: utils.Vec2,
+    }) {
+        this._buttonStates = options.buttonStates;
+        this._buttonEvents = options.buttonEvents;
+        this._mouseLastPos = options.mouseLastPos;
+        this._mouseNowPos = options.mouseNowPos;
+        this._mouseNextPos = options.mouseNewPos;
     }
 
     /**
@@ -301,58 +349,97 @@ export class Input {
      * // ↑ timeScale 是可选的，这样写游戏在减速时按键统计时间也会减速。
      * // 但这么写不太可靠，原因懒得解释，我个人不推荐
      */
-    _update(timeScale: number = 1) {
-        for (const [ key, eventType ] of Object.entries(this._keyEvents)) {
-            if (this._states[key] === undefined) this._states[key] = 0;
-            if (eventType === KeyEventType.none) {
-                if (this._states[key] > 0) {
-                    this._states[key] += timeScale;
+    _update() {
+        for (const [ key, eventType ] of Object.entries(this._buttonEvents)) {
+            if (this._buttonStates[key] === undefined) { this._buttonStates[key] = 0; }
+            if (eventType === ButtonEventType.none) {
+                if (this._buttonStates[key] > 0) {
+                    this._buttonStates[key] += 1;
                 } else {
-                    this._states[key] = 0;
+                    this._buttonStates[key] = 0;
                 }
-            } else if (eventType === KeyEventType.up) {
-                if (this._states[key] > 0) {
-                    this._states[key] *= -1;
+            } else if (eventType === ButtonEventType.up) {
+                if (this._buttonStates[key] > 0) {
+                    this._buttonStates[key] *= -1;
                 } else {
-                    this._states[key] = 0
+                    this._buttonStates[key] = 0
                 }
             } else { // down | DownAndUp
-                if (this._states[key] < 0) {
-                    this._states[key] = timeScale;
+                if (this._buttonStates[key] < 0) {
+                    this._buttonStates[key] = 1;
                 } else {
-                    this._states[key] += timeScale;
+                    this._buttonStates[key] += 1;
                 }
             }
-            if (eventType == KeyEventType.downAndUp) {
-                this._keyEvents[key] = KeyEventType.up;
+            if (eventType == ButtonEventType.downAndUp) {
+                this._buttonEvents[key] = ButtonEventType.up;
             } else {
-                this._keyEvents[key] = KeyEventType.none;
+                this._buttonEvents[key] = ButtonEventType.none;
             }
         }
+        // 这里我总感觉不太稳当所以浅拷贝一下
+        this._mouseLastPos = { ...this._mouseNowPos };
+        this._mouseNowPos = { ...this._mouseNextPos };
     }
 
-    /** 获取一个按键的状态，初始为0，按住则从1开始每帧加1，松开的一帧变为相反数，之后归0 */
-    getState(button: KeyName) { return this._states[button] ?? 0; }
-    /** 按键被按下的一瞬间，返回 true */
-    isDown(button: KeyName) { return this.getState(button) == 1; }
-    /** 按键松开的一瞬间，返回 true */
-    isUp(button: KeyName) { return this.getState(button) < 0; }
-    /** 如果按键被按住，返回 true */
-    isHold(button: KeyName) { return this.getState(button) > 0; }
-    /** 如果按键闲置，返回 true */
-    isIdle(button: KeyName) { return this.getState(button) <= 0; }
+    /**
+     * 获取一个按键的状态，初始为 0 ，按住则从1开始每帧加 1 ，松开的一帧变为相反数，之后归 0 。  
+     * ⚠️ 这个值不受 timeScale 的影响，只跟更新次数有关。  
+     */
+    getState(button: ButtonName) { return this._buttonStates[button] ?? 0; }
+    /** 按键被按下的一瞬间，返回 true 。 */
+    isDown(button: ButtonName) { return this.getState(button) == 1; }
+    /** 按键松开的一瞬间，返回 true 。 */
+    isUp(button: ButtonName) { return this.getState(button) < 0; }
+    /** 如果按键被按住，返回 true 。 */
+    isHold(button: ButtonName) { return this.getState(button) > 0; }
+    /** 如果按键闲置，返回 true 。 */
+    isIdle(button: ButtonName) { return this.getState(button) <= 0; }
 
-    /** 如果轻敲按键并立即松开，在松开的那一帧返回 true */
-    isShortClick(button: KeyName,
-        /** 容许按住的最大持续帧数，若按住的时长超过此值则不会判定为轻敲 */
+    /**
+     * 如果轻敲按键并立即松开，在松开的那一帧返回 true 。  
+     * ⚠️ 此函数不考虑 timeScale ，只跟更新次数有关。  
+     */
+    isShortClick(button: ButtonName,
+        /** 容许按住的最大持续帧数，若按住的时长超过此值则不会判定为轻敲。 */
         maxHoldTime: number = 10
     ) { return this.isUp(button) && this.getState(button) >= -maxHoldTime; }
 
-    /** 如果长按按键并松开，在松开的那一帧返回 true */
-    isLongRelease(button: KeyName,
-        /** 容许按住的最小持续帧数，若按住的时长低于此值则不会判定为长按 */
+    /**
+     * 如果长按按键并松开，在松开的那一帧返回 true 。  
+     * ⚠️ 此函数不考虑 timeScale ，只跟更新次数有关。  
+     */
+    isLongRelease(button: ButtonName,
+        /** 容许按住的最小持续帧数，若按住的时长低于此值则不会判定为长按。 */
         minHoldTime: number = 12
     ) { return this.getState(button) <= -minHoldTime; }
 }
 
-export const makeInput = () => new Input();
+export const makeInput = (options: {
+    app: pixi.Application,
+}) => {
+    const { app } = options;
+    const input = new Input({
+        buttonStates: {},
+        buttonEvents: {},
+        mouseLastPos: { x: 0, y: 0 },
+        mouseNowPos: { x: 0, y: 0 },
+        mouseNewPos: { x: 0, y: 0 },
+    });
+    document.addEventListener("keydown", ev => input._onBtnDown(ev.code));
+    document.addEventListener("keyup", ev => input._onBtnUp(ev.code));
+    app.stage.eventMode = "static";
+    app.stage.addEventListener("mousedown", ev => input._onBtnDown(mouseCodeNameMap[ev.button]));
+    app.stage.addEventListener("mouseup", ev => input._onBtnUp(mouseCodeNameMap[ev.button]));
+    app.stage.addEventListener("mousemove", ev => input._onMouseMove(ev.global));
+    input.getState = input.getState.bind(input);
+    input.isDown = input.isDown.bind(input);
+    input.isUp = input.isUp.bind(input);
+    input.isHold = input.isHold.bind(input);
+    input.isIdle = input.isIdle.bind(input);
+    input.isShortClick = input.isShortClick.bind(input);
+    input.isLongRelease = input.isLongRelease.bind(input);
+    input.getMouseXy = input.getMouseXy.bind(input);
+    input.getMouseMotion = input.getMouseMotion.bind(input);
+    return input;
+};
