@@ -303,6 +303,13 @@ export class Input {
     /** @internal */
     _onMouseMove({ x, y }: utils.Vec2) { this._mouseNextPos = { x, y }; }
 
+    /** @internal */
+    private _nowWheelDown: -1 | 0 | 1;
+    /** @internal */
+    private _nextWheelDown: -1 | 0 | 1;
+    _onWheel(wheelDown: -1 | 0 | 1) { this._nextWheelDown = wheelDown; }
+    getWheel() { return this._nowWheelDown; }
+
     /** TODOC: getMouseXy */
     getMouseXy(relativeNode?: RelativableNode) { 
         let pos = { ...this._mouseNowPos };
@@ -322,20 +329,22 @@ export class Input {
         };
     }
 
-    // TODO: 滚轮
-
     constructor(options: {
         buttonStates: Record<string, number | undefined>,
         buttonEvents: Record<string, ButtonEventType>,
         mouseLastPos: utils.Vec2,
         mouseNowPos: utils.Vec2,
-        mouseNewPos: utils.Vec2,
+        mouseNextPos: utils.Vec2,
+        nowWheelDown: -1 | 0 | 1,
+        nextWheelDown: -1 | 0 | 1,
     }) {
         this._buttonStates = options.buttonStates;
         this._buttonEvents = options.buttonEvents;
         this._mouseLastPos = options.mouseLastPos;
         this._mouseNowPos = options.mouseNowPos;
-        this._mouseNextPos = options.mouseNewPos;
+        this._mouseNextPos = options.mouseNextPos;
+        this._nowWheelDown = options.nowWheelDown;
+        this._nextWheelDown = options.nextWheelDown;
     }
 
     /**
@@ -380,6 +389,8 @@ export class Input {
         // 这里我总感觉不太稳当所以浅拷贝一下
         this._mouseLastPos = { ...this._mouseNowPos };
         this._mouseNowPos = { ...this._mouseNextPos };
+        this._nowWheelDown = this._nextWheelDown;
+        this._nextWheelDown = 0;
     }
 
     /**
@@ -424,14 +435,17 @@ export const makeInput = (options: {
         buttonEvents: {},
         mouseLastPos: { x: 0, y: 0 },
         mouseNowPos: { x: 0, y: 0 },
-        mouseNewPos: { x: 0, y: 0 },
+        mouseNextPos: { x: 0, y: 0 },
+        nowWheelDown: 0,
+        nextWheelDown: 0,
     });
     document.addEventListener("keydown", ev => input._onBtnDown(ev.code));
     document.addEventListener("keyup", ev => input._onBtnUp(ev.code));
     app.stage.eventMode = "static";
-    app.stage.addEventListener("mousedown", ev => input._onBtnDown(mouseCodeNameMap[ev.button]));
-    app.stage.addEventListener("mouseup", ev => input._onBtnUp(mouseCodeNameMap[ev.button]));
-    app.stage.addEventListener("mousemove", ev => input._onMouseMove(ev.global));
+    app.stage.on("mousedown", ev => input._onBtnDown(mouseCodeNameMap[ev.button]));
+    app.stage.on("mouseup", ev => input._onBtnUp(mouseCodeNameMap[ev.button]));
+    app.stage.on("mousemove", ev => input._onMouseMove(ev.global));
+    app.stage.on("wheel", ev => input._onWheel(ev.deltaY < 0 ? -1 : ev.deltaY > 0 ? 1 : 0));
     input.getState = input.getState.bind(input);
     input.isDown = input.isDown.bind(input);
     input.isUp = input.isUp.bind(input);

@@ -426,7 +426,7 @@ import * as pixi from "pixi";
 
     forever(loop => {
         const { x: mx, y: my } = input.getMouseXy(board);
-        txt.text = `${mx.toFixed(2)}, ${my.toFixed(2)}`;
+        txt.text = `${mx.toFixed(2)}, ${my.toFixed(2)}, ${input.getWheel()}`;
         pl.update({ input, keyMap: {
             up: ["ArrowUp", "KeyW"],
             down: ["ArrowDown", "KeyS"],

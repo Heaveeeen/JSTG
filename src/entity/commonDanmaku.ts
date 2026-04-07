@@ -40,7 +40,7 @@ export class CommonDanmaku extends AbstractDanmaku {
     }
 
     /** 更新调试用的那个碰撞箱 */
-    updateDebugHitbox(player: Player) {
+    updateDebugHitbox(player: Player) {// TODO: 优化这个玩意，现在这玩意太卡了
         if (!this.isDamageToPlayer) {
             this.clearHitboxGraphics();
         }
@@ -280,7 +280,7 @@ export function baseMakePrefabDanmaku<TIsFoggy extends boolean>(options: BaseMak
                 hitboxRadius, sprite: danSprite,
             });
             danmaku.speed = speed;
-            danmaku.canBeErase = canBeErase; // TODO: 把这个变成类的构造参数？
+            danmaku.canBeErase = canBeErase;
             return danmaku;
         }).then(result => { // 如果循环被意外打断，说明 fogSprite 所有权没能移交给外部，则摧毁 fogSprite 。
             if (result === undefined) { fogSprite.destroy(); }
