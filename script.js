@@ -52,6 +52,8 @@ import * as pixi from "pixi";
 
     /** 自机 */
     const pl = prefabPlayers.makeSimple({
+        highSpeed: 4.5,
+        slowSpeed: 2,
         autoUpdateSelf: false,
     });
     const se = game.prefabSounds.thse;

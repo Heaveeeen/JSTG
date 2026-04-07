@@ -66,24 +66,15 @@ export interface NewPlayerOptions {
     slowModeRingTexture: pixi.Texture;
     invincibleRingTexture: pixi.Texture;
     filters: pixi.Filter[];
-    /** @default 3 */
-    hitboxRadius: number | null;
-    /** @default 4 */
-    highSpeed: number | null;
-    /** @default 1.6 */
-    slowSpeed: number | null;
-    /** @default 12 */
-    dyingBombTime: number | null;
-    /** @default 2 */
-    initHpAmount: number | null;
-    /** @default 3 */
-    initBombAmount: number | null;
-    /** @default 8 */
-    maxHpAmount: number | null;
-    /** @default 8 */
-    maxBombAmount: number | null;
-    /** @default "resetToInitAmount" */
-    missGainBombType: MissGainBombType | null;
+    hitboxRadius: number;
+    highSpeed: number;
+    slowSpeed: number;
+    dyingBombTime: number;
+    initHpAmount: number;
+    initBombAmount: number;
+    maxHpAmount: number;
+    maxBombAmount: number;
+    missGainBombType: MissGainBombType;
     autoUpdateDanmakuRegList: boolean;
     autoUpdateSelf: boolean;
     updateFn: (options: PlayerUpdateOptions) => void;
@@ -194,15 +185,15 @@ export class Player {
         this.combat = options.combat;
         this.board = options.board;
         this.filters = options.filters;
-        this.hitboxRadius = options.hitboxRadius ?? 3;
-        this.highSpeed = options.highSpeed ?? 4;
-        this.slowSpeed = options.slowSpeed ?? 1.6;
-        this.dyingBombTime = options.dyingBombTime ?? 12;
-        this.initHpAmount = this._hpAmount = options.initHpAmount ?? 2;
-        this.initBombAmount = this._bombAmount = options.initBombAmount ?? 3;
-        this.maxHpAmount = options.maxHpAmount ?? 8;
-        this.maxBombAmount = options.maxBombAmount ?? 8;
-        this.missGainBombType = options.missGainBombType ?? "resetToInitAmount";
+        this.hitboxRadius = options.hitboxRadius;
+        this.highSpeed = options.highSpeed;
+        this.slowSpeed = options.slowSpeed;
+        this.dyingBombTime = options.dyingBombTime;
+        this.initHpAmount = this._hpAmount = options.initHpAmount;
+        this.initBombAmount = this._bombAmount = options.initBombAmount;
+        this.maxHpAmount = options.maxHpAmount;
+        this.maxBombAmount = options.maxBombAmount;
+        this.missGainBombType = options.missGainBombType;
 
         this.update = options.updateFn;
         this.beHurt = options.beHurtFn;

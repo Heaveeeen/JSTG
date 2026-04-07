@@ -9,7 +9,7 @@ import { AbstractDanmaku, EraseDanmakuOptions, prefabDanmakuHitboxRadius } from 
 import { makeRegList } from "./regList.js";
 import { LoadPrefabSounds, LoadPrefabSoundsOptions, LoadSound } from "./sounds.js";
 import { LaserBeam, MakeGrowingLaserBeamResult, baseMakeGrowingLaserBeam, baseMakePrefabLaserBeam } from "./entity/laserBeam.js";
-import { Player } from "./player/player.js";
+import { MissGainBombType, Player } from "./player/player.js";
 import { CoDoGenFn, LoopController, LooperFn, LoopOptions, makeLooper, makePauseController, CoDoGenerator } from "./looper.js";
 import { AbstractEnemy } from "./entity/abstractEnemy.js";
 import { prefabEnemyFactory } from "./entity/prefabEnemyFactory.js";
@@ -392,10 +392,32 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     autoUpdateDanmakuRegList?: boolean,
                     /** @default true */
                     autoUpdateSelf?: boolean,
+                    /** @default 1 */
+                    hitboxRadius?: number,
+                    /** @default 4 */
+                    highSpeed?: number,
+                    /** @default 1.6 */
+                    slowSpeed?: number,
+                    /** @default 12 */
+                    dyingBombTime?: number,
+                    initHpAmount?: number,
+                    initBombAmount?: number,
+                    maxHpAmount?: number,
+                    maxBombAmount?: number, 
+                    missGainBombType?: MissGainBombType,
                 } = {}) => makePlayer(prefabPlayerFactory.makeSimple({
                     game, combat, board,
                     autoUpdateDanmakuRegList: options.autoUpdateDanmakuRegList ?? true,
                     autoUpdateSelf: options.autoUpdateSelf ?? true,
+                    hitboxRadius: options.hitboxRadius ?? 1,
+                    highSpeed: options.highSpeed ?? 4,
+                    slowSpeed: options.slowSpeed ?? 1.6,
+                    dyingBombTime: options.dyingBombTime ?? 12,
+                    initHpAmount: options.initHpAmount ?? 2,
+                    initBombAmount: options.initBombAmount ?? 3,
+                    maxHpAmount: options.maxHpAmount ?? 8,
+                    maxBombAmount: options.maxBombAmount ?? 8,
+                    missGainBombType: options.missGainBombType ?? "resetToInitAmount",
                 }));
 
                 /* TODO: simple.homingOnly ...

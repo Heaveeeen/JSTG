@@ -1,5 +1,5 @@
 import * as pixi from "pixi";
-import { NewPlayerOptions, Player, PlayerBeHurtOptions, PlayerBombOptions, PlayerUpdateOptions } from "./player.js";
+import { MissGainBombType, NewPlayerOptions, Player, PlayerBeHurtOptions, PlayerBombOptions, PlayerUpdateOptions } from "./player.js";
 import { Board, Combat, Destroyable, Game } from "../jstg.js";
 import * as utils from "../utils.js";
 import { AbstractEnemy } from "../entity/abstractEnemy.js";
@@ -10,11 +10,24 @@ export const prefabPlayerFactory = (()=>{
 
     const { deg } = utils;
 
-    const makeSimple = (options: {
-        game: Game, combat: Combat, board: Board,
-        autoUpdateDanmakuRegList: boolean,
-        autoUpdateSelf: boolean,
-    }) => {
+    type _BaseOptions = {
+        game: Game;
+        combat: Combat;
+        board: Board;
+        autoUpdateDanmakuRegList: boolean;
+        autoUpdateSelf: boolean;
+        hitboxRadius: number;
+        highSpeed: number;
+        slowSpeed: number;
+        dyingBombTime: number;
+        initHpAmount: number;
+        initBombAmount: number;
+        maxHpAmount: number;
+        maxBombAmount: number;
+        missGainBombType: MissGainBombType;
+    };
+
+    const makeSimple = (options: _BaseOptions) => {
         const { game, combat, board, autoUpdateDanmakuRegList, autoUpdateSelf } = options;
         const { prefabTextures } = game;
         type Drone = { sprite: pixi.Sprite, rotation: number, laser: {
@@ -303,9 +316,6 @@ export const prefabPlayerFactory = (()=>{
             slowModeRingTexture: prefabTextures.player.slowMode,
             invincibleRingTexture: prefabTextures.player.invincibleRing,
             ...game.prefabCharInfos.simple.player,
-            hitboxRadius: 1, highSpeed: 4, slowSpeed: 1.6,
-            dyingBombTime: null, initHpAmount: null, initBombAmount: null, missGainBombType: null,
-            maxHpAmount: null, maxBombAmount: null,
             updateFn, beHurtFn, bombFn, destroyCallback,
         });
         initDrones();
