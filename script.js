@@ -287,8 +287,8 @@ import * as pixi from "pixi";
             yield* Sleep(30);
         } },
     });
-    const 暴风雪 = jstg.makeSingleBossSpellOptions({
-        time: 60 * 60, hp: 4500, title: "冬符「暴风雪」",
+    const 漫天落雪 = jstg.makeSingleBossSpellOptions({
+        time: 60 * 60, hp: 4500, title: "冬符「漫天落雪的大口真神原」",
         loopFn({ boss, loop }) {
             if (loop.clock % 300 === 250) { boss.glideTo(boss.wander.getStepd()); }
         },
@@ -322,7 +322,8 @@ import * as pixi from "pixi";
                 };
                 const dan = makeDanmaku({
                     type: danTypes[i],
-                    color: rand.select(["h180", "h180", "h210", "h240", "white", "white", "white"]),
+                    color: rand.select(["h180", "h180", "h210", "white", "white", "white"]),/*
+                    color: rand.select(["h180", "h180", "h210", "h240", "white", "white", "white"]),/**/
                     x: xList[i],
                     y: rand.float(-260, -250),
                 });
@@ -416,17 +417,19 @@ import * as pixi from "pixi";
             boss,
             spells: [
                 non1,
-                暴风雪,
+                漫天落雪,
                 //non2, { title: "aaaaaaaa", hp: 50, time: 15 * 60 }, { title: "bbbbbbbb", hp: 50, time: 15 * 60}
             ],
         });
     });
     fooBoss();
+    debug.debugBar.addInput("foo");
+    debug.debugBar.addInput("bar");
+    debug.debugBar.addInput("baz", { type: "text" });
+    debug.debugBar.show();
     //#endregion
 
     forever(loop => {
-        const { x: mx, y: my } = input.getMouseXy(board);
-        txt.text = `${mx.toFixed(2)}, ${my.toFixed(2)}, ${input.getWheel()}`;
         pl.update({ input, keyMap: {
             up: ["ArrowUp", "KeyW"],
             down: ["ArrowDown", "KeyS"],
@@ -436,6 +439,7 @@ import * as pixi from "pixi";
             attack: ["KeyZ", "KeyK"],
             bomb: ["KeyX", "KeyJ"],
         }});
+        txt.text = debug.debugBar.getStr("bar") + debug.debugBar.getStr("baz");
         if (isDown("KeyP")) {
             if (!debug.showHitbox.isOn) {
                 debug.showHitbox.isOn = true;

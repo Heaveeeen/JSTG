@@ -273,7 +273,7 @@ interface RelativableNode {
     toLocal(pos: utils.Vec2): utils.Vec2,
 }
 
-export class Input {
+export class Input { // TODO: lastPressedKey，虚拟按键，onTap，type Button = ButtonName | ButtonObj ...
 
     // 注意：如果按住一个键，突然松开极短的时间，然后再次按住，有可能忽视这次抬手，视为一直按住。
     // ↑ 这条注释是我好久之前留下的了，我只记得这玩意仅存在于理论分析中，对实际使用应该没啥影响。。

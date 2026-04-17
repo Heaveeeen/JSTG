@@ -35,6 +35,8 @@ export type Combat = ExtractPromiseType<ReturnType<Game["StartCombat"]>>;
 export type Board = Combat["board"];
 export type boardFrameUi = Combat["boardFrameUi"];
 
+// MAYDO: 屁用没有，换一套好点的等宽字体
+const monospaceFontFamily = `"consolas", monospace`;
 /** @async 启动 JSTG 游戏 */
 export async function LaunchGame(/** 不建议填参数，因为我处理得不太完备。想干啥建议直接改源码。 */gameOptions: {
     /** @default 640 */
@@ -138,7 +140,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
     //#region combat
 
-    async function StartCombat() {
+    async function StartCombat() { // TODO: combat.clock
 
         //#region board
         const board = (() => {
@@ -893,9 +895,115 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             // TODO: isContainsPlayerRadius
         };
 
+        let debugBar = (()=>{
+            const root = document.createElement("div");
+            root.style.display = "none";
+            root.style.flexDirection = "column";
+            root.style.padding = "5px";
+
+            const debugBarTitle = document.createElement("h3");
+            debugBarTitle.innerText = "JSTG Debug Bar";
+            debugBarTitle.style.fontFamily = monospaceFontFamily;
+            debugBarTitle.style.color = "#ffffff";
+            debugBarTitle.style.display = "flex";
+            root.appendChild(debugBarTitle);
+            document.body.appendChild(root);
+
+            const inputs: Record<string, ({ value: string }) | undefined> = {};
+
+            const show = (options: {
+            } = {}) => {
+                document.body.style.justifyContent = "start";
+                root.style.display = "flex";
+            }
+            const hide = () => {
+                document.body.style.justifyContent = "center";
+                root.style.display = "none";
+            }
+
+            const makeDiv = (id: string) => {
+                const div = document.createElement("div");
+                div.style.fontFamily = monospaceFontFamily;
+                div.style.display = "flex";
+                div.style.margin = "3px 0px";
+                const label = document.createElement("label");
+                label.innerText = id;
+                label.style.color = "#ffffff";
+                label.style.paddingRight = "3px";
+                div.appendChild(label);
+                return div;
+            }
+
+            // TODO: addNum, addInt, addStr ...
+            const addInput = (id: string, options: {
+                /** @default "num" */
+                type?: "num",
+                min?: number,
+                max?: number,
+                /** @default false */
+                //isWithSlider?: boolean,
+                step?: number,
+            } | {
+                type: "text",
+            } = {}) => {
+                if (inputs[id] !== undefined) {
+                    return;
+                }
+                if (options.type === "num" || options.type === undefined) {
+                    const min = options.min?.toString() ?? "";
+                    const max = options.max?.toString() ?? "";
+                    const step = options.step?.toString() ?? "0.01";
+                    const div = makeDiv(id);
+                    const inp = document.createElement("input");
+                    inp.style.height = "16px";
+                    inp.type = "number";
+                    inp.min = min;
+                    inp.max = max;
+                    inp.step = step;
+                    /*if (options.isWithSlider) {
+                        const sliderEle = document.createElement("input");
+                        sliderEle.type = "range";
+                        sliderEle.min = min;
+                        sliderEle.max = max;
+                        sliderEle.step = step;
+                    }*/
+                    div.appendChild(inp);
+                    root.appendChild(div);
+                    inputs[id] = inp;
+                } else if (options.type === "text") {
+                    const div = makeDiv(id);
+                    const inp = document.createElement("input");
+                    inp.style.height = "16px";
+                    inp.type = "text";
+                    div.appendChild(inp);
+                    root.appendChild(div);
+                    inputs[id] = inp;
+                } else {
+                    utils.staticAssert<never>(options.type);
+                }
+            };
+
+            const getStr = (id: string) => inputs[id]?.value ?? "";
+            const getInt = (id: string) => {
+                const n = parseInt(getStr(id));
+                return isNaN(n) ? 0 : n;
+            };
+            const getFloat = (id: string) => {
+                const n = parseFloat(getStr(id));
+                return isNaN(n) ? 0 : n;
+            };
+
+            return {
+                show, hide,
+                addInput,
+                getStr, getInt, getFloat,
+            }
+        })();
+
         return {
             godMode,
             showHitbox,
+            debugBar,
         };
     })();
 
@@ -1065,7 +1173,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         prefabTextures,
         /** JSTG 预置的一些音效，部分音效解包自东方原作 */
         prefabSounds,
-        /** 调试模式工具，如上帝模式 */
+        /** 调试工具，如上帝模式 */
         debug,
         /**
          * 从游戏启动后过了多少帧。第一帧为0。  
