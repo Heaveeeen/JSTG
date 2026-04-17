@@ -1096,6 +1096,15 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             color2: "#ff8080",
             playerHue: null, shieldHsla: null, bossHpBarHue: null,
         }),
+        koke: makeJstgCharInfo({
+            playerName: "koke",
+            bossName: "Shimohara Koke",
+            defaultSpellcardFigure: prefabTextures.charFigure.kokeTempFigure,
+            avatar: prefabTextures.avatar.koke,
+            color1: "#71799e",
+            color2: "#9cc8f0",
+            playerHue: null, shieldHsla: null, bossHpBarHue: null,
+        }),
     } as const;
 
     const game = {

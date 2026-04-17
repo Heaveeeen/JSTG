@@ -220,6 +220,8 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
             icu: await lsvg(`avatar/icu.svg`),
             ran: await lsvg(`avatar/ran.svg`),
             wriggle: await lsvg(`avatar/wriggle.svg`),
+            /** Simple 画的，感谢 Simple ，我爱他 */
+            koke: await lsvg(`avatar/koke.svg`),
             unknown: await lsvg(`avatar/unknown.svg`),
         },
         charFigure: {
@@ -230,6 +232,7 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
                 spellcard: await lsvg(`charFigure/maple/spellcard.svg`),
             },
             unknown: await lsvg(`charFigure/unknown.svg`),
+            kokeTempFigure: await lsvg(`charFigure/kokeTempFigure.svg`),
         },
         enemy: {
             yinYangOrb: {

@@ -412,7 +412,7 @@ import * as pixi from "pixi";
     });
     const fooBoss = () => coDo(function*() {
         yield* Sleep(30);
-        const boss = board.makeBoss(game.prefabCharInfos.jstgDummyUnknown.boss);
+        const boss = board.makeBoss(game.prefabCharInfos.koke.boss);
         const battle = board.startSingleBossBattle({
             boss,
             spells: [
