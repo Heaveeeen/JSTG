@@ -24,8 +24,6 @@ import * as pixi from "pixi";
     const { board, rand } = combat;
     const { makeDanmaku, makeFoggyDanmaku, makeLaserBeam, makeGrowingLaserBeam, prefabPlayers, prefabEnemys, forever, coDo, } = board;
 
-    console.log(game, combat, board);
-
     const txt = new pixi.Text({
         parent: board.root,
         text: 
@@ -423,10 +421,10 @@ import * as pixi from "pixi";
         });
     });
     fooBoss();
-    debug.debugBar.addInput("foo");
-    debug.debugBar.addInput("bar");
-    debug.debugBar.addInput("baz", { type: "text" });
-    debug.debugBar.show();
+    debug.vars.addInput("foo");
+    debug.vars.addInput("bar");
+    debug.vars.addInput("baz", { type: "text" });
+    debug.vars.show();
     //#endregion
 
     forever(loop => {
@@ -439,7 +437,7 @@ import * as pixi from "pixi";
             attack: ["KeyZ", "KeyK"],
             bomb: ["KeyX", "KeyJ"],
         }});
-        txt.text = debug.debugBar.getStr("bar") + debug.debugBar.getStr("baz");
+        //txt.text = debug.vars.getStr("bar") + debug.vars.getStr("baz");
         if (isDown("KeyP")) {
             if (!debug.showHitbox.isOn) {
                 debug.showHitbox.isOn = true;

@@ -31,7 +31,7 @@ export interface PlayerUpdateOptions {
      */
     input?: Input,
 
-    keyMap?: PlayerKeyMapOptions,
+    keyMap?: PlayerKeyMapOptions, // TODO: 把这玩意改成一个“某某按键是否已按下”的表，方便做 replay
     /**
      * 高速时的移速
      * @default this.highSpeed

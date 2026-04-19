@@ -37,6 +37,21 @@ export type boardFrameUi = Combat["boardFrameUi"];
 
 // MAYDO: 屁用没有，换一套好点的等宽字体
 const monospaceFontFamily = `"consolas", monospace`;
+
+type GameDebugOptions = {
+    /**
+     * 我感觉这玩意开了关了对性能影响不是很大，建议常年开着
+     * @default true
+     */
+    isLooperBlame?: boolean;
+    /**
+     * 是否把 game, combat, board 暴露给全局，并输出到控制台中。
+     * 可以在控制台中通过全局变量 `game`, `combat` 等等，用于访问这些对象。
+     * @default true
+     */
+    isExposeToGlobal?: boolean;
+};
+
 /** @async 启动 JSTG 游戏 */
 export async function LaunchGame(/** 不建议填参数，因为我处理得不太完备。想干啥建议直接改源码。 */gameOptions: {
     /** @default 640 */
@@ -56,10 +71,11 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
     /** @default 60 */
     standardFps?: number,
     /**
-     * 我感觉这玩意开了关了对性能影响不是很大，建议常年开着
-     * @default true
+     * 是否以调试模式启动游戏。该选项包含一系列不同效果。  
+     * ⚠️发布游戏时，务必检查该项目，因为其中有些功能非常危险！  
+     * @default "default"
      */
-    isLooperDebugBlame?: boolean,
+    debugOptions?: "default" | "all" | "none" | GameDebugOptions,
 } = {}) {
 
     const standardFps = gameOptions.standardFps ?? 60;
@@ -113,13 +129,33 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
     app.ticker.maxFPS = standardFps;
 
+    const debugOptions = (()=>{
+        let opt = gameOptions.debugOptions ?? "default";
+        if (opt === "default") {
+            opt = {};
+        } else if (opt === "none") {
+            opt = {
+                isLooperBlame: false,
+                isExposeToGlobal: false,
+            };
+        } else if (opt === "all") {
+            opt = {
+                isLooperBlame: true,
+                isExposeToGlobal: true,
+            };
+        }
+        opt.isLooperBlame ??= true;
+        opt.isExposeToGlobal ??= true;
+        return utils.cast<GameDebugOptions, Required<GameDebugOptions>>(opt);
+    })();
+
     //#region game
 
     let timeScale: number = 1;
 
     const mainPauseController = makePauseController();
 
-    const looper = makeLooper({ getTimescale: () => timeScale, mainPauseController, isDebugBlame: gameOptions.isLooperDebugBlame ?? true });
+    const looper = makeLooper({ getTimescale: () => timeScale, mainPauseController, isDebugBlame: debugOptions.isLooperBlame ?? true });
 
     const { forever, coDo } = looper;
 
@@ -729,6 +765,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 if (isDestroyGun) { board.gunRegList.getAlives().forEach(gun => gun.destroy()); }
             }); }
 
+            console.log("JSTG board:", board);
+
             return board;
         })();// TODO: 粒子效果
         //#endregion board
@@ -839,6 +877,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         combat.forever = combat.forever.bind(combat);
         combat.coDo = combat.coDo.bind(combat);
 
+        console.log("JSTG combat:", combat);
+
         return combat;
     }
 
@@ -895,18 +935,40 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             // TODO: isContainsPlayerRadius
         };
 
-        let debugBar = (()=>{
+        let vars = (()=>{
             const root = document.createElement("div");
             root.style.display = "none";
             root.style.flexDirection = "column";
             root.style.padding = "5px";
 
-            const debugBarTitle = document.createElement("h3");
-            debugBarTitle.innerText = "JSTG Debug Bar";
-            debugBarTitle.style.fontFamily = monospaceFontFamily;
-            debugBarTitle.style.color = "#ffffff";
-            debugBarTitle.style.display = "flex";
-            root.appendChild(debugBarTitle);
+            { // 调试栏标题
+                const title = document.createElement("h3");
+                title.innerHTML = `⛩️ JSTG Debug Bar`;
+                title.style.fontFamily = monospaceFontFamily;
+                title.style.color = "#ffffff";
+                title.style.display = "flex";
+                title.style.cursor = "pointer"; //我也不知道这个超链接有啥用……
+                title.addEventListener("click", ev => open("https://github.com/Heaveeeen/JSTG", "_blank", 'noopener,noreferrer'));
+                root.appendChild(title);
+            }
+
+            if (debugOptions.isExposeToGlobal) {
+                const warnBox = document.createElement("p");
+                warnBox.innerText = 
+`⚠️已将 game 暴露到全局，可以通过全局变量 game, combat, board 访问游戏主要对象。
+如果您希望公开发布此游戏，建议把 jstg.LaunchGame 的参数 debugOptions.isExposeToGlobal 设为 false。`;
+                warnBox.style.fontFamily = monospaceFontFamily;
+                warnBox.style.color = "#ffffff";
+                warnBox.style.display = "flex";
+                warnBox.style.padding = "5px";
+                warnBox.style.border = "3px double #ff3333";
+                warnBox.style.backgroundColor = "#120808";
+                warnBox.style.fontFamily = monospaceFontFamily;
+                warnBox.style.fontSize = "12px";
+                warnBox.style.maxWidth = "400px";
+                root.appendChild(warnBox);
+            }
+
             document.body.appendChild(root);
 
             const inputs: Record<string, ({ value: string }) | undefined> = {};
@@ -952,7 +1014,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 if (options.type === "num" || options.type === undefined) {
                     const min = options.min?.toString() ?? "";
                     const max = options.max?.toString() ?? "";
-                    const step = options.step?.toString() ?? "0.01";
+                    const step = options.step?.toString() ?? "0.1";
                     const div = makeDiv(id);
                     const inp = document.createElement("input");
                     inp.style.height = "16px";
@@ -996,14 +1058,14 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             return {
                 show, hide,
                 addInput,
-                getStr, getInt, getFloat,
+                getStr, getInt, getFloat, getNum: getFloat,
             }
         })();
 
         return {
             godMode,
             showHitbox,
-            debugBar,
+            vars,
         };
     })();
 
@@ -1206,6 +1268,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
     };
 
     //#endregion game
+
+    console.log("JSTG game:", game);
 
     return game;
 
