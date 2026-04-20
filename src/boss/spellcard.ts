@@ -21,7 +21,7 @@ export interface StartSpellcardOptions {
 
 export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
     const { game, combat, board, title: titleString, time: maxTime, ownEnemys, isNonSpell, isSurvival } = spellcardOptions;
-    const beginClockTs = game.clock;
+    const beginClockTs = combat.clock;
     let endClockTs: number | null = null;
     if (spellcardOptions.isPlayStartSound) { game.prefabSounds.thse.cat00.play(); }
     game.debug.godMode.dieCount = 0;
@@ -33,8 +33,8 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
 
     let isSpellcardDestroyed = false;
     const spellcard = {
-        get clock() { return game.clock - beginClockTs; },
-        get timeRemaining() { return maxTime - this.clock; },
+        get clock(): number { return combat.clock - beginClockTs; },
+        get timeRemaining(): number { return maxTime - this.clock; },
 
         kill() {
             liveLoop.destroy();
@@ -144,7 +144,7 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
     const mainLoop = board.coDo(function*() {
         yield* liveLoop;
         // 击破后的收尾
-        endClockTs = game.clock;
+        endClockTs = combat.clock;
         ownEnemys.forEach(enemy => enemy.kill());
         const clearBoardDuration = isNonSpell ? 30 : 60;
         board._playerRegList.getAlives().forEach(pl => pl.applyInvincible(clearBoardDuration));

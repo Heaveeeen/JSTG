@@ -31,7 +31,7 @@ import * as pixi from "pixi";
 按 P 显示判定范围。
 按 O 开启上帝模式。
 按 ESC 暂停。
-按 M 生成一个枫叶。`,
+按 M 生成一个演示 boss 。`,
         x: 0,
         y: 0,
         anchor: 0.5,

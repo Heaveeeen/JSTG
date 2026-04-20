@@ -49,7 +49,7 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
     /** @internal */
     private get _birthProtectCoef() {
         if (this._birthProtectDuration <= 0) { return 1; }
-        const t = (this.danmaku.game.clock - this._birthClockTS) / this._birthProtectDuration - 1;
+        const t = (this.danmaku.combat.clock - this._birthClockTS) / this._birthProtectDuration - 1;
         if (t >= 0) {
             return 1;
         } else {
@@ -59,7 +59,7 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
 
     /** @internal */
     private _lastInvincibleClockTs: number = -999;
-    private get isInvincible() { return this.danmaku.game.clock - this._lastInvincibleClockTs < 10; }
+    private get isInvincible() { return this.danmaku.combat.clock - this._lastInvincibleClockTs < 10; }
 
     /** @internal */
     private _hp: number;
@@ -79,7 +79,7 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
         this.maxHp = this._hp = options.maxHp;
         this.danmaku.canBeErase = options.canBeErase ?? false;
         this._afterBeHurtCallback = options.afterBeHurtCallback;
-        this._birthClockTS = this.danmaku.game.clock;
+        this._birthClockTS = this.danmaku.combat.clock;
         this._birthProtectDuration = options.birthProtectDuration;
         if (options.hpBar === null) {
             this._hpBarGraphics = null;
@@ -128,10 +128,10 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
             this._hpBarGraphics = null;
         }
         if (damageSoundLoop === null || damageSoundLoop.destroyed) { damageSoundLoop = this.danmaku.game.forever(loop => {
-            if (this.danmaku.game.clock >= lastPlayDamageSoundClockTs + 3) {
+            if (this.danmaku.combat.clock >= lastPlayDamageSoundClockTs + 3) {
                 const fn = damageSoundQueue.shift();
                 if (fn) {
-                    lastPlayDamageSoundClockTs = this.danmaku.game.clock;
+                    lastPlayDamageSoundClockTs = this.danmaku.combat.clock;
                     fn();
                 }
             }
@@ -140,7 +140,7 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
             this.forever(loop => {
                 for (const player of this.danmaku.board._playerRegList.getAlives()) {
                     if (player.state.type !== "common" || player.state.invincibleTime > 10) {
-                        this._lastInvincibleClockTs = this.danmaku.game.clock + 10;
+                        this._lastInvincibleClockTs = this.danmaku.combat.clock + 10;
                     }
                 }
             });
@@ -169,10 +169,10 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
         }
         const { damage00, damage01, nodamage } = this.danmaku.game.prefabSounds.thse;
         const play = this.isInvincible ? () => nodamage.play(utils.decibel(-6)) : this.hp <= Math.min(this.maxHp * 0.1, 500) ? damage01.play : damage00.play;
-        if (this.danmaku.game.clock >= lastPlayDamageSoundClockTs + 3) {
-            lastPlayDamageSoundClockTs = this.danmaku.game.clock;
+        if (this.danmaku.combat.clock >= lastPlayDamageSoundClockTs + 3) {
+            lastPlayDamageSoundClockTs = this.danmaku.combat.clock;
             play();
-        } else if (this.danmaku.game.clock >= lastPlayDamageSoundClockTs + 1) {
+        } else if (this.danmaku.combat.clock >= lastPlayDamageSoundClockTs + 1) {
             if (damageSoundQueue.length < 2) { damageSoundQueue.push(play); }
         }
         this._afterBeHurtCallback?.(options);

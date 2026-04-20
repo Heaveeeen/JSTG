@@ -197,7 +197,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
     //#region combat
 
-    async function StartCombat() { // TODO: combat.clock
+    async function StartCombat() {
 
         //#region board
         const board = (() => {
@@ -861,6 +861,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
         const rand = makeRng();
 
+        const combatClockLoop = forever(()=>{}, { order: 0 });
+
         const combat = {
             /** @readonly  游戏内 UI ，版面上盖着的那一层 UI ，包括血条啥的以及那个像窗口框架的东西 */
             boardFrameUi,
@@ -879,6 +881,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
              * ); // 根据权重，随机返回一个弹幕类型
              */
             rand,
+            /** TODOC: combat.clock */
+            get clock() { return combatClockLoop.clock; },
             destroy() {
                 if (this.destroyed) { return; }
                 boardFrameUi.destroy();
