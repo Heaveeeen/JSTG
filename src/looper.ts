@@ -1,9 +1,15 @@
-import { Destroyable, Game } from "./jstg.js";
+import { Destroyable } from "./jstg.js";
 import * as utils from "./utils.js"
 
-
-export const makePauseController = () => ({ isRun: true });
-type PauseController = ReturnType<typeof makePauseController>;
+export interface PauseController {
+    readonly isRun: boolean,
+    /** 是否要在下一帧继续运行？ */
+    isRunNextUpdate: boolean,
+    /** 从下一帧开始，暂停。 */
+    pause(): void,
+    /** 从下一帧开始，取消暂停、继续运行。 */
+    resume(): void,
+};
 
 /**
  * 循环的控制器对象，用于控制该循环

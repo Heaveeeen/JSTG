@@ -6,11 +6,11 @@ import { makeRng } from "./random.js";
 import * as utils from './utils.js';
 import { CommonDanmaku, MakeFoggyDanmakuResult, baseMakePrefabDanmaku } from "./entity/commonDanmaku.js";
 import { AbstractDanmaku, EraseDanmakuOptions, prefabDanmakuHitboxRadius } from "./entity/abstractDanmaku.js";
-import { makeRegList } from "./regList.js";
+import { makeRegList, RegList } from "./regList.js";
 import { LoadPrefabSounds, LoadPrefabSoundsOptions, LoadSound } from "./sounds.js";
 import { LaserBeam, MakeGrowingLaserBeamResult, baseMakeGrowingLaserBeam, baseMakePrefabLaserBeam } from "./entity/laserBeam.js";
 import { MissGainBombType, Player } from "./player/player.js";
-import { CoDoGenFn, LoopController, LooperFn, LoopOptions, makeLooper, makePauseController, CoDoGenerator } from "./looper.js";
+import { CoDoGenFn, LoopController, LooperFn, LoopOptions, makeLooper, CoDoGenerator, PauseController } from "./looper.js";
 import { AbstractEnemy } from "./entity/abstractEnemy.js";
 import { prefabEnemyFactory } from "./entity/prefabEnemyFactory.js";
 import { Spellcard } from "./boss/spellcard.js";
@@ -153,6 +153,26 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
     //#region game
 
     let timeScale: number = 1;
+
+    const pauseControllers: (PauseController & { _internalSetCurrentToNext(): void })[] = [];
+    const makePauseController = () => {
+        const pause = () => controller.isRunNextUpdate = false;
+        const resume = () => controller.isRunNextUpdate = true;
+        let isRun = true;
+        const _internalSetCurrentToNext = () => isRun = controller.isRunNextUpdate;
+        const controller = {
+            get isRun(): boolean { return isRun },
+            // TODO: 把异常放到 JSTG 调试栏里……或者说，这个异常可能压根就没必要……但是以后总要做这种东西的，不能靠静态分析，那编译报错萌新根本看不懂。。。
+            set isRun(b: never) { throw new utils.JstgError(
+                "PauseControllerSetIsRun",
+                "对于 PauseController ，不能直接设定 isRun 属性的值。若要暂停或恢复，请改为使用 pause() 和 resume() 方法，或更改 isRunNextUpdate 属性。",
+            ); },
+            isRunNextUpdate: true,
+            pause, resume, _internalSetCurrentToNext,
+        };
+        pauseControllers.push(controller);
+        return utils.cast<PauseController>(controller);
+    };
 
     const mainPauseController = makePauseController();
 
@@ -918,11 +938,19 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
     const mainClockLoop = forever(()=>{}, { order: 0 });
 
-    app.ticker.add(() => {
+    const updateGame = () => {
+        for (const controller of pauseControllers) {
+            controller._internalSetCurrentToNext();
+        }
+        timeScale = game.timeScaleNextUpdate;
         looper.stepThreads();
+    };
+
+    app.ticker.add(() => {
+        updateGame();
         // 跳帧补偿
         if (app.ticker.deltaMS > 1.5 * 16.66 && fps < 63) {
-            looper.stepThreads();
+            updateGame();
         }
     });
 
@@ -1186,7 +1214,6 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         /** @readonly 游戏的标准帧率，默认为 60 。 */
         standardFps,
         /**
-         * @readonly
          * 每帧执行一次给定的回调函数。  
          * @example
          * let t = 0;
@@ -1202,7 +1229,6 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
          */
         forever,
         /**
-         * @readonly
          * 启动一个生成器函数，可以简单理解为启动一个协程，可以编写 Scratch 风格的代码
          * @example 
          * coDo(function*() {
@@ -1224,24 +1250,30 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
          * 按键名称为实体建码，即 HTML 按键事件的 code 属性
          * @see {@link [MDN KeyboardEvent.code](https://developer.mozilla.org/zh-CN/docs/Web/API/KeyboardEvent/code)}
          * @example
-         * if (input.isHold(JSTG.Key.ArrowUp)) {
+         * if (input.isHold("ArrowUp")) {
          *     // 如果现在正在按着上方向键，干啥干啥
          * }
-         * if (input.isDown(JSTG.Key.KeyX)) {
+         * if (input.isDown("KeyX")) {
          *     // 如果现在是刚按下 X 键的那一帧，干啥干啥
          * }
-         * if (input.isIdle(JSTG.Key.ShiftLeft)) {
+         * if (input.isIdle("ShiftLeft")) {
          *     // 如果现在没按左 Shift，干啥干啥
          * }
-         * // 可以引用 JSTG.Key ，如果愿意的话也可以直接写字符串字面量（不推荐）
          */
         input,
-        /** 游戏的时间流速，可以用来做慢镜头啥的 */
-        get timeScale() { return timeScale; },
-        set timeScale(v: number) { timeScale = v; },// TODO: 原子化 timeScale
+        /**
+         * 游戏的时间流速，可以用来做慢镜头啥的。  
+         * @readonly ⚠️该属性是只读的，不能更改。若要更改 timeScale ，请更改 game.timeScaleNextUpdate 属性。  
+         */
+        get timeScale(): number { return timeScale; },
+        /**
+         * 在下一帧开始时， timeScale 的值会变为多少？  
+         * 若要改变 timeScale ，请更改这个属性。  
+         */ // TODO: TEST timeScale
+        timeScaleNextUpdate: 1,
         /** 每秒帧数的估算值 */
         get fps() { return fps; },
-        /** @readonly @generator 等待 timeFrame 帧 */
+        /** @generator 等待 timeFrame 帧 */
         Sleep,
         /** JSTG 预置的一些贴图 */
         prefabTextures,
@@ -1293,7 +1325,6 @@ export {
     makeRng,
     utils,
     prefabDanmakuHitboxRadius,
-    makePauseController,
     HslaFilter,
     makeSingleBossSpellOptions,
 }

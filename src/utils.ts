@@ -102,3 +102,9 @@ export const staticAssert = <T>(x: T) => x;
 export const cast = <T, U extends T = T>(x: T) => x as U;
 
 export const asAny = (x: any) => x as any;
+
+export class JstgError<TType extends Readonly<string>, TData extends any> extends Error {
+    constructor(readonly type: TType, message?: string | null, readonly data?: TData) {
+        super(message ?? undefined);
+    }
+}

@@ -457,7 +457,7 @@ import * as pixi from "pixi";
 
     forever(loop => {
         if (isDown("Escape")) {
-            game.mainPauseController.isRun = !game.mainPauseController.isRun;
+            game.mainPauseController.isRunNextUpdate = !game.mainPauseController.isRun;
             game.prefabSounds.thse.pause.play();
         }
     }, { order: 0, pauseController: "none" });

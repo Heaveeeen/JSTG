@@ -59,3 +59,5 @@ export const makeRegList = <T extends Destroyable>(options: {
     
     return regList;
 }
+
+export type RegList<T extends Destroyable> = ReturnType<typeof makeRegList<T>>
