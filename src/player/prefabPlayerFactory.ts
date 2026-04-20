@@ -5,6 +5,7 @@ import * as utils from "../utils.js";
 import { AbstractEnemy } from "../entity/abstractEnemy.js";
 import { AbstractDanmaku } from "../entity/abstractDanmaku.js";
 import { CommonEnemy } from "../entity/commonEnemy.js";
+import { makePlayerControllerByInput, PlayerKeyMap, PlayerKeyMapOptions } from "./playerController.js";
 
 export const prefabPlayerFactory = (()=>{
 
@@ -25,10 +26,11 @@ export const prefabPlayerFactory = (()=>{
         maxHpAmount: number;
         maxBombAmount: number;
         missGainBombType: MissGainBombType;
+        keyMap: PlayerKeyMap;
     };
 
-    const makeSimple = (options: _BaseOptions) => {
-        const { game, combat, board, autoUpdateDanmakuRegList, autoUpdateSelf } = options;
+    const makeSimple = (makeSimpleOptions: _BaseOptions) => {
+        const { game, combat, board, autoUpdateDanmakuRegList, autoUpdateSelf } = makeSimpleOptions;
         const { prefabTextures } = game;
         type Drone = { sprite: pixi.Sprite, rotation: number, laser: {
             sprite: pixi.Sprite,
@@ -69,7 +71,6 @@ export const prefabPlayerFactory = (()=>{
         let shootTimer = 0;
         const lasers = new Map<Drone, pixi.Sprite | null>();
         const updateFn = (opt: PlayerUpdateOptions) => {
-            const input = opt.input ?? game.input;
             player._defaultUpdate(opt);
             let trans: [[number, number, number], [number, number, number], [number, number, number], [number, number, number]];
             let size: number;
@@ -311,12 +312,13 @@ export const prefabPlayerFactory = (()=>{
             }
         };
         const player = new Player({
-            ...options,
+            ...makeSimpleOptions,
             hitboxTexture: prefabTextures.player.hitbox,
             slowModeRingTexture: prefabTextures.player.slowMode,
             invincibleRingTexture: prefabTextures.player.invincibleRing,
             ...game.prefabCharInfos.simple.player,
             updateFn, beHurtFn, bombFn, destroyCallback,
+            controller: makePlayerControllerByInput(game.input, makeSimpleOptions.keyMap),
         });
         initDrones();
         return player;

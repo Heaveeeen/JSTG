@@ -315,8 +315,8 @@ class Wanderer {
 
     // RAND: wander
 
-    getMoved({ x, y }: utils.Vec2): void;
-    getMoved(x: number, y: number): void;
+    getMoved({ x, y }: utils.Vec2): utils.Vec2;
+    getMoved(x: number, y: number): utils.Vec2;
     getMoved(arg1: utils.Vec2 | number, arg2?: number) {
         let { x: dx, y: dy } = typeof arg1 === "number" ? { x: arg1, y: arg2 as number } : arg1;
         const { glideState, combat } = this.entity;
@@ -371,6 +371,7 @@ export class Gun extends Entity {
     destroyed = false;
 }
 
+// TODO: GunPool
 export const baseMakeGun = (options: {
     game: Game, combat: Combat, board: Board,
     x: number, y: number, rotation: number,

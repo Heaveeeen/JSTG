@@ -59,7 +59,7 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
 
     /** @internal */
     private _lastInvincibleClockTs: number = -999;
-    private get isInvincible() { return this.danmaku.game.clock - this._lastInvincibleClockTs < 30; }
+    private get isInvincible() { return this.danmaku.game.clock - this._lastInvincibleClockTs < 10; }
 
     /** @internal */
     private _hp: number;

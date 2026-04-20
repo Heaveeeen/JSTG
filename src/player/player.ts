@@ -6,36 +6,12 @@ import { AbstractDanmaku } from "../entity/abstractDanmaku.js";
 import { DifferenceBlendFilter } from "../graphics/differenceBlendFilter.js";
 import { CoDoGenFn, LooperFn, LoopOptions } from "../looper.js";
 import { makeReigekiRing } from "./reigekiRing.js";
+import { PlayerController, PlayerControllerActionType } from "./playerController.js";
 
-export interface PlayerKeyMapOptions {
-    /** @default Key.ArrowUp */
-    up?: KeyName | KeyName[],
-    /** @default Key.ArrowDown */
-    down?: KeyName | KeyName[],
-    /** @default Key.ArrowLeft */
-    left?: KeyName | KeyName[],
-    /** @default Key.ArrowRight */
-    right?: KeyName | KeyName[],
-    /** @default Key.ShiftLeft */
-    slow?: KeyName | KeyName[],
-    /** @default Key.KeyZ */
-    attack?: KeyName | KeyName[],
-    /** @default Key.KeyX */
-    bomb?: KeyName | KeyName[],
-}
 
 export interface PlayerUpdateOptions {
-    /**
-     * 可以传一个 replay 专用 input 啥的
-     * @default game.input
-     */
-    input?: Input,
+    controller?: PlayerController,
 
-    keyMap?: PlayerKeyMapOptions, // TODO: 把这玩意改成一个“某某按键是否已按下”的表，方便做 replay
-    /**
-     * 高速时的移速
-     * @default this.highSpeed
-     */
     highSpeed?: number,
     /**
      * 低速时的移速
@@ -81,6 +57,7 @@ export interface NewPlayerOptions {
     beHurtFn: (options: PlayerBeHurtOptions) => void;
     bombFn: (options: PlayerBombOptions) => void;
     destroyCallback: () => void;
+    controller: PlayerController | null;
 }
 
 export class Player {
@@ -179,6 +156,8 @@ export class Player {
         this.backParts.alpha = n;
     }
 
+    controller: PlayerController;
+
     constructor(options: NewPlayerOptions) {
         this.name = options.name;
         this.game = options.game;
@@ -199,6 +178,13 @@ export class Player {
         this.beHurt = options.beHurtFn;
         this.bombFn = options.bombFn;
         this.destroyFn = options.destroyCallback;
+
+        this.controller = options.controller ?? {
+            isDown: () => false,
+            isUp: () => false,
+            isHold: () => false,
+            isIdle: () => true,
+        };
 
         this.backParts = new pixi.Sprite({
             parent: options.board.playerBackLayer,
@@ -289,19 +275,18 @@ export class Player {
     _updateInputAndMove(options: PlayerUpdateOptions) {
         const ts = this.game.timeScale;
         const { deg, clamp } = utils;
-        const keyMap = options.keyMap ?? {};
-        const { isDown, isHold } = options.input ?? this.game.input;
         let dx = 0;
         let dy = 0;
+        const controller = options.controller ?? this.controller;
 
-        const kh = (keyOrKeys: KeyName | KeyName[]) => typeof keyOrKeys === "string" ? isHold(keyOrKeys) : keyOrKeys.some(key => isHold(key));
-        const kd = (keyOrKeys: KeyName | KeyName[]) => typeof keyOrKeys === "string" ? isDown(keyOrKeys) : keyOrKeys.some(key => isDown(key));
+        const kh = controller.isHold;
+        const kd = controller.isDown;
         // @ts-expect-error MAGIC: 布尔值隐式转换为 0 和 1 ，可以用于数学运算
-        dx = kh(keyMap.right ?? Key.ArrowRight) - kh(keyMap.left ?? Key.ArrowLeft);
+        dx = kh("right") - kh("left");
         // @ts-expect-error
-        dy = kh(keyMap.down ?? Key.ArrowDown) - kh(keyMap.up ?? Key.ArrowUp);
+        dy = kh("down") - kh("up");
         if (this.state.type === "common") {
-            this.isSlow = kh(keyMap.slow ?? "ShiftLeft");
+            this.isSlow = kh("slow");
 
             this.slowModeRing.rotation += deg(2 * ts);
             if (dx !== 0 || dy !== 0) {
@@ -317,14 +302,14 @@ export class Player {
                 this.y = clamp(this.y + dy, -h, h);
             }
 
-            this.isShooting = kh(keyMap.attack ?? "KeyZ");
+            this.isShooting = kh("attack");
         } else {
             this.isSlow = false;
             this.isShooting = false;
         }
 
         if (this.state.type === "common" || this.state.type === "dying") {
-            if (this.bombAmount >= 1 && kd(keyMap.bomb ?? "KeyX") && (
+            if (this.bombAmount >= 1 && kd("bomb") && (
                 this._bombCd <= 0 || this.state.type !== "common" || this.state.invincibleTime <= 0
             )) {
                 this.bombFn({});

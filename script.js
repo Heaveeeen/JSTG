@@ -52,7 +52,15 @@ import * as pixi from "pixi";
     const pl = prefabPlayers.makeSimple({
         highSpeed: 4.5,
         slowSpeed: 2,
-        autoUpdateSelf: false,
+        keyMap: {
+            up: ["ArrowUp", "KeyW"],
+            down: ["ArrowDown", "KeyS"],
+            left: ["ArrowLeft", "KeyA"],
+            right: ["ArrowRight", "KeyD"],
+            slow: ["ShiftLeft", "KeyL", "Space"],
+            attack: ["KeyZ", "KeyK"],
+            bomb: ["KeyX", "KeyJ"],
+        },
     });
     const se = game.prefabSounds.thse;
     
@@ -428,15 +436,6 @@ import * as pixi from "pixi";
     //#endregion
 
     forever(loop => {
-        pl.update({ input, keyMap: {
-            up: ["ArrowUp", "KeyW"],
-            down: ["ArrowDown", "KeyS"],
-            left: ["ArrowLeft", "KeyA"],
-            right: ["ArrowRight", "KeyD"],
-            slow: ["ShiftLeft", "KeyL", "Space"],
-            attack: ["KeyZ", "KeyK"],
-            bomb: ["KeyX", "KeyJ"],
-        }});
         //txt.text = debug.vars.getStr("bar") + debug.vars.getStr("baz");
         if (isDown("KeyP")) {
             if (!debug.showHitbox.isOn) {

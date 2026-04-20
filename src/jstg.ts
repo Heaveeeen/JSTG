@@ -19,6 +19,7 @@ import { baseMakeBoss, Boss, NewBossOptions } from "./boss/boss.js";
 import { HslaFilter, HslaColor, PartialHslaColor, makeHsla, HslaOptions } from "./graphics/hslaFilter.js";
 import { baseMakeGun, Gun } from "./entity/entity.js";
 import { AutoInvincibleMode } from "./entity/commonEnemy.js";
+import { fillKeyMapOptions, PlayerKeyMapOptions } from "./player/playerController.js";
 
 
 
@@ -446,6 +447,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     maxHpAmount?: number,
                     maxBombAmount?: number, 
                     missGainBombType?: MissGainBombType,
+                    keyMap?: PlayerKeyMapOptions,
                 } = {}) => makePlayer(prefabPlayerFactory.makeSimple({
                     game, combat, board,
                     autoUpdateDanmakuRegList: options.autoUpdateDanmakuRegList ?? true,
@@ -459,6 +461,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     maxHpAmount: options.maxHpAmount ?? 8,
                     maxBombAmount: options.maxBombAmount ?? 8,
                     missGainBombType: options.missGainBombType ?? "resetToInitAmount",
+                    keyMap: fillKeyMapOptions(options.keyMap ?? {}),
                 }));
 
                 /* TODO: simple.homingOnly ...
