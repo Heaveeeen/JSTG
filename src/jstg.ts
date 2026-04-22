@@ -930,14 +930,16 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         zIndex: 100,
     });
     let fps = standardFps;
-    let timeRecords: number[] = [];
+    let timeMsRecords: number[] = [];
     const fpsCounterLoop = forever(() => {
         const now = performance.now();
-        timeRecords.push(now);
-        if (timeRecords.length > 10) {// TODO: 现在这个帧率测试器容易看不出来长期的平均帧率，跳得太快了
-            fps = Math.round(1000000 / (now - (timeRecords.shift() as number))) / 100;
+        timeMsRecords.push(now);
+        const len = 60;
+        if (timeMsRecords.length > len) {// TODO: 改良帧率显示器，增加多个不同的指标
+            // 这个算式的数学意义是： (经过的帧数 / 经过的秒数) ，秒数即为 (毫秒数 / 1000)
+            fps = len / ((now - (timeMsRecords.shift() as number)) / 1000);
         }
-        fpsMonitor.text = `FPS:${fps}`;
+        fpsMonitor.text = `FPS:${fps.toFixed(2)}`;
     }, { order: 0, pauseController: "none" });
 
     const mainClockLoop = forever(()=>{}, { order: 0 });
@@ -970,7 +972,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             // TODO: isContainsPlayerRadius
         };
 
-        let vars = (()=>{
+        let debugBar = (()=>{
             const root = document.createElement("div");
             root.style.display = "none";
             root.style.flexDirection = "column";
@@ -979,10 +981,11 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             { // 调试栏标题
                 const title = document.createElement("h3");
                 title.innerHTML = `⛩️ JSTG Debug Bar`;
-                title.style.fontFamily = monospaceFontFamily;
-                title.style.color = "#ffffff";
-                title.style.display = "flex";
-                title.style.cursor = "pointer"; //我也不知道这个超链接有啥用……
+                const { style } = title;
+                style.fontFamily = monospaceFontFamily;
+                style.color = "#ffffff";
+                style.display = "flex";
+                style.cursor = "pointer"; //我也不知道这个超链接有啥用……
                 title.addEventListener("click", ev => open("https://github.com/Heaveeeen/JSTG", "_blank", 'noopener,noreferrer'));
                 root.appendChild(title);
             }
@@ -990,17 +993,18 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             if (debugOptions.isExposeToGlobal) {
                 const warnBox = document.createElement("p");
                 warnBox.innerText = 
-`⚠️已将 game 暴露到全局，可以通过全局变量 game, combat, board 访问游戏主要对象。
+`已将 game 暴露到全局，可以通过全局变量 game, combat, board 访问游戏主要对象。
 如果您希望公开发布此游戏，建议把 jstg.LaunchGame 的参数 debugOptions.isExposeToGlobal 设为 false。`;
-                warnBox.style.fontFamily = monospaceFontFamily;
-                warnBox.style.color = "#ffffff";
-                warnBox.style.display = "flex";
-                warnBox.style.padding = "5px";
-                warnBox.style.border = "3px double #ff3333";
-                warnBox.style.backgroundColor = "#120808";
-                warnBox.style.fontFamily = monospaceFontFamily;
-                warnBox.style.fontSize = "12px";
-                warnBox.style.maxWidth = "400px";
+                const { style } = warnBox;
+                style.fontFamily = monospaceFontFamily;
+                style.color = "#ffffff";
+                style.display = "flex";
+                style.padding = "5px";
+                style.border = "3px double #ff3333";
+                style.backgroundColor = "#120808";
+                style.fontFamily = monospaceFontFamily;
+                style.fontSize = "12px";
+                style.maxWidth = "400px";
                 root.appendChild(warnBox);
             }
 
@@ -1018,20 +1022,20 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 root.style.display = "none";
             }
 
-            const makeDiv = (id: string) => {
+            const makeDiv = (name: string) => {
                 const div = document.createElement("div");
                 div.style.fontFamily = monospaceFontFamily;
                 div.style.display = "flex";
                 div.style.margin = "3px 0px";
                 const label = document.createElement("label");
-                label.innerText = id;
+                label.innerText = name;
                 label.style.color = "#ffffff";
                 label.style.paddingRight = "3px";
                 div.appendChild(label);
                 return div;
             }
 
-            // TODO: addNum, addInt, addStr ...
+            // MAYDO: addNum, addInt, addStr ...
             const addInput = (id: string, options: {
                 /** @default "num" */
                 type?: "num",
@@ -1053,6 +1057,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     const div = makeDiv(id);
                     const inp = document.createElement("input");
                     inp.style.height = "16px";
+                    inp.style.fontFamily = monospaceFontFamily;
+                    inp.style.width = "stretch";
                     inp.type = "number";
                     inp.min = min;
                     inp.max = max;
@@ -1071,6 +1077,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     const div = makeDiv(id);
                     const inp = document.createElement("input");
                     inp.style.height = "16px";
+                    inp.style.fontFamily = monospaceFontFamily;
+                    inp.style.width = "stretch";
                     inp.type = "text";
                     div.appendChild(inp);
                     root.appendChild(div);
@@ -1090,17 +1098,48 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 return isNaN(n) ? 0 : n;
             };
 
+            const set = (id: string, value: any) => {
+                if (inputs[id]) {
+                    inputs[id].value = String(value);
+                }
+            };
+
+            const buttons: Record<string, HTMLInputElement | undefined> = {};
+            type ClickCallback = (event: MouseEvent) => any;
+            function addButton(id: string, onclick?: ClickCallback): void;
+            function addButton(options: { id: string, onclick?: ClickCallback }): void;
+            function addButton(arg1: { id: string, onclick?: ClickCallback } | string, arg2?: ClickCallback) {
+                const { id, onclick } = typeof arg1 === "string" ? { id: arg1, onclick: arg2, } : arg1;
+                let btn: HTMLInputElement;
+                if (buttons[id]) {
+                    btn = buttons[id];
+                } else {
+                    const div = document.createElement("div");
+                    div.style.fontFamily = monospaceFontFamily;
+                    div.style.display = "flex";
+                    div.style.margin = "3px 0px";
+                    btn = document.createElement("input");
+                    btn.style.fontFamily = monospaceFontFamily;
+                    btn.type = "button";
+                    btn.value = id;
+                    div.appendChild(btn);
+                    root.appendChild(div);
+                    buttons[id] = btn;
+                };
+                if (onclick) { btn.addEventListener("click", onclick); }
+            }
+
             return {
                 show, hide,
-                addInput,
-                getStr, getInt, getFloat, getNum: getFloat,
+                addInput, addButton,
+                getStr, getInt, getFloat, getNum: getFloat, set,
             }
         })();
 
         return {
             godMode,
             showHitbox,
-            vars,
+            debugBar,
         };
     })();
 

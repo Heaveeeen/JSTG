@@ -15,8 +15,8 @@ import * as pixi from "pixi";
 (async () => {
     const game = await jstg.LaunchGame();
     const { prefabDanmakuHitboxRadius, utils } = jstg;
-    const { input, app, debug, Sleep, prefabSounds, prefabTextures } = game;
-    const { thse } = prefabSounds;
+    const { input, app, debug, Sleep, prefabSounds: { thse }, prefabTextures } = game;
+    const { debugBar } = debug;
     const { isDown, isUp, isHold, isIdle } = input;
     const { asAny, UntilDestroy, decibel, deg, lerp, lerpAngle } = utils;
 
@@ -337,6 +337,7 @@ import * as pixi from "pixi";
                 if ((dan.x < -210 && vx <= 0) || (dan.x > 210 && vx >= 0)) {
                     dan.destroy();
                 } else {
+                    debugBar.addButton("erase all", () => dan.erase({effectType: "reduce"}));
                     const vy = rand.float(2, 3) * speedMul;
                     dan.rotation = Math.atan2(vy, vx);
                     dan.forever(loop => {
@@ -429,14 +430,15 @@ import * as pixi from "pixi";
         });
     });
     fooBoss();
-    debug.vars.addInput("foo");
-    debug.vars.addInput("bar");
-    debug.vars.addInput("baz", { type: "text" });
-    debug.vars.show();
+    debugBar.addInput("foo");
+    debugBar.addInput("bar");
+    debugBar.addInput("baz", { type: "text" });
+    debugBar.addButton("erase all");
+    debugBar.show();
     //#endregion
 
     forever(loop => {
-        //txt.text = debug.vars.getStr("bar") + debug.vars.getStr("baz");
+        //txt.text = debugBar.getStr("bar") + debugBar.getStr("baz");
         if (isDown("KeyP")) {
             if (!debug.showHitbox.isOn) {
                 debug.showHitbox.isOn = true;
