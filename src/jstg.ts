@@ -1009,24 +1009,6 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 root.appendChild(title);
             }
 
-            if (debugOptions.isExposeToGlobal) {
-                const warnBox = document.createElement("p");
-                warnBox.innerText = 
-`已将 game 暴露到全局，可以通过全局变量 game, combat, board 访问游戏主要对象。
-如果您希望公开发布此游戏，建议把 jstg.LaunchGame 的参数 debugOptions.isExposeToGlobal 设为 false。`;
-                const { style } = warnBox;
-                style.fontFamily = monospaceFontFamily;
-                style.color = "#ffffff";
-                style.display = "flex";
-                style.padding = "5px";
-                style.border = "3px double #ff3333";
-                style.backgroundColor = "#120808";
-                style.fontFamily = monospaceFontFamily;
-                style.fontSize = "12px";
-                style.maxWidth = "400px";
-                root.appendChild(warnBox);
-            }
-
             document.body.appendChild(root);
 
             const inputs: Record<string, ({ value: string }) | undefined> = {};
