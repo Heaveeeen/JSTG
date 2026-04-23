@@ -93,6 +93,13 @@ export const select = <T>(t: number, results: Readonly<SelectItem<T>[]>): typeof
 
 export function* UntilDestroy(...objs: Destroyable[]) { while (!objs.every(obj => obj.destroyed)) { yield; } }
 
+export const arrayRemove = <T extends any[]>(array: T, items: T) => {
+    for (const item of items) {
+        const idx = array.indexOf(item);
+        if (idx >= 0) { array.splice(idx, 1); }
+    }
+};
+
 
 
 /** 如果给定参数不属于 T，让 ts 报错 */

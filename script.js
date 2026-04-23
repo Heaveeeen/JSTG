@@ -261,7 +261,7 @@ import * as pixi from "pixi";
                     gun.rotation += o * 0.018;
                     gun.step();
                     if (loop.clock % 1 === 0) {
-                        game.prefabSounds.thse.tan00.play(decibel(-15));
+                        thse.tan00.play(decibel(-15));
                         const v = rand.float(0.8, 3.2);
                         const a = rand.float(0.008, 0.015);
                         makeFoggyDanmaku({
@@ -337,7 +337,6 @@ import * as pixi from "pixi";
                 if ((dan.x < -210 && vx <= 0) || (dan.x > 210 && vx >= 0)) {
                     dan.destroy();
                 } else {
-                    debugBar.addButton("erase all", () => dan.erase({effectType: "reduce"}));
                     const vy = rand.float(2, 3) * speedMul;
                     dan.rotation = Math.atan2(vy, vx);
                     dan.forever(loop => {
@@ -363,7 +362,7 @@ import * as pixi from "pixi";
             let omega = 0;
             let d = deg(0);
             while (true) {
-                game.prefabSounds.thse.tan00.play(decibel(-9));
+                thse.tan00.play(decibel(-9));
                 const gun1 = boss.makeGun();
                 gun1.rotation = d;
                 for (const gun2 of gun1.ringBlast(3)) {
@@ -388,7 +387,7 @@ import * as pixi from "pixi";
         fn({ boss, spellcard, shield }) {
             spellcard.forever(loop => {
                 if (loop.clock % 17 === 0) {
-                    game.prefabSounds.thse.tan00.play(decibel(-15));
+                    thse.tan00.play(decibel(-15));
                     for (const gun of boss.aimedGun(pl).scatter({ amount: 5, deg: 60 })) {
                         makeFoggyDanmaku({
                             type: "chain", ...gun, color: "blue", speed: 8
@@ -400,7 +399,7 @@ import * as pixi from "pixi";
                     }
                 }
                 if (loop.clock % 41 === 10) {
-                    game.prefabSounds.thse.kira00.play(decibel(-3));
+                    thse.kira00.play(decibel(-3));
                     const gun1 = boss.aimedGun(pl);
                     gun1.rotation += deg(180 / 20);
                     for (const gun2 of gun1.ringBlast(40)) {
@@ -430,10 +429,6 @@ import * as pixi from "pixi";
         });
     });
     fooBoss();
-    debugBar.addInput("foo");
-    debugBar.addInput("bar");
-    debugBar.addInput("baz", { type: "text" });
-    debugBar.addButton("erase all");
     debugBar.show();
     //#endregion
 
@@ -457,11 +452,11 @@ import * as pixi from "pixi";
         }
     }, { order: 0 });
 
-    forever(loop => {
+    game.looper.forever(loop => {
         if (isDown("Escape")) {
-            game.mainPauseController.isRunNextUpdate = !game.mainPauseController.isRun;
-            game.prefabSounds.thse.pause.play();
+            combat.combatPauseController.toggle();
+            thse.pause.play();
         }
-    }, { order: 0, pauseController: "none" });
+    }, { order: 0 });
 
 })();

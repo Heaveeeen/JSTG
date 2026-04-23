@@ -158,6 +158,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
     const makePauseController = () => {
         const pause = () => controller.isRunNextUpdate = false;
         const resume = () => controller.isRunNextUpdate = true;
+        const toggle = () => controller.isRunNextUpdate = !controller.isRunNextUpdate;
         let isRun = true;
         const _internalSetCurrentToNext = () => isRun = controller.isRunNextUpdate;
         const controller = {
@@ -168,17 +169,27 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 "对于 PauseController ，不能直接设定 isRun 属性的值。若要暂停或恢复，请改为使用 pause() 和 resume() 方法，或更改 isRunNextUpdate 属性。",
             ); },
             isRunNextUpdate: true,
-            pause, resume, _internalSetCurrentToNext,
+            pause, resume, _internalSetCurrentToNext, toggle,
         };
         pauseControllers.push(controller);
         return utils.cast<PauseController>(controller);
     };
 
-    const mainPauseController = makePauseController();
+    const gamePauseController = makePauseController();
 
-    const looper = makeLooper({ getTimescale: () => timeScale, mainPauseController, isDebugBlame: debugOptions.isLooperBlame ?? true });
+    const looper = makeLooper({ getTimescale: () => timeScale, isDebugBlame: debugOptions.isLooperBlame ?? true });
 
-    const { forever, coDo } = looper;
+    function forever<T>(fn: LooperFn<T>, options: LoopOptions = {}) {
+        const loop = looper.forever(fn, options);
+        loop.addPauseController(gamePauseController);
+        return loop;
+    }
+
+    function coDo<T>(genFn: CoDoGenFn<T>, options: LoopOptions = {}) {
+        const loop = looper.coDo(genFn, options);
+        loop.addPauseController(gamePauseController);
+        return loop;
+    }
 
     function* Sleep(
         /** 要等待的时间（帧） */
@@ -193,7 +204,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
     const alphaTo: typeof utils.alphaTo = (spr, dst, speed) => utils.alphaTo(spr, dst, speed * timeScale);
 
     const input = makeInput({ app });
-    if (gameOptions.autoUpdateInput ?? true) { forever(() => input._update(), { order: 0, pauseController: "none" }); }
+    if (gameOptions.autoUpdateInput ?? true) { looper.forever(() => input._update(), { order: 0 }); }
 
     //#region combat
 
@@ -333,6 +344,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             let halfWidth = 200;
             let halfHeight = 240;
 
+            const boardPauseController = makePauseController();
+
             const makeBoardLayer = (zIndex: number) => new pixi.Sprite({ parent: boardRoot, zIndex });
             const board = {
                 /** 根节点 */
@@ -428,19 +441,21 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 },
                 get destroyed() { return boardRoot.destroyed },
 
+                /** TODOC: boardPauseController */
+                boardPauseController,
                 forever<T>(fn: LooperFn<T>, options: LoopOptions = {}) {
                     const loop = combat.forever(fn, options);
-                    loop.addRefs(this);
+                    loop.addRefs(board);
+                    loop.addPauseController(boardPauseController);
                     return loop;
                 },
                 coDo<T>(genFn: CoDoGenFn<T>, options: LoopOptions = {}) {
                     const loop = combat.coDo(genFn, options);
-                    loop.addRefs(this);
+                    loop.addRefs(board);
+                    loop.addPauseController(boardPauseController);
                     return loop;
                 },
             };
-            board.forever = board.forever.bind(board);
-            board.coDo = board.coDo.bind(board);
 
             const prefabPlayers = (()=>{
                 const makePlayer = (player: Player) => {
@@ -861,7 +876,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
         const rand = makeRng();
 
-        const combatClockLoop = forever(()=>{}, { order: 0 });
+        const combatPauseController = makePauseController();
 
         const combat = {
             /** @readonly  游戏内 UI ，版面上盖着的那一层 UI ，包括血条啥的以及那个像窗口框架的东西 */
@@ -881,6 +896,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
              * ); // 根据权重，随机返回一个弹幕类型
              */
             rand,
+            /** TODOC: combatPauseController */
+            combatPauseController,
             /** TODOC: combat.clock */
             get clock() { return combatClockLoop.clock; },
             destroy() {
@@ -892,17 +909,19 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
             forever<T>(fn: LooperFn<T>, options: LoopOptions = {}) {
                 const loop = game.forever(fn, options);
-                loop.addRefs(this);
+                loop.addRefs(combat);
+                loop.addPauseController(combatPauseController);
                 return loop;
             },
             coDo<T>(genFn: CoDoGenFn<T>, options: LoopOptions = {}) {
                 const loop = game.coDo(genFn, options);
-                loop.addRefs(this);
+                loop.addRefs(combat);
+                loop.addPauseController(combatPauseController);
                 return loop;
             },
         };
-        combat.forever = combat.forever.bind(combat);
-        combat.coDo = combat.coDo.bind(combat);
+
+        const combatClockLoop = combat.forever(()=>{}, { order: 0 });
 
         console.log("JSTG combat:", combat);
 
@@ -931,7 +950,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
     });
     let fps = standardFps;
     let timeMsRecords: number[] = [];
-    const fpsCounterLoop = forever(() => {
+    const fpsCounterLoop = looper.forever(() => {
         const now = performance.now();
         timeMsRecords.push(now);
         const len = 60;
@@ -940,7 +959,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             fps = len / ((now - (timeMsRecords.shift() as number)) / 1000);
         }
         fpsMonitor.text = `FPS:${fps.toFixed(2)}`;
-    }, { order: 0, pauseController: "none" });
+    }, { order: 0 });
 
     const mainClockLoop = forever(()=>{}, { order: 0 });
 
@@ -1286,7 +1305,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
          * });
          */
         coDo,
-        _looper: looper,
+        looper,
         /**
          * @readonly
          * 用来获取用户输入，例如检测键盘上的某个键是否按下  
@@ -1336,8 +1355,9 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
          * ⚠️此计时器受 mainPauseController 影响，在 mainPauseController 暂停期间不会运作。  
          */
         get clock() { return mainClockLoop.clock; }, // 每个 looper 都有自己的时钟，因为它们会暂停，不一定是同步的。
-        /** TODOC: mainPauseController */
-        mainPauseController,
+        /** TODOC: gamePauseController */
+        gamePauseController,
+        makePauseController,
 
         /** 一些预置角色的信息，从弹幕引擎里抄来的。 */
         prefabCharInfos,

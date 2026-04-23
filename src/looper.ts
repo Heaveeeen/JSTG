@@ -5,6 +5,11 @@ export interface PauseController {
     readonly isRun: boolean,
     /** 是否要在下一帧继续运行？ */
     isRunNextUpdate: boolean,
+    /**
+     * 反转 isRunNextUpdate 。  
+     * 如果正在运行，则暂停；如果正在暂停，则继续。  
+     */
+    toggle(): void,
     /** 从下一帧开始，暂停。 */
     pause(): void,
     /** 从下一帧开始，取消暂停、继续运行。 */
@@ -14,7 +19,7 @@ export interface PauseController {
 /**
  * 循环的控制器对象，用于控制该循环
  * @example
- * loop.stop(); // 从下一帧开始，停止该循环
+ * loop.destroy(); // 从下一帧开始，停止该循环
  */
 export interface LoopController<T> {
     /** 从下一帧起，停止该循环。 */
@@ -32,9 +37,13 @@ export interface LoopController<T> {
      */
     then(callback: (result?: T) => void): this,
     addRefs(...objs: Destroyable[]): void,
+    removeRefs(...objs: Destroyable[]): void,
     addDestroys(...objs: Destroyable[]): void,
+    removeDestroys(...objs: Destroyable[]): void,
     addOwns(...objs: Destroyable[]): void,
+    removeOwns(...objs: Destroyable[]): void,
     addPauseController(...controllers: PauseController[]): void,
+    removePauseController(...controllers: PauseController[]): void,
     [Symbol.iterator](): CoDoGenerator<T>,
     debugBlameTag?: any,
 }
@@ -65,17 +74,16 @@ export interface LoopOptions {
      */
     owns?: Destroyable | Destroyable[],
     /** TODOC: LoopOptions.pauseController */
-    pauseController?: PauseController | PauseController[] | "none",
+    pauseControllers?: PauseController | PauseController[],
     debugBlameTag?: any,
 }
 
 export const makeLooper = (makeLooperOptions: {
     getTimescale: () => number,
-    mainPauseController: PauseController,
     isDebugBlame: boolean,
 }) => {
 
-    const { getTimescale, mainPauseController, isDebugBlame } = makeLooperOptions;
+    const { getTimescale, isDebugBlame } = makeLooperOptions;
 
     // MAYDO: 把这个东西跟 loopController 合并
     type ThreadItem = { fn: (() => void) | null, debugBlameTag?: any };
@@ -126,7 +134,7 @@ export const makeLooper = (makeLooperOptions: {
         const refs = [...utils.makeElements(options.refs), ...owns];
         const destroys = [...utils.makeElements(options.destroys), ...owns];
 
-        const pauseControllers = options.pauseController === "none" ? [] : utils.makeElements(options.pauseController ?? mainPauseController);
+        const pauseControllers = utils.makeElements(options.pauseControllers);
 
         let clock = 0;
         let destroyed = false;
@@ -141,12 +149,19 @@ export const makeLooper = (makeLooperOptions: {
                 return loop;
             },
             addRefs: (...objs) => { refs.push(...objs); },
+            removeRefs: (...objs) => { utils.arrayRemove(refs, objs) },
             addDestroys: (...objs) => { destroys.push(...objs); },
+            removeDestroys: (...objs) => { utils.arrayRemove(destroys, objs) },
             addOwns: (...objs) => {
                 refs.push(...objs);
                 destroys.push(...objs);
             },
+            removeOwns: (...objs) => {
+                utils.arrayRemove(refs, objs);
+                utils.arrayRemove(destroys, objs);
+            },
             addPauseController: (...controllers) => { pauseControllers.push(...controllers); },
+            removePauseController: (...controllers) => { utils.arrayRemove(pauseControllers, controllers) },
             *[Symbol.iterator]() {
                 while (!loop.destroyed) { yield; }
                 return loopResult;
