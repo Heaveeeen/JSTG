@@ -133,10 +133,9 @@ export const prefabPlayerFactory = (()=>{
                                     let eff = laser.hitEffects.get(enemy);
                                     const laserHurtRadius = enemy.hurtHitboxRadius + 2;
                                     const { isHit, hitDist } = (()=>{
-                                        const d2 = laserHurtRadius ** 2 - ry ** 2;
                                         if ((rx >= 0) && (Math.abs(ry) <= laserHurtRadius)) {
-                                            return { isHit: true, hitDist: Math.max(rx - Math.sqrt(d2), 0) };
-                                        } else if (rx ** 2 <= d2) { // rx ** 2 + ry ** 2 <= laserHurtRadius ** 2
+                                            return { isHit: true, hitDist: Math.max(rx - Math.sqrt(Math.max(enemy.hurtHitboxRadius ** 2 - ry ** 2, 0)), 0) };
+                                        } else if (rx ** 2 + ry ** 2 <= laserHurtRadius ** 2) {
                                             return { isHit: true, hitDist: 0 };
                                         } else {
                                             return { isHit: false, hitDist: 0 };
