@@ -250,9 +250,6 @@ import * as pixi from "pixi";
     //#region 测试 boss
     const non1 = jstg.makeSingleBossSpellOptions({
         time: 30 * 60, hp: 2500,
-        loopFn({ boss, spellcard, shield }) {
-            txt.text = shield.phase;
-        },
         *gen({ boss, spellcard, shield }) { while (true) {
             const foo = (gun, o) => {let r = gun.aimedGun(boss).rotation; gun.forever(loop => {
                 if (loop.clock >= 80) { gun.destroy(); } else {
@@ -525,7 +522,7 @@ import * as pixi from "pixi";
                         dan.speedToA(1.5, 0.05);
                         dan.boundaryDelete();
                     },
-                }));
+                }).fogSprite.blendMode = "add");
                 kira00.play(decibel(-3));
                 yield* Sleep(period4);
             }});
@@ -537,6 +534,7 @@ import * as pixi from "pixi";
         const battle = board.startSingleBossBattle({
             boss,
             spells: [
+                波力海苔,
                 想起死亡证明,
                 non1,
                 漫天落雪,
@@ -549,7 +547,6 @@ import * as pixi from "pixi";
     //#endregion
 
     forever(loop => {
-        //txt.text = debugBar.getStr("bar") + debugBar.getStr("baz");
         if (isDown("KeyP")) {
             if (!debug.showHitbox.isOn) {
                 debug.showHitbox.isOn = true;

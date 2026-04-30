@@ -67,7 +67,7 @@ export abstract class Entity {
             rotation = arg1.rotation ?? this.rotation;
         } else {
             dist = arg1;
-            rotation = arg2 as number;
+            rotation = arg2 as number | undefined ?? this.rotation;
         }
         this.x += Math.cos(rotation) * dist;
         this.y += Math.sin(rotation) * dist;

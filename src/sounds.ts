@@ -64,9 +64,7 @@ export async function LoadSound(loadOptions: {
             nextPoolItemIdx = 0;
         }
 
-        if (item.controller !== null) {
-            item.controller.destroy();
-        }
+        item.controller?.destroy();
 
         const source = ctx.createBufferSource();
         source.buffer = buffer;

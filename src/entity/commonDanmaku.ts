@@ -57,9 +57,11 @@ export class CommonDanmaku extends AbstractDanmaku {
             if (this.isHitboxGraphicsDirty) {
                 this.hitboxGraphics.clear();
                 this.enemy?.drawDebugHitbox();
-                this.hitboxGraphics.circle(
-                    0, 0, this.hitboxRadius + player.hitboxRadius
-                ).fill("hsla(180, 100%, 60%, 0.50)").stroke("#ffffff");
+                if (this.isDamageToPlayer) {
+                    this.hitboxGraphics.circle(
+                        0, 0, this.hitboxRadius + player.hitboxRadius
+                    ).fill("hsla(180, 100%, 60%, 0.50)").stroke("#ffffff");
+                }
             }
             this.visible = showHitbox.isShowDanmakuBoth;
         } else {
@@ -69,9 +71,9 @@ export class CommonDanmaku extends AbstractDanmaku {
     }
 
     update(player: Player) {
-        if (!this.isDamageToPlayer) { return; }
-
         this.updateDebugHitbox(player);
+
+        if (!this.isDamageToPlayer) { return; }
 
         // 这里的判定和弹幕引擎一样是动对动判定
         let isHit = false;
@@ -259,24 +261,34 @@ export function baseMakePrefabDanmaku<TIsFoggy extends boolean>(options: BaseMak
             parent, x, y, rotation,
             texture: game.prefabTextures.danmaku.particle.fog[color],
             anchor: 0.5,
-            scale: hitboxRadius * 0.6,
+            scale: hitboxRadius / 4 * 2.4,
             zIndex,
             alpha: 0.2,
         });
-        // 弹雾期间，该循环持有 fogSprite 的所有权；弹雾结束后，把 fogSprite 的所有权连带弹幕移交给外部。
+        const danSprite = makeCommonOrAnimatedSprite({
+            game, combat, board, texture, sprite: new pixi.Sprite({
+                parent, x, y, rotation,
+                anchor: 0.5,
+                scale: hitboxRadius / prefabDanmakuHitboxRadius[type] * 2.4,
+                zIndex,
+                alpha: 0,
+            }),
+        });
         const loop = board.coDo<CommonDanmaku>(function*(loop) {
             for (let t = 0; t < 20; t += game.timeScale) {
-                fogSprite.scale.x -= fogSprite.scale.x * 0.04 * game.timeScale;
-                fogSprite.scale.y -= fogSprite.scale.y * 0.04 * game.timeScale;
-                fogSprite.alpha += 0.04 * game.timeScale;
+                fogSprite.scale.x -= fogSprite.scale.x * 0.05 * game.timeScale;
+                fogSprite.scale.y -= fogSprite.scale.y * 0.05 * game.timeScale;
+                danSprite.scale.x -= danSprite.scale.x * 0.05 * game.timeScale;
+                danSprite.scale.y -= danSprite.scale.y * 0.05 * game.timeScale;
+                const p = t / 20;
+                const alpha = utils.lerp(0.1, 0.8, p);
+                const q = utils.lerp(0, 0.8, p ** 2);
+                fogSprite.alpha = alpha * (1 - q);
+                danSprite.alpha = alpha * q;
                 yield;
             }
-            fogSprite.texture = pixi.Texture.EMPTY;
-            fogSprite.scale = hitboxRadius / prefabDanmakuHitboxRadius[type];
-            fogSprite.alpha = 1;
-            const danSprite = makeCommonOrAnimatedSprite({
-                game, combat, board, texture, sprite: fogSprite,
-            });
+            danSprite.scale = hitboxRadius / prefabDanmakuHitboxRadius[type];
+            danSprite.alpha = 1;
             const danmaku = new CommonDanmaku({
                 type, color, game, combat, board,
                 hitboxRadius, sprite: danSprite,
@@ -284,8 +296,8 @@ export function baseMakePrefabDanmaku<TIsFoggy extends boolean>(options: BaseMak
             danmaku.speed = speed;
             danmaku.canBeErase = canBeErase;
             return danmaku;
-        }).then(result => { // 如果循环被意外打断，说明 fogSprite 所有权没能移交给外部，则摧毁 fogSprite 。
-            if (result === undefined) { fogSprite.destroy(); }
+        }, { owns: fogSprite }).then(result => { // 如果循环被意外打断，说明 danSprite 所有权没能移交给外部，则摧毁 danSprite 。
+            if (result === undefined) { danSprite.destroy(); }
         });
         return {
             loop, fogSprite,
