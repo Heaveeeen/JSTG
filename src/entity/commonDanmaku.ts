@@ -139,10 +139,10 @@ export class CommonDanmaku extends AbstractDanmaku {
             const eraseEffectType: "fog" | "reduce" = options.effectType ?? (this.type === "bubble" || this.type === "nuclear" ? "reduce" : "fog");
             if (eraseEffectType === "fog") {
                 // 常规雾化消弹
-                this.game.coDo(this._EraseEffectBehaviorFog.bind(this));
+                this.board.coDo(this._EraseEffectBehaviorFog.bind(this));
             } else {
                 // 缩小消弹
-                this.game.coDo(this._EraseEffectBehaviorReduce.bind(this));
+                this.board.coDo(this._EraseEffectBehaviorReduce.bind(this));
             }
         } else {
             // 如果看不见，直接删除
@@ -151,7 +151,7 @@ export class CommonDanmaku extends AbstractDanmaku {
     }
 
     /** @internal @generator 雾化消失 */
-    private *_EraseEffectBehaviorFog() {
+    private *_EraseEffectBehaviorFog(loop: LoopController<void>) {
         if (this.sprite.destroyed) { return; }
         const color = this.color === "noColor" ? "red" : this.color;
         const eraseEffectSprite = new pixi.Sprite({
@@ -163,6 +163,7 @@ export class CommonDanmaku extends AbstractDanmaku {
             rotation: Math.random() * 2 * Math.PI,
             filters: this.sprite.filters,
         });
+        loop.addDestroys(eraseEffectSprite);
         this.destroy();
         while (eraseEffectSprite.alpha > 0) {
             eraseEffectSprite.scale.x += 0.1 * this.game.timeScale;
@@ -170,11 +171,11 @@ export class CommonDanmaku extends AbstractDanmaku {
             this.game.alphaTo(eraseEffectSprite, 0, 0.05);
             yield;
         }
-        eraseEffectSprite.destroy({ children: true });
+        eraseEffectSprite.destroy();
     }
 
     /** @internal @generator 缩小虚化至消失 */
-    private *_EraseEffectBehaviorReduce() {
+    private *_EraseEffectBehaviorReduce(loop: LoopController<void>) {
         if (this.sprite.destroyed) { return; }
         const eraseEffectSprite = new pixi.Sprite({
             parent: this.board.danmakuEraseLayer,
@@ -185,6 +186,7 @@ export class CommonDanmaku extends AbstractDanmaku {
             rotation: this.sprite.rotation,
             filters: this.sprite.filters,
         });
+        loop.addDestroys(eraseEffectSprite);
         this.destroy();
         while (eraseEffectSprite.alpha > 0) {
             eraseEffectSprite.scale.x -= 0.05 * this.game.timeScale;
@@ -192,7 +194,7 @@ export class CommonDanmaku extends AbstractDanmaku {
             this.game.alphaTo(eraseEffectSprite, 0, 0.05);
             yield;
         }
-        eraseEffectSprite.destroy({ children: true });
+        eraseEffectSprite.destroy();
     }
 
     getIsInBoundary() {

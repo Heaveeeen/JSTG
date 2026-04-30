@@ -48,7 +48,7 @@ export const prefabEnemyFactory = (()=>{
         });
         danmaku.grazeCd = Infinity;
         const enemy = new CommonEnemy({
-            danmaku, maxHp, hurtHitboxRadius: 14, // MAYDO: 想办法查查原版判定数据……？我不知道原版阴阳玉判定多大，我瞎填的……
+            danmaku, maxHp, phaseHpThresholds: [], hurtHitboxRadius: 14, // MAYDO: 想办法查查原版判定数据……？我不知道原版阴阳玉判定多大，我瞎填的……
             canBeErase: false,
             birthProtectDuration,
             afterBeHurtCallback: null,
@@ -64,17 +64,19 @@ export const prefabEnemyFactory = (()=>{
     const makeSpellcardShield = (options: {
         game: Game, combat: Combat, board: Board,
         maxHp: number,
+        phaseHpThresholds: number[],
         x: number, y: number, rotation: number,
         /** @default board.bossShieldLayer */
         parent: pixi.Container | null,
         birthProtectDuration: number,
         hpBarHue: number,
+        hpBarPhaseLineHue: number,
         //scale: number, 
         // TODO: hitboxRadius, isCanHurt, isTouchingDamage, isCanGraze, animRotation(?), hpBarType
         autoInvincibleMode: AutoInvincibleMode,
         isBoss: boolean,
     }) => {
-        const { game, combat, board, maxHp, x, y, rotation, birthProtectDuration, hpBarHue, autoInvincibleMode, isBoss } = options;
+        const { game, combat, board, maxHp, phaseHpThresholds, x, y, rotation, birthProtectDuration, hpBarHue, hpBarPhaseLineHue, autoInvincibleMode, isBoss } = options;
         const sprite = new pixi.Sprite({
             parent: options.parent ?? board.bossShieldLayer,
             texture: game.prefabTextures.enemy.shield,
@@ -92,13 +94,13 @@ export const prefabEnemyFactory = (()=>{
         });
         danmaku.grazeCd = Infinity;
         const enemy = new CommonEnemy({
-            danmaku, maxHp, hurtHitboxRadius: 40 * 1.1,
+            danmaku, maxHp, phaseHpThresholds, hurtHitboxRadius: 40 * 1.1,
             canBeErase: false,
             birthProtectDuration,
             afterBeHurtCallback: () => {
                 sprite.alpha = 0.8;
             },
-            hpBar: { type: "circle", radius: 50 * 1.1, hue: hpBarHue },
+            hpBar: { type: "circle", radius: 50 * 1.1, mainHue: hpBarHue, phaseLineHue: hpBarPhaseLineHue },
             autoInvincibleMode, isBoss,
         });
         enemy.forever(loop => {

@@ -100,13 +100,37 @@ export const arrayRemove = <T extends any[]>(array: T, items: T) => {
     }
 };
 
+/**
+ * 返回一个由 `[0, length)` 中的整数组成的数组。  
+ * python 同款 range 。  
+ */
+export function range(length: number): number[];
+/**
+ * 返回一个由 `[begin, end)` 中的数字组成的数组，每两个数字之间的间隔为`step`。（`step`默认为`1`）  
+ * python 同款 range 。  
+ */
+export function range(begin: number, end: number, step?: number): number[]
+export function range(arg1: number, arg2?: number, arg3?: number) {
+    const arr = [];
+    if (arg2 === undefined) {
+        for (let i = 0; i < arg1; i++) { arr.push(i); }
+    } else {
+        for (let i = arg1; i < arg2; i += arg3 ?? 1) { arr.push(i); }
+    }
+    return arr;
+}
+
 
 
 /** 如果给定参数不属于 T，让 ts 报错 */
 export const staticAssert = <T>(x: T) => x;
 
 /** 仅限向下转换的 as 断言 */
-export const cast = <T, U extends T = T>(x: T) => x as U;
+export const cast = <TFrom, TTo extends TFrom = TFrom>(x: TFrom) => x as TTo;
+
+/** @example castDown(myAnimal)<Dog>() */
+// export const castDown = <TFrom>(x: TFrom) => <TTo extends TFrom>() => x as TTo;
+// 这玩意有点太猎奇了……
 
 export const asAny = (x: any) => x as any;
 

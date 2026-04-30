@@ -19,10 +19,17 @@
         <script type="importmap">
             {
                 "imports": {
-                    "pixi": "./lib/pixi/pixi.min.mjs"
+                    "pixi": "./lib/pixi/pixi.min.mjs",
+                    "./src/jstg.ts": "./dist/jstg.js",
+                    "../src/jstg.ts": "./dist/jstg.js",
+                    "../../src/jstg.ts": "./dist/jstg.js",
+                    "../../../src/jstg.ts": "./dist/jstg.js",
+                    "../../../../src/jstg.ts": "./dist/jstg.js",
+                    "../../../../../src/jstg.ts": "./dist/jstg.js"
                 }
             }
         </script>
+        <!-- MAGIC: 这里使用 import map ，以便在 js 中导入 jstg 时能够直接联动 jstg 源码，很神奇的写法 -->
 
         <script type="module" src="./script.js"></script>
 

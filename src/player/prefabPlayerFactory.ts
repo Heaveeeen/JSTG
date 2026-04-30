@@ -109,7 +109,7 @@ export const prefabPlayerFactory = (()=>{
                             parent: board.playerBulletLayer,
                             texture: game.prefabTextures.player.playerBullet.laserAndNova,
                             anchor: 0.5,
-                            alpha: 0.4,
+                            alpha: 0.3,
                             blendMode: "add",
                         });
                         player.forever(loop => {
@@ -148,6 +148,7 @@ export const prefabPlayerFactory = (()=>{
                                                 parent: laser.sprite.parent ?? undefined,
                                                 texture: game.prefabTextures.player.playerBullet.nova,
                                                 anchor: 0.5,
+                                                alpha: 0.7,
                                             });
                                             laser.hitEffects.set(enemy, eff);
                                         }

@@ -56,14 +56,21 @@ export abstract class Entity {
         /** @default this.speed * game.timeScale */dist?: number,
         /** @default this.rotation */rotation?: number,
     }): void;
-    step(dist: number, rotation?: number): void;
-    step(dist: number | { dist?: number, rotation?: number } = {}, rotation?: number) {
-        if (typeof dist !== "number") {
-            rotation = dist.rotation ?? this.rotation;
-            dist = dist.dist ?? this.speed * this.game.timeScale;
+    step(
+        /** @default this.speed * game.timeScale */dist?: number,
+        /** @default this.rotation */rotation?: number
+    ): void;
+    step(arg1: number | { dist?: number, rotation?: number } = {}, arg2?: number) {
+        let dist, rotation;
+        if (typeof arg1 !== "number") {
+            dist = arg1.dist ?? this.speed * this.game.timeScale;
+            rotation = arg1.rotation ?? this.rotation;
+        } else {
+            dist = arg1;
+            rotation = arg2 as number;
         }
-        this.x += Math.cos(this.rotation) * dist;
-        this.y += Math.sin(this.rotation) * dist;
+        this.x += Math.cos(rotation) * dist;
+        this.y += Math.sin(rotation) * dist;
     }
 
     /** 匀变速至目标速度。 */
@@ -371,7 +378,6 @@ export class Gun extends Entity {
     destroyed = false;
 }
 
-// TODO: GunPool
 export const baseMakeGun = (options: {
     game: Game, combat: Combat, board: Board,
     x: number, y: number, rotation: number,

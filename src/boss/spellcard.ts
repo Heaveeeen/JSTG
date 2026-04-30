@@ -26,7 +26,6 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
     if (spellcardOptions.isPlayStartSound) { game.prefabSounds.thse.cat00.play(); }
     game.debug.godMode.dieCount = 0;
 
-    let isMissOrBomb = false;
     let missCount = 0;
     let bombCount = 0;
     let isUsedGodMode = false;
@@ -50,7 +49,7 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
             summaryPopup?.destroy({ children: true });
         },
         get destroyed() {
-            return ownEnemys.some(enemy => enemy.destroyed) || isSpellcardDestroyed || this.timeRemaining <= 0;
+            return ownEnemys.some(enemy => enemy.destroyed) || isSpellcardDestroyed || spellcard.timeRemaining <= 0;
         },
 
         onMiss(options: { player: Player }) { missCount++; },
@@ -58,19 +57,17 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
 
         forever<T>(fn: LooperFn<T>, options: LoopOptions = {}) {
             const loop = board.forever(fn, options);
-            loop.addRefs(this);
+            loop.addRefs(spellcard);
             return loop;
         },
         coDo<T>(genFn: CoDoGenFn<T>, options: LoopOptions = {}) {
             const loop = board.coDo(genFn, options);
-            loop.addRefs(this);
+            loop.addRefs(spellcard);
             return loop;
         },
 
         get mainLoop() { return mainLoop; },
     };
-    spellcard.forever = spellcard.forever.bind(spellcard);
-    spellcard.coDo = spellcard.coDo.bind(spellcard);
     board._spellcardRegList.push(spellcard);
 
     //#region 立绘

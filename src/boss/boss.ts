@@ -13,6 +13,7 @@ export interface NewBossOptions {
     shieldFilters: pixi.Filter[],
     defaultSpellcardFigure: pixi.Texture | "useTheUnknownFigure",
     hpBarHue: number,
+    hpBarPhaseLineHue: number,
 }
 
 export class Boss extends Entity {
@@ -21,6 +22,7 @@ export class Boss extends Entity {
     defaultSpellcardFigure: pixi.Texture | "useTheUnknownFigure";
     shieldFilters: pixi.Filter[];
     hpBarHue: number;
+    hpBarPhaseLineHue: number;
     /** @internal */
     private _shield: CommonEnemy | null = null;
     
@@ -31,6 +33,7 @@ export class Boss extends Entity {
         this.defaultSpellcardFigure = options.defaultSpellcardFigure;
         this.shieldFilters = options.shieldFilters;
         this.hpBarHue = options.hpBarHue;
+        this.hpBarPhaseLineHue = options.hpBarPhaseLineHue;
     }
 
     get x() { return this.sprite.x; }
@@ -47,7 +50,7 @@ export class Boss extends Entity {
     set alpha(n: number) { this.sprite.alpha = n; }
 
     makeSpellcardShield(options: {
-        maxHp: number, birthProtectDuration: number,
+        maxHp: number, phaseHpThresholds: number[], birthProtectDuration: number,
         autoInvincibleMode: AutoInvincibleMode,
     }) {
         if (this._shield !== null) {
@@ -56,7 +59,7 @@ export class Boss extends Entity {
         this._shield = prefabEnemyFactory.makeSpellcardShield({
             game: this.game, combat: this.combat, board: this.board,
             x: this.x, y: this.y, rotation: 0, parent: null,
-            ...options, hpBarHue: this.hpBarHue, isBoss: true,
+            ...options, hpBarHue: this.hpBarHue, hpBarPhaseLineHue: this.hpBarPhaseLineHue, isBoss: true,
         });
         this._shield.danmaku.sprite.filters = this.shieldFilters;
         return this._shield;
@@ -86,8 +89,9 @@ export const baseMakeBoss = (options: {
     defaultSpellcardFigure: pixi.Texture | "useTheUnknownFigure",
     avatar: pixi.Texture | "useTheUnknownAvatar",
     hpBarHue: number,
+    hpBarPhaseLineHue: number,
 }) => {
-    const { game, combat, board, name, x, y, shieldFilters, defaultSpellcardFigure, avatar, hpBarHue } = options;
+    const { game, combat, board, name, x, y, shieldFilters, defaultSpellcardFigure, avatar, hpBarHue, hpBarPhaseLineHue } = options;
     const sprite = new pixi.Sprite({
         parent: board.bossLayer,
         anchor: 0.5,
@@ -97,6 +101,6 @@ export const baseMakeBoss = (options: {
     return new Boss({
         game, combat, board,
         name, defaultSpellcardFigure,
-        sprite, shieldFilters, hpBarHue,
+        sprite, shieldFilters, hpBarHue, hpBarPhaseLineHue,
     });
 };

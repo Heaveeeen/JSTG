@@ -3,6 +3,7 @@ import { AbstractDanmaku, EraseDanmakuOptions, NewAbstractDanmakuOptions, prefab
 import { Game, Board, Player, Combat } from "../jstg.js";
 import * as utils from "../utils.js";
 import { DyedTextures, PrefabDanmakuNames, DyedTextureColors, makeCommonOrAnimatedSprite } from "../textures.js";
+import { LoopController } from "../looper.js";
 
 
 /** 激光上附带的一个端点 */
@@ -215,7 +216,7 @@ export class LaserBeam extends AbstractDanmaku {
         if (options.effectType !== "none" && this.getIsInBoundary() && this.visible && this.alpha > 0) {
             // 如果能看见，则生成消弹特效，之后再删除
             utils.staticAssert<"reduce" | "fog">(options.effectType); // MAYDO: 激光的雾化消弹效果
-            this.game.coDo(this._EraseEffectBehaviorGhost.bind(this));
+            this.board.coDo(this._EraseEffectBehaviorGhost.bind(this));
         } else {
             // 如果看不见，直接删除
             this.destroy();
@@ -223,17 +224,21 @@ export class LaserBeam extends AbstractDanmaku {
     }
     
     /** @internal @generator 虚化至消失 */
-    *_EraseEffectBehaviorGhost() {
+    *_EraseEffectBehaviorGhost(loop: LoopController<void>) {
         if (this.mainSprite.destroyed) { return; }
-        const makeEff = (spr: pixi.Sprite) => new pixi.Sprite({
-            parent: this.board.danmakuEraseLayer,
-            texture: spr.texture,
-            anchor: spr.anchor,
-            x: spr.x, y: spr.y,
-            scale: spr.scale,
-            rotation: spr.rotation,
-            filters: spr.filters,
-        })
+        const makeEff = (spr: pixi.Sprite) => {
+            const effSpr = new pixi.Sprite({
+                parent: this.board.danmakuEraseLayer,
+                texture: spr.texture,
+                anchor: spr.anchor,
+                x: spr.x, y: spr.y,
+                scale: spr.scale,
+                rotation: spr.rotation,
+                filters: spr.filters,
+            });
+            loop.addDestroys(effSpr);
+            return effSpr;
+        };
         const eraseMain = makeEff(this.mainSprite);
         const eraseStartPoint = this.tailPoint ? makeEff(this.tailPoint.sprite) : null;
         const eraseEndPoint = this.headPoint ? makeEff(this.headPoint.sprite) : null;

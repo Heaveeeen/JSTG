@@ -3,10 +3,7 @@
 /// <reference path="./lib/pixi/pixi.d.ts" />
 // ↑ 上面这行用来联动 pixi 的类型注释
 
-// ↓ 在编辑时，把这行注释掉，可以与 .ts 源码联动，对语法服务可能有些帮助。注意在运行时要导入 .js 。
-import * as jstg from "./dist/jstg.js";/*
-import * as jstg from "./src/jstg.ts";/**/
-
+import * as jstg from "./src/jstg.ts";
 import * as pixi from "pixi";
 
 
@@ -18,7 +15,7 @@ import * as pixi from "pixi";
     const { input, app, debug, Sleep, prefabSounds: { thse }, prefabTextures } = game;
     const { debugBar } = debug;
     const { isDown, isUp, isHold, isIdle } = input;
-    const { asAny, UntilDestroy, decibel, deg, lerp, lerpAngle } = utils;
+    const { asAny, UntilDestroy, decibel, deg, lerp, lerpAngle, range } = utils;
 
     const combat = await game.StartCombat()
     const { board, rand } = combat;
@@ -253,6 +250,9 @@ import * as pixi from "pixi";
     //#region 测试 boss
     const non1 = jstg.makeSingleBossSpellOptions({
         time: 30 * 60, hp: 2500,
+        loopFn({ boss, spellcard, shield }) {
+            txt.text = shield.phase;
+        },
         *gen({ boss, spellcard, shield }) { while (true) {
             const foo = (gun, o) => {let r = gun.aimedGun(boss).rotation; gun.forever(loop => {
                 if (loop.clock >= 80) { gun.destroy(); } else {
@@ -416,12 +416,128 @@ import * as pixi from "pixi";
             });
         }
     });
+    const 想起死亡证明 = jstg.makeSingleBossSpellOptions({
+        title: "想起「死亡证明」",
+        phases: [
+            { hp: 1000, time: 30 * 60 },
+            { hp: 2000, time: 30 * 60 },
+            { hp: 5000, time: 30 * 60 },
+            { hp: 6000, time: 30 * 60 },
+        ],
+        *gen({ boss, spellcard, shield }) {
+            boss.glideTo(0, -80);
+            shield.danmaku.isDamageToPlayer = false;
+            const { tan00, kira00, enep02 } = thse;
+            let period1 = 36, period2 = 77, period3 = 151, period4 = 53;
+            // p1
+            spellcard.coDo(function*() { while (true) {
+                for (const i of range(board.halfWidth * 2 / 50)) {
+                    makeDanmaku({
+                        type: "drip", color: "red", rotation: deg(90),
+                        x: 50 * (i + rand.float(0, 1)) - board.halfWidth,
+                        y: -(board.halfHeight + rand.float(0, 1 * period1) + 5),
+                        speed: rand.float(1.2, 1.4),
+                        loopFn({ dan, loop }) {
+                            dan.step();
+                            if (loop.clock > 200) { dan.boundaryDelete(); }
+                        },
+                    });
+                }
+                tan00.play(decibel(-15));
+                yield* Sleep(period1);
+            }});
+            while (shield.phase <= 1) { yield; }
+            board.danmakuRegList.getAlives().forEach(dan => { if (dan.y >= -180) { dan.erase(); } });
+            tan00.play(decibel(-6)); // FIXME: 这个音效貌似能够播放，但音量不正确，其响度似乎不是 -6db ，而是上一次播放该音效时的 -15db
+            // p2
+            spellcard.coDo(function*() { while (true) {
+                for (const i of range(board.halfWidth * 2 / 50)) {
+                    makeDanmaku({
+                        type: "drip", color: "h300", rotation: deg(90),
+                        x: 50 * (i + rand.float(0, 1)) - board.halfWidth,
+                        y: -(board.halfHeight + rand.float(0, 0.67 * period2) + 5),
+                        speed: rand.float(0.8, 0.95),
+                        loopFn({ dan, loop }) {
+                            dan.step();
+                            if (loop.clock > 200) { dan.boundaryDelete(); }
+                        },
+                    });
+                }
+                tan00.play(decibel(-15));
+                yield* Sleep(period2);
+            }});
+            while (shield.phase <= 2) { yield; }
+            board.danmakuRegList.getAlives().forEach(dan => { if (dan.y >= -180) { dan.erase(); } });
+            tan00.play(decibel(-6));
+            // p3
+            spellcard.coDo(function*() { yield* Sleep(30); while (true) {
+                makeFoggyDanmaku({
+                    type: "bubble", color: "h120",
+                    ...boss.xy,
+                    fn({ dan: bubble }) {
+                        let vx = rand.float(1.55, 1.8);
+                        if (rand.maybe(0.5)) { vx *= -1; }
+                        let vy = -5;
+                        bubble.forever(loop => {
+                            bubble.x += vx * game.timeScale;
+                            bubble.y += vy * game.timeScale;
+                            vy += 0.3 * game.timeScale;
+                            if (vy > 6) { vy = 6; }
+                            if (bubble.y > board.halfHeight - 12) {
+                                enep02.play(decibel(-3));
+                                bubble.aimedGun(pl).ringBlast(13).forEach(gun => {
+                                    const makeScale = speed => makeDanmaku({
+                                        type: "scale", color: rand.select(["h30", "h60"]),
+                                        ...gun, speed,
+                                        loopFn({ dan: scale }) {
+                                            scale.step();
+                                            scale.speed += 0.02 * scale.speed * game.timeScale;
+                                            scale.boundaryDelete();
+                                        }
+                                    });
+                                    for (let speed = 0.4; speed <= 2.0; speed += 0.3) {
+                                        makeScale(speed);
+                                    }
+                                    makeScale(rand.float(0.44, 1.86));
+                                    makeScale(rand.float(0.44, 1.86));
+                                    makeScale(rand.float(0.44, 1.86));
+                                    makeScale(rand.float(0.44, 1.86));
+                                });
+                                bubble.erase();
+                            }
+                        });
+                    },
+                });
+                kira00.play(decibel(-3));
+                yield* Sleep(period3);
+            }});
+            while (shield.phase <= 3) { yield; }
+            board.danmakuRegList.getAlives().forEach(dan => { if (dan.y >= -180) { dan.erase(); } });
+            tan00.play(decibel(-6));
+            // p4
+            spellcard.coDo(function*() { while (true) {
+                boss.aimedGun(pl).scatter({ deg: 4, amount: 4 }).forEach(gun => makeFoggyDanmaku({
+                    type: "knife", color: "h210",
+                    ...gun, speed: 4,
+                    fn({ dan }) { dan.sprite.blendMode = "add"; },
+                    loopFn({ dan }) {
+                        dan.step();
+                        dan.speedToA(1.5, 0.05);
+                        dan.boundaryDelete();
+                    },
+                }));
+                kira00.play(decibel(-3));
+                yield* Sleep(period4);
+            }});
+        },
+    });
     const fooBoss = () => coDo(function*() {
         yield* Sleep(30);
         const boss = board.makeBoss(game.prefabCharInfos.koke.boss);
         const battle = board.startSingleBossBattle({
             boss,
             spells: [
+                想起死亡证明,
                 non1,
                 漫天落雪,
                 //non2, { title: "aaaaaaaa", hp: 50, time: 15 * 60 }, { title: "bbbbbbbb", hp: 50, time: 15 * 60}

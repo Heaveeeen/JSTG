@@ -80,7 +80,7 @@ export const makeReigekiRing = (options: {
         ring.scale = radius / 100;
         ring.rotation -= utils.deg(20 + Math.random() * 40) * game.timeScale; // RAND: 灵击圈旋转
         board.enemyRegList.getAlives().forEach(enemy => enemy.beHurt(
-            enemy.danmaku.getIsCrossCircle({ x: ring.x, y: ring.y, radius }) ? insideDamage : outsideDamage,
+            (enemy.danmaku.getIsCrossCircle({ x: ring.x, y: ring.y, radius }) ? insideDamage : outsideDamage) * game.timeScale,
             { isEffectByBirthProtect: !pierceEnemys.has(enemy) },
         ));
         board.danmakuRegList.eraseByRadius({ x: ring.x, y: ring.y, radius });

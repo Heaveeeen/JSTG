@@ -106,7 +106,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
     await app.init(gameOptions.pixiApplicationOptions ?? {
         backgroundColor: "#000000",
-        //preference: "webgl",
+        preference: "webgl", // hslaFilter 暂未适配 webgpu
         useBackBuffer: true,
         hello: true,
     });
@@ -306,16 +306,24 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 /** @default "useTheUnknownFigure" */figure?: pixi.Texture | "useTheUnknownFigure",
                 /** @default "useTheUnknownAvatar" */avatar?: pixi.Texture | "useTheUnknownAvatar",
                 /** @default 0 */hpBarHue?: number,
-            } = {}) => baseMakeBoss({
-                game, combat, board,
-                name: options.name ?? "JSTG Boss",
-                x: options.x ?? 0,
-                y: options.y ?? -100,
-                shieldFilters: utils.makeElements(options.shieldFilters),
-                defaultSpellcardFigure: options.figure ?? "useTheUnknownFigure",
-                avatar: options.avatar ?? "useTheUnknownAvatar",
-                hpBarHue: options.hpBarHue ?? 0,
-            });
+                /** @default 256 */hpBarPhaseLineHue?: number,
+            } = {}) => {
+                const boss = baseMakeBoss({
+                    game, combat, board,
+                    name: options.name ?? "JSTG Boss",
+                    x: options.x ?? 0,
+                    y: options.y ?? -100,
+                    shieldFilters: utils.makeElements(options.shieldFilters),
+                    defaultSpellcardFigure: options.figure ?? "useTheUnknownFigure",
+                    avatar: options.avatar ?? "useTheUnknownAvatar",
+                    hpBarHue: options.hpBarHue ?? 0,
+                    hpBarPhaseLineHue: options.hpBarPhaseLineHue ?? 256,
+                });
+                if (debugOptions.isExposeToGlobal) {
+                    console.log("JSTG boss", boss);
+                }
+                return boss;
+            };
 
             const startSingleBossBattle = (options: {
                 /** @default boss.name */
@@ -525,9 +533,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     /** @default board.commonEnemyLayer */
                     parent?: pixi.Container,
                     /**
-                     * 这个参数可以用来让敌人不吃 Bomb 。  
-                     * "noDamageWhilePlayerInvincible" - 一旦玩家获得无敌帧或 Miss ，这个敌人也会随之进入无敌状态，免疫所有伤害。  
-                     * "ghostWhilePlayerInvincible" - 一旦玩家获得无敌帧或 Miss ，这个敌人会随之进入无法选中的虚化状态，无法受到任何伤害，并且不会被诱导弹索敌等等。  
+                     * TODOC: autoInvincibleMode
                      * @default "none"
                      */
                     autoInvincibleMode?: AutoInvincibleMode,
@@ -803,7 +809,9 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 if (isDestroyGun) { board.gunRegList.getAlives().forEach(gun => gun.destroy()); }
             }); }
 
-            console.log("JSTG board:", board);
+            if (debugOptions.isExposeToGlobal) {
+                console.log("JSTG board:", board);
+            }
 
             return board;
         })();// TODO: 粒子效果
@@ -923,7 +931,9 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
         const combatClockLoop = combat.forever(()=>{}, { order: 0 });
 
-        console.log("JSTG combat:", combat);
+        if (debugOptions.isExposeToGlobal) {
+            console.log("JSTG combat:", combat);
+        }
 
         return combat;
     }
@@ -1009,19 +1019,20 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 root.appendChild(title);
             }
 
+            // TODO: addMonitor, inputMonitor, danmakuCountMonitor
+
             document.body.appendChild(root);
 
             const inputs: Record<string, ({ value: string }) | undefined> = {};
 
-            const show = (options: {
-            } = {}) => {
+            const show = () => {
                 document.body.style.justifyContent = "start";
                 root.style.display = "flex";
-            }
+            };
             const hide = () => {
                 document.body.style.justifyContent = "center";
                 root.style.display = "none";
-            }
+            };
 
             const makeDiv = (name: string) => {
                 const div = document.createElement("div");
@@ -1145,20 +1156,21 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
     })();
 
     type CharInfo = {
-        hsla1: HslaColor;
-        hsla2: HslaColor;
+        hsla1: HslaColor,
+        hsla2: HslaColor,
         player: {
             name: string,
-            avatarTexture: pixi.Texture;
-            filters: pixi.Filter[];
+            avatarTexture: pixi.Texture,
+            filters: pixi.Filter[],
         },
         boss: {
-            name: string;
-            shieldFilters: pixi.Filter[];
-            figure: pixi.Texture | "useTheUnknownFigure";
-            avatar: pixi.Texture | "useTheUnknownAvatar";
-            hpBarHue: number;
-        };
+            name: string,
+            shieldFilters: pixi.Filter[],
+            figure: pixi.Texture | "useTheUnknownFigure",
+            avatar: pixi.Texture | "useTheUnknownAvatar",
+            hpBarHue: number,
+            hpBarPhaseLineHue: number,
+        },
     };
 
     function makeJstgCharInfo(options: {
@@ -1174,8 +1186,10 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         shieldHsla: HslaOptions | null,
         /** @default hsla2.h */
         bossHpBarHue: number | null,
+        /** @default 250 */
+        bossHpBarPhaseLineHue: number | null,
     }): CharInfo {
-        let { playerName, bossName, defaultSpellcardFigure, avatar, color1, color2, playerHue, shieldHsla, bossHpBarHue } = options;
+        let { playerName, bossName, defaultSpellcardFigure, avatar, color1, color2, playerHue, shieldHsla, bossHpBarHue, bossHpBarPhaseLineHue } = options;
         //defaultSpellcardFigure ??= "useTheUnknownFigure";
         //avatar ??= "useTheUnknownAvatar";
         //color1 ??= "#ff3333";
@@ -1185,6 +1199,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         playerHue ??= hsla1.h;
         shieldHsla ??= hsla2;
         bossHpBarHue ??= hsla2.h;
+        bossHpBarPhaseLineHue ??= 250;
 
         const playerHueFilter = new pixi.ColorMatrixFilter({ resolution: "inherit" });
         playerHueFilter.hue(playerHue, false);
@@ -1199,7 +1214,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             boss: {
                 name: bossName, figure: defaultSpellcardFigure, avatar,
                 shieldFilters: [shieldHslaFilter],
-                hpBarHue: bossHpBarHue,
+                hpBarHue: bossHpBarHue, hpBarPhaseLineHue: bossHpBarPhaseLineHue,
             },
         };
     }
@@ -1212,7 +1227,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             avatar: prefabTextures.avatar.simple,
             color1: "#80c2ff",
             color2: "#bfe9ff",
-            playerHue: null, shieldHsla: null, bossHpBarHue: null,
+            playerHue: null, shieldHsla: null, bossHpBarHue: null, bossHpBarPhaseLineHue: null,
         }),
         maple: makeJstgCharInfo({
             playerName: "maple",
@@ -1221,7 +1236,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             avatar: prefabTextures.avatar.maple,
             color1: "#ffad33",
             color2: "#ffd931",
-            playerHue: null, shieldHsla: null, bossHpBarHue: null,
+            playerHue: null, shieldHsla: null, bossHpBarHue: null, bossHpBarPhaseLineHue: null,
         }),
         // TODO: icu, wriggle
         jstgDummyUnknown: makeJstgCharInfo({
@@ -1231,7 +1246,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             avatar: prefabTextures.avatar.unknown,
             color1: "#ff3333",
             color2: "#ff8080",
-            playerHue: null, shieldHsla: null, bossHpBarHue: null,
+            playerHue: null, shieldHsla: null, bossHpBarHue: null, bossHpBarPhaseLineHue: null,
         }),
         koke: makeJstgCharInfo({
             playerName: "koke",
@@ -1240,7 +1255,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             avatar: prefabTextures.avatar.koke,
             color1: "#71799e",
             color2: "#9cc8f0",
-            playerHue: null, shieldHsla: null, bossHpBarHue: null,
+            playerHue: null, shieldHsla: null, bossHpBarHue: null, bossHpBarPhaseLineHue: null,
         }),
     } as const;
 
@@ -1345,11 +1360,16 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         prefabCharInfos,
         /** 弹幕引擎 ghost to 同款。 */
         alphaTo,
+
+        /** @internal */
+        _debugOptions: debugOptions,
     };
 
     //#endregion game
 
-    console.log("JSTG game:", game);
+    if (debugOptions.isExposeToGlobal) {
+        console.log("JSTG game:", game);
+    }
 
     return game;
 

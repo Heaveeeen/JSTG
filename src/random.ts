@@ -2,7 +2,7 @@ import * as utils from "./utils.js";
 
 
 type NewRngOptions = {
-    /** 随机种子，可选，留空会自动帮你填上一个随机数 */
+    /** 随机种子，可选，留空会自动帮你填上一个随机数。 */
     seed?: number;
     /** @default 1664525 */
     a?: number;
@@ -40,13 +40,13 @@ export class Rng {
      * @example
      * rng.float(0, 4) // 可能是：0.3547, 3.5813, 1.2, ...
      */
-    float(from: number, to: number) { return this._next() / this.m * (to - from) + from; }
+    float(from: number = 0, to: number = 1) { return this._next() / this.m * (to - from) + from; }
     /**
      * 返回一个 [from, to) 范围内的随机整数
      * @example
      * rng.int(2, 8) // 可能是：7, 2, 4, 5, ... 不可能是 8
      */
-    int(from: number, to: number) { return this._next() / this.m * (to - from) + from | 0; }
+    int(from: number = 0, to: number = 1) { return (this._next() / this.m * (to - from) + from) | 0; }
     /** 
      * 有 prob 的概率返回 true ，否则返回 false
      * @example
@@ -55,7 +55,7 @@ export class Rng {
      *     // 有 7/19 的概率执行这里
      * }
      */
-    maybe(prob: number) { return (this._next() / this.m) < prob; }
+    maybe(prob: number = 0.5) { return (this._next() / this.m) < prob; }
     /** 
      * 根据权重随机选择一个结果返回
      * @example

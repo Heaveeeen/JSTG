@@ -4,10 +4,33 @@ import { baseStartSpellcard, spde_UiGradient, Spellcard } from "./spellcard.js";
 import { AutoInvincibleMode, CommonEnemy } from "../entity/commonEnemy.js";
 import { LooperFn, LoopOptions, CoDoGenFn, CoDoGenerator, LoopController } from "../looper.js";
 import { Boss } from "./boss.js";
+import * as utils from "../utils.js";
 
 
 
 const _startupDuration = 60;
+
+export interface BaseStartCommonSpellcardOptions {
+    figure?: pixi.Texture,
+    title: string,
+    birthProtectDuration?: number,
+    /** @default true */
+    isShowFigureAndTitle?: boolean,
+    /**
+     * TODOC: autoInvincibleMode
+     * @default "none"
+     */
+    autoInvincibleMode?: AutoInvincibleMode,
+}
+
+export interface SinglePhaseStartCommonSpellcardOptions extends BaseStartCommonSpellcardOptions {
+    time: number,
+    hp: number,
+}
+
+export interface MultiPhaseStartCommonSpellcardOptions extends BaseStartCommonSpellcardOptions {
+    phases: { hp: number, time: number }[],
+}
 
 /** TODOC: baseMakeSingleBossBattleController */
 export const baseMakeSingleBossBattleController = (manualBossBattleOptions: {
@@ -92,23 +115,35 @@ export const baseMakeSingleBossBattleController = (manualBossBattleOptions: {
         };
     })();
 
-    const startCommonSpellcard = (options: {
-        time: number,
-        hp: number,
-        figure?: pixi.Texture,
-        title: string,
-        birthProtectDuration?: number,
-        /** @default true */
-        isShowFigureAndTitle?: boolean,
-        /**
-         * 这个参数可以用来让敌人不吃 Bomb 。  
-         * "noDamageWhilePlayerInvincible" - 一旦玩家获得无敌帧或 Miss ，这个敌人也会随之进入无敌状态，免疫所有伤害。  
-         * "ghostWhilePlayerInvincible" - 一旦玩家获得无敌帧或 Miss ，这个敌人会随之进入无法选中的虚化状态，无法受到任何伤害，并且不会被诱导弹索敌等等。  
-         * @default "none"
-         */
-        autoInvincibleMode?: AutoInvincibleMode,
-    }) => {
-        const { time, title, hp, figure } = options;
+    const startCommonSpellcard = (options: SinglePhaseStartCommonSpellcardOptions | MultiPhaseStartCommonSpellcardOptions) => {
+        const { hp, time, phases } = (()=>{
+            if ((options as SinglePhaseStartCommonSpellcardOptions).time !== undefined) {
+                return { ...options, phases: [options] } as SinglePhaseStartCommonSpellcardOptions & MultiPhaseStartCommonSpellcardOptions;
+            } else {
+                const { phases } = (options as MultiPhaseStartCommonSpellcardOptions);
+                let hp = 0, time = 0;
+                for (const phase of phases) {
+                    hp += phase.hp;
+                    time += phase.time;
+                }
+                return { hp, time, phases };
+            }
+        })();
+        const phaseHpThresholds: number[] = [];
+        const phaseTimeThresholds: number[] = [];
+        {
+            let hpThr = hp;
+            let timeThr = time;
+            for (let i = 0; i < phases.length - 1; i++) {
+                const phase = phases[i];
+                hpThr -= phase.hp;
+                phaseHpThresholds.push(hpThr);
+                timeThr -= phase.time;
+                phaseTimeThresholds.push(timeThr);
+            }
+            phaseHpThresholds.reverse();
+        }
+        const { title, figure } = options;
         const isShowFigureAndTitle = options.isShowFigureAndTitle ?? true;
         const birthProtectDuration = options.birthProtectDuration ?? 250;
         const opt = isShowFigureAndTitle ? {
@@ -118,7 +153,7 @@ export const baseMakeSingleBossBattleController = (manualBossBattleOptions: {
             isPlayStartSound: false,
             figure: "noFigure",
         } as const;
-        const shield = refBoss.makeSpellcardShield({ maxHp: hp, birthProtectDuration, autoInvincibleMode: options.autoInvincibleMode ?? "none" });
+        const shield = refBoss.makeSpellcardShield({ maxHp: hp, phaseHpThresholds, birthProtectDuration, autoInvincibleMode: options.autoInvincibleMode ?? "none" });
         const spellcard = baseStartSpellcard({
             game, combat, board,
             title, time, ...opt,
@@ -139,6 +174,16 @@ export const baseMakeSingleBossBattleController = (manualBossBattleOptions: {
                 t += game.timeScale;
             }
         }).then(() => refBoss.stopGlide());
+        spellcard.forever(loop => {
+            // thrs = [90, 60, 30]
+            // phase = 1: timeRem <= thr[phase - 1] => popPhase();
+            // phase = 2: timeRem <= thr[phase - 1] => popPhase();
+            // ...
+            // phase = 4: not (phase <= len) => break;
+            while (shield.phase <= phaseTimeThresholds.length && spellcard.timeRemaining < phaseTimeThresholds[shield.phase - 1]) {
+                shield._popPhase();
+            }
+        });
         return { spellcard, shield, startupLoop };
     };
 
@@ -220,9 +265,9 @@ interface BaseSpellOptions {
     isSurvival?: boolean,
     /** @default 2400 */
     time?: number,
-    /** 不填写此参数，则采用构造战斗时设定的默认立绘；填写此参数，可以给这个符卡设定另一张立绘。（对非符无效，因为非符没有立绘） */
+    /** 若不填写此参数，则采用构造战斗时设定的默认立绘；填写此参数，可以给这个符卡设定另一张立绘。（对非符无效，因为非符没有立绘） */
     figure?: pixi.Texture,
-    /** 不填写此参数，则该符卡为非符 */
+    /** 若不填写此参数，则该符卡为非符 */
     title?: string | number,
 }
 
@@ -231,14 +276,24 @@ interface CommonSpellOptions extends BaseSpellOptions {
     /** @default 3000 */
     hp?: number,
     /**
+     * 使用该参数，可以创建一个拥有多个阶段的符卡。  
+     * 该参数是一个列表，列表中的每一项都代表符卡的一个阶段。  
+     * ⚠️phases 参数会覆盖 hp 和 time 参数！  
+     * @example
+     * {
+     *     phases: [{ hp: 2000, time: 20 * 60 }, { hp: 4500, time: 30 * 60 }, { hp: 3500, time: 40 * 60 }],
+     * }
+     * // ↑ 这张符卡共有三个阶段：p1 有 2000 血，p2 有 4500 血，p3 有 3500 血，整张符卡共有 10000 血。
+     * // 这张符卡的时间限制为 (20+30+40 = 90) 秒。在倒计时到达 (90-20 = 70) 秒时，强制进入 p2 ；在倒计时到达 (70-30 = 40) 秒时，强制进入 p3 。
+     */
+    phases?: { hp: number, time: number }[],
+    /**
      * 对于符卡，250 的出生保护近似等效于 3 秒无敌。《风神录》中的符卡保护差不多就是这个数。
      * @default 250
      */
     birthProtectDuration?: number,
     /**
-     * 这个参数可以用来让敌人不吃 Bomb 。  
-     * "noDamageWhilePlayerInvincible" - 一旦玩家获得无敌帧或 Miss ，这个敌人也会随之进入无敌状态，免疫所有伤害。  
-     * "ghostWhilePlayerInvincible" - 一旦玩家获得无敌帧或 Miss ，这个敌人会随之进入无法选中的虚化状态，无法受到任何伤害，并且不会被诱导弹索敌等等。  
+     * TODOC: autoInvincibleMode
      * @default "none"
      */
     autoInvincibleMode?: AutoInvincibleMode,
@@ -305,11 +360,11 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
                 yield* spellController.spellcard.mainLoop;
             } else {
                 const spellController = battle.startCommonSpellcard({
-                    title, time, figure, isShowFigureAndTitle,
-                    hp: info.hp ?? 3000,
+                    title, figure, isShowFigureAndTitle,
                     birthProtectDuration: info.birthProtectDuration,
                     autoInvincibleMode: info.autoInvincibleMode,
-                })
+                    ...(info.phases ? { phases: info.phases } : { time, hp: info.hp ?? 3000 }),
+                });
                 yield* spellController.startupLoop;
                 const { fn, loopFn, gen } = info;
                 fn?.({ ...spellController, boss: ownBoss });
