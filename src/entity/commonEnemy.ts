@@ -10,7 +10,7 @@ import { LoopController } from "../looper.js";
 export type AutoInvincibleMode = "none" | "noDamageWhilePlayerInvincible" | "ghostWhilePlayerInvincible";
 // MAYDO: 车万原作有的符，我感觉是吃 B 的，但又不完全吃，主要是一些终符……比方说石之女神，我怀疑那玩意是不吃 B 本身的伤害，但放 B 期间开枪能打出伤害。我得做个替代品，比方说“放 B 期间受伤减半”啥的。
 
-interface NewCommonEnemyOptions extends newAbstractEnemyOptions<CommonDanmaku> {
+export interface NewCommonEnemyOptions extends newAbstractEnemyOptions<CommonDanmaku> {
     /** @default danmaku.hitboxRadius */
     hurtHitboxRadius: number | null,
     maxHp: number,

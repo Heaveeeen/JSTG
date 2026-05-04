@@ -1,7 +1,7 @@
 import * as pixi from "pixi";
 import { Game, Combat, Board } from "../jstg.js";
 import { DyedTextureColors } from "../textures.js";
-import { AutoInvincibleMode, CommonEnemy } from "./commonEnemy.js";
+import { AutoInvincibleMode, CommonEnemy, NewCommonEnemyOptions } from "./commonEnemy.js";
 import { CommonDanmaku } from "./commonDanmaku.js";
 
 export const prefabEnemyFactory = (()=>{
@@ -14,11 +14,12 @@ export const prefabEnemyFactory = (()=>{
         parent: pixi.Container | null,
         birthProtectDuration: number,
         //scale: number,
-        // TODO: hitboxRadius, isCanHurt, isTouchingDamage, isCanGraze, hpBarType
+        // TODO: hitboxRadius, isCanHurt, isTouchingDamage, isCanGraze, animRotation(?)
+        hpBar: NewCommonEnemyOptions["hpBar"],
         autoInvincibleMode: AutoInvincibleMode,
         isBoss: boolean,
     }) => {
-        const { game, combat, board, maxHp, color, x, y, rotation, birthProtectDuration, autoInvincibleMode, isBoss } = options;
+        const { game, combat, board, maxHp, color, x, y, rotation, birthProtectDuration, autoInvincibleMode, isBoss, hpBar } = options;
         const rootSprite = new pixi.Sprite({
             parent: options.parent ?? board.commonEnemyLayer,
             x, y, rotation, anchor: 0.5,
@@ -52,7 +53,7 @@ export const prefabEnemyFactory = (()=>{
             canBeErase: false,
             birthProtectDuration,
             afterBeHurtCallback: null,
-            hpBar: null, autoInvincibleMode, isBoss,
+            hpBar, autoInvincibleMode, isBoss,
         });
         enemy.forever(loop => {
             outerRing.rotation -= 0.07;
@@ -72,7 +73,7 @@ export const prefabEnemyFactory = (()=>{
         hpBarHue: number,
         hpBarPhaseLineHue: number,
         //scale: number, 
-        // TODO: hitboxRadius, isCanHurt, isTouchingDamage, isCanGraze, animRotation(?), hpBarType
+        // TODO: hitboxRadius, isCanHurt, isTouchingDamage, isCanGraze
         autoInvincibleMode: AutoInvincibleMode,
         isBoss: boolean,
     }) => {

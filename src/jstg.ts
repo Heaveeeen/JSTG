@@ -18,7 +18,7 @@ import { baseStartSingleBossBattle, SingleBossSpellOptions, makeSingleBossSpellO
 import { baseMakeBoss, Boss, NewBossOptions } from "./boss/boss.js";
 import { HslaFilter, HslaColor, PartialHslaColor, makeHsla, HslaOptions } from "./graphics/hslaFilter.js";
 import { baseMakeGun, Gun } from "./entity/entity.js";
-import { AutoInvincibleMode } from "./entity/commonEnemy.js";
+import { AutoInvincibleMode, NewCommonEnemyOptions } from "./entity/commonEnemy.js";
 import { fillKeyMapOptions, PlayerKeyMapOptions } from "./player/playerController.js";
 
 
@@ -539,6 +539,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     autoInvincibleMode?: AutoInvincibleMode,
                     /** @default false */
                     isBoss?: boolean,
+                    hpBar?: NewCommonEnemyOptions["hpBar"],
                 } = {}) => prefabEnemyFactory.makeYinYangOrb({
                     game, combat, board,
                     maxHp: options.maxHp ?? 30,
@@ -548,6 +549,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                     birthProtectDuration: 30,
                     autoInvincibleMode: options.autoInvincibleMode ?? "none",
                     isBoss: options.isBoss ?? false,
+                    hpBar: options.hpBar ?? null,
                 });
 
                 return {
