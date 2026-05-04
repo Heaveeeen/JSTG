@@ -226,6 +226,7 @@ export class LaserBeam extends AbstractDanmaku {
     /** @internal @generator 虚化至消失 */
     *_EraseEffectBehaviorGhost(loop: LoopController<void>) {
         if (this.mainSprite.destroyed) { return; }
+        // 激光消弹姑且不做音效
         const makeEff = (spr: pixi.Sprite) => {
             const effSpr = new pixi.Sprite({
                 parent: this.board.danmakuEraseLayer,

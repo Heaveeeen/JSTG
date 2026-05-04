@@ -155,6 +155,7 @@ export class CommonDanmaku extends AbstractDanmaku {
     /** @internal @generator 雾化消失 */
     private *_EraseEffectBehaviorFog(loop: LoopController<void>) {
         if (this.sprite.destroyed) { return; }
+        this.game.prefabSounds.thse.etbreak.play(utils.decibel(-6));
         const color = this.color === "noColor" ? "red" : this.color;
         const eraseEffectSprite = new pixi.Sprite({
             parent: this.board.danmakuEraseLayer,
@@ -179,6 +180,7 @@ export class CommonDanmaku extends AbstractDanmaku {
     /** @internal @generator 缩小虚化至消失 */
     private *_EraseEffectBehaviorReduce(loop: LoopController<void>) {
         if (this.sprite.destroyed) { return; }
+        this.game.prefabSounds.thse.etbreak.play(utils.decibel(-3));
         const eraseEffectSprite = new pixi.Sprite({
             parent: this.board.danmakuEraseLayer,
             texture: this.sprite.texture,
