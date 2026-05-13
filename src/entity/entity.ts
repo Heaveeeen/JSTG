@@ -298,7 +298,7 @@ export abstract class Entity {
     chargeIn(options: {
         /** @default "thse_ch02" */
         sound?: "none" | "thse_ch02",
-        /** @default prefabGraphicEffectsFactory.chargeRingWhiteFilter */
+        /** @default prefabGraphicEffectsFactory.defaultWhiteFilter */
         filters?: pixi.Filter | readonly pixi.Filter[] | "none",
     } = {}) {
         if (options.sound === "thse_ch02" || options.sound === undefined) {
@@ -309,14 +309,14 @@ export abstract class Entity {
         return prefabGraphicEffectsFactory.chargeIn({
             game: this.game, combat: this.combat, board: this.board,
             refPos: this,
-            filters: options.filters === "none" ? null : options.filters ?? prefabGraphicEffectsFactory.chargeRingWhiteFilter,
+            filters: options.filters === "none" ? null : options.filters ?? prefabGraphicEffectsFactory.defaultWhiteFilter,
         });
     }
 
     chargeOut(options: {
         /** @default "thse_enep02" */
         sound?: "none" | "thse_enep02"
-        /** @default prefabGraphicEffectsFactory.chargeRingWhiteFilter */
+        /** @default prefabGraphicEffectsFactory.defaultWhiteFilter */
         filters?: pixi.Filter | readonly pixi.Filter[] | "none",
     } = {}) {
         if (options.sound === "thse_enep02" || options.sound === undefined) {
@@ -327,7 +327,7 @@ export abstract class Entity {
         return prefabGraphicEffectsFactory.chargeOut({
             game: this.game, combat: this.combat, board: this.board,
             refPos: this,
-            filters: options.filters === "none" ? null : options.filters ?? prefabGraphicEffectsFactory.chargeRingWhiteFilter,
+            filters: options.filters === "none" ? null : options.filters ?? prefabGraphicEffectsFactory.defaultWhiteFilter,
         });
     }
 

@@ -6,7 +6,7 @@ import * as utils from "./utils.js";
 
 export const prefabGraphicEffectsFactory = (() => {
 
-    const chargeRingWhiteFilter = new HslaFilter("hsla(0, 0%, 100%, 0.8)");
+    const defaultWhiteFilter = new HslaFilter("hsla(0, 0%, 100%, 0.8)");
 
     const makeBossChargeRing = (options: {
         game: Game, combat: Combat, board: Board,
@@ -71,7 +71,7 @@ export const prefabGraphicEffectsFactory = (() => {
     };
 
     return {
-        chargeRingWhiteFilter,
+        defaultWhiteFilter,
         makeBossChargeRing,
         chargeIn, chargeOut,
     }
