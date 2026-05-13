@@ -193,7 +193,7 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
             plStateBarFrame: {
                 spdeCommon: await lsvg(`boardFrameUi/plStateBarFrame/spdeCommon.svg`, 3),
                 spdeWideScreen: await lsvg(`boardFrameUi/plStateBarFrame/spdeWideScreen.svg`),
-            }
+            },
         },
         player: {
             hitbox: await lsvg(`player/hitbox.svg`),
@@ -201,6 +201,7 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
             slowMode: await lsvg(`player/slowMode.svg`),
             missFilter: await lsvg(`player/missFilter.svg`),
             reigekiRing: await lsvg(`player/reigekiRing.svg`),
+            seasonReleaseRing: await lsvg(`player/seasonReleaseRing.svg`),
             drone: {
                 simpleDrone: await lsvg(`player/drone/simpleDrone.svg`),
             },
@@ -211,7 +212,7 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
                 simpleBullet: {
                     head: await lsvg(`player/playerBullet/simpleBullet/head.svg`),
                     trail: await lsvg(`player/playerBullet/simpleBullet/trail.svg`),
-                }
+                },
             },
         },
         avatar: {
@@ -257,7 +258,14 @@ export async function LoadPrefabTextures(options: LoadPrefabTexturesOptions) {
                 dodge: await lsvg(`spellcardUi/summaryPopup/dodge.svg`),
                 godMode: await lsvg(`spellcardUi/summaryPopup/godMode.svg`),
             },
-        }
+        },
+        effects: {
+            aimLine: await lsvg(`effects/aimLine.svg`),
+            aimRange: await lsvg(`effects/aimRange.svg`),
+            chargeRing: await lsvg(`effects/chargeRing.svg`),
+            explode: await lsvg(`effects/explode.svg`),
+            leaf: await lsvg(`effects/leaf.svg`),
+        },
     }
 }
 

@@ -375,7 +375,11 @@ export const baseStartSingleBossBattle = (bossBattleOptions: {
             battle.scCounterBar.popStar();
             const nextInfo = spellInfos[i + 1] as SingleBossSpellOptions | undefined;
             if (nextInfo && typeof info.title === "string" && typeof nextInfo.title === "string") {
-                yield* game.Sleep(60);
+                yield* game.Sleep(30);
+                // ↑ 此处的等待意为：两个连续的符卡之间会间隔一小段时间。
+                // 车万原作中，两个连续的符卡之间会明显空出一小段时间，这是因为符卡的结尾有收卡提示，并且符卡有较长的前摇，这两者加起来就显得像空出来了很长时间。
+                // 非符没有前后摇，所以非符与符卡相连不会有这种等待时间。
+                // JSTG 为了模仿这种留白，额外加上了这么一处等待……大概是为了放慢游戏节奏吧。两个符卡紧挨着总感觉有点不对劲。
             }
         }
     }).then(() => board.coDo(function*() {

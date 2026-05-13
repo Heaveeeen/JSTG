@@ -201,7 +201,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         }
     }
 
-    const alphaTo: typeof utils.alphaTo = (spr, dst, speed) => utils.alphaTo(spr, dst, speed * timeScale);
+    const alphaTo = (spr: { alpha: number }, dst: number, speed: number) => utils.alphaTo(spr, dst, speed * timeScale);
 
     const input = makeInput({ app });
     if (gameOptions.autoUpdateInput ?? true) { looper.forever(() => input._update(), { order: 0 }); }
@@ -359,31 +359,33 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 /** 根节点 */
                 root: boardRoot,
                 /** Miss 出来那几个交叉圈的图层。 */
-                missFilterLayer: makeBoardLayer(150),
+                missFilterLayer: makeBoardLayer(1500),
                 /** 自机前半部分所属的图层。 */
-                playerFrontLayer: makeBoardLayer(100),
+                playerFrontLayer: makeBoardLayer(1000),
                 /** 符卡 UI 的图层，包括符卡名称、计时器等等。 */
-                spellcardUiLayer: makeBoardLayer(50),
+                spellcardUiLayer: makeBoardLayer(500),
                 /** 所有普通弹幕节点的图层 */
-                commonDanmakuLayer: makeBoardLayer(20),
+                commonDanmakuLayer: makeBoardLayer(200),
                 /** 自机发射出的所有子弹的图层 */
-                playerBulletLayer: makeBoardLayer(-5),
+                playerBulletLayer: makeBoardLayer(-50),
                 /** 自机扔出的灵击圈（默认 Bomb ）所在的图层 */
-                reigekiRingLayer: makeBoardLayer(-10),
+                reigekiRingLayer: makeBoardLayer(-100),
+                /** boss 蓄力特效所在的图层 */
+                bossChargeRingLayer: makeBoardLayer(-200),
                 /** 所有常规敌人的图层 */
-                commonEnemyLayer: makeBoardLayer(-30),
+                commonEnemyLayer: makeBoardLayer(-300),
                 /** Boss 防护罩的图层 */
-                bossShieldLayer: makeBoardLayer(-40),
+                bossShieldLayer: makeBoardLayer(-400),
                 /** Boss 本体的图层 */
-                bossLayer: makeBoardLayer(-50),
+                bossLayer: makeBoardLayer(-500),
                 /** 所有消弹特效的图层 */
-                danmakuEraseLayer: makeBoardLayer(-60),
+                danmakuEraseLayer: makeBoardLayer(-600),
                 /** 自机后半部分所属的图层。 */
-                playerBackLayer: makeBoardLayer(-100),
+                playerBackLayer: makeBoardLayer(-1000),
                 /** 敌人血条所属的图层。 */
-                enemyHpBarLayer: makeBoardLayer(-150),
+                enemyHpBarLayer: makeBoardLayer(-1500),
                 /** 符卡 UI 的根节点，包括符卡名称、计时器等等。 */
-                spellcardFigureLayer: makeBoardLayer(-120),
+                spellcardFigureLayer: makeBoardLayer(-1200),
                 /**
                  * TODOC: danmakuRegList
                  * 这个列表包含所有弹幕的引用，可以利用这个东西来每帧更新所有弹幕，这样弹幕才能攻击玩家。  
@@ -398,10 +400,10 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 _playerRegList,
                 /** @internal */
                 _spellcardRegList,
-                /** 场地宽度的一半 */
+                /** 场地宽度的一半，默认为 200 */
                 get halfWidth() { return halfWidth; },
                 // set width(n: number) { width = n; },
-                /** 场地高度的一半 */
+                /** 场地高度的一半，默认为 240 */
                 get halfHeight() { return halfHeight; },
                 // set height(n: number) { height = n; },
                 // MAYDO: 改变场地尺寸
@@ -815,6 +817,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 console.log("JSTG board:", board);
             }
 
+            // TODO: const boardDestroysObjRegList = makeRegList<Destroyable>({ game });
+
             return board;
         })();// TODO: 粒子效果
         //#endregion board
@@ -1227,8 +1231,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             bossName: "Simple",
             defaultSpellcardFigure: prefabTextures.charFigure.simple.spellcard,
             avatar: prefabTextures.avatar.simple,
-            color1: "#80c2ff",
-            color2: "#bfe9ff",
+            color1: "hsl(209, 100%, 65%)",
+            color2: "hsl(201, 100%, 75%)",
             playerHue: null, shieldHsla: null, bossHpBarHue: null, bossHpBarPhaseLineHue: null,
         }),
         maple: makeJstgCharInfo({
@@ -1236,8 +1240,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             bossName: "Maple Nightfall",
             defaultSpellcardFigure: prefabTextures.charFigure.maple.spellcard,
             avatar: prefabTextures.avatar.maple,
-            color1: "#ffad33",
-            color2: "#ffd931",
+            color1: "hsl(36, 100%, 60%)",
+            color2: "hsl(49, 100%, 60%)",
             playerHue: null, shieldHsla: null, bossHpBarHue: null, bossHpBarPhaseLineHue: null,
         }),
         // TODO: icu, wriggle
@@ -1246,8 +1250,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             bossName: "JSTG Dummy Unknown",
             defaultSpellcardFigure: prefabTextures.charFigure.unknown,
             avatar: prefabTextures.avatar.unknown,
-            color1: "#ff3333",
-            color2: "#ff8080",
+            color1: "hsl(0, 100%, 60%)",
+            color2: "hsl(0, 100%, 70%)",
             playerHue: null, shieldHsla: null, bossHpBarHue: null, bossHpBarPhaseLineHue: null,
         }),
         koke: makeJstgCharInfo({
@@ -1255,8 +1259,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             bossName: "Shimohara Koke",
             defaultSpellcardFigure: prefabTextures.charFigure.kokeTempFigure,
             avatar: prefabTextures.avatar.koke,
-            color1: "#71799e",
-            color2: "#9cc8f0",
+            color1: "hsl(229, 19%, 53%)",
+            color2: "hsl(209, 74%, 78%)",
             playerHue: null, shieldHsla: null, bossHpBarHue: null, bossHpBarPhaseLineHue: null,
         }),
     } as const;

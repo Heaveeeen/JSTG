@@ -209,6 +209,28 @@ export class CommonDanmaku extends AbstractDanmaku {
     getIsCrossCircle(circle: { x: number; y: number; radius: number; }) {
         return (this.x - circle.x) ** 2 + (this.y - circle.y) ** 2 <= (this.hitboxRadius + circle.radius) ** 2;
     }
+    
+    override chargeIn(options: {
+        sound?: "none" | "thse_ch02",
+        /** @default this.sprite.filters */
+        filters?: pixi.Filter | readonly pixi.Filter[] | "none"
+    } = {}) {
+        return super.chargeIn({
+            sound: options?.sound,
+            filters: options.filters ?? this.sprite.filters ?? "none",
+        });
+    }
+
+    override chargeOut(options: {
+        sound?: "none" | "thse_enep02",
+        /** @default this.sprite.filters */
+        filters?: pixi.Filter | readonly pixi.Filter[] | "none"
+    } = {}) {
+        return super.chargeOut({
+            sound: options?.sound,
+            filters: options.filters ?? this.sprite.filters ?? "none",
+        });
+    }
 
     destroy() {
         if (this.sprite.destroyed) { return };

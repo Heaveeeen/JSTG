@@ -1,3 +1,5 @@
+import * as pixi from "pixi";
+import { prefabGraphicEffectsFactory } from "../graphicEffects.js";
 import { Board, Combat, Game } from "../jstg.js";
 import { CoDoGenFn, LoopController, LooperFn, LoopOptions } from "../looper.js";
 import * as utils from "../utils.js";
@@ -290,7 +292,45 @@ export abstract class Entity {
             this.destroy();
         }
     }
-    
+
+    // MAYDO: 给这些方法加个命名空间，effects 啥的，但那样就有不少抽象成本了……
+    /** TODOC: Entity effects */
+    chargeIn(options: {
+        /** @default "thse_ch02" */
+        sound?: "none" | "thse_ch02",
+        /** @default prefabGraphicEffectsFactory.chargeRingWhiteFilter */
+        filters?: pixi.Filter | readonly pixi.Filter[] | "none",
+    } = {}) {
+        if (options.sound === "thse_ch02" || options.sound === undefined) {
+            this.game.prefabSounds.thse.ch02.play();
+        } else {
+            utils.staticAssert<"none">(options.sound);
+        }
+        return prefabGraphicEffectsFactory.chargeIn({
+            game: this.game, combat: this.combat, board: this.board,
+            refPos: this,
+            filters: options.filters === "none" ? null : options.filters ?? prefabGraphicEffectsFactory.chargeRingWhiteFilter,
+        });
+    }
+
+    chargeOut(options: {
+        /** @default "thse_enep02" */
+        sound?: "none" | "thse_enep02"
+        /** @default prefabGraphicEffectsFactory.chargeRingWhiteFilter */
+        filters?: pixi.Filter | readonly pixi.Filter[] | "none",
+    } = {}) {
+        if (options.sound === "thse_enep02" || options.sound === undefined) {
+            this.game.prefabSounds.thse.enep02.play();
+        } else {
+            utils.staticAssert<"none">(options.sound);
+        }
+        return prefabGraphicEffectsFactory.chargeOut({
+            game: this.game, combat: this.combat, board: this.board,
+            refPos: this,
+            filters: options.filters === "none" ? null : options.filters ?? prefabGraphicEffectsFactory.chargeRingWhiteFilter,
+        });
+    }
+
     abstract destroy(): void;
     /**
      * 返回该对象是否被摧毁，已被摧毁的对象不应该继续使用，应该丢弃
@@ -321,7 +361,7 @@ class Wanderer {
     };
 
     // RAND: wander
-
+    // TODO: 自动往玩家脑袋顶上跑，利好直线机跟枪的移动方式
     getMoved({ x, y }: utils.Vec2): utils.Vec2;
     getMoved(x: number, y: number): utils.Vec2;
     getMoved(arg1: utils.Vec2 | number, arg2?: number) {

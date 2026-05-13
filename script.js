@@ -42,7 +42,7 @@ import * as pixi from "pixi";
                 join: "round",
             }
         },
-        zIndex: -200,
+        zIndex: -99999,
     });
 
     /** 自机 */
@@ -267,7 +267,7 @@ import * as pixi from "pixi";
                             ...gun, speed: 0,
                             rotation: deg(rand.float(-100, 100)) * rand.float(0,1) ** 3 + r,
                             fn({ dan }) { dan.loopBoundaryDelete(300); },
-                            loopFn({ dan }) {
+                            loopFn({ dan, loop }) {
                                 dan.speedToA(v, a);
                                 dan.step();
                             },
@@ -275,6 +275,9 @@ import * as pixi from "pixi";
                     }
                 }
             })};
+            boss.chargeIn();
+            yield* Sleep(60);
+            boss.chargeOut();
             const gunLeft = boss.makeGun();
             gunLeft.y -= 25;
             gunLeft.rotation = deg(90 + 40);
@@ -287,7 +290,6 @@ import * as pixi from "pixi";
             foo(gunRight, deg(-20));
             yield* Sleep(80);
             boss.glideTo(boss.wander.getStepd());
-            yield* Sleep(30);
         } },
     });
     const 漫天落雪 = jstg.makeSingleBossSpellOptions({
@@ -534,8 +536,8 @@ import * as pixi from "pixi";
         const battle = board.startSingleBossBattle({
             boss,
             spells: [
-                波力海苔,
-                想起死亡证明,
+                //波力海苔,
+                //想起死亡证明,
                 non1,
                 漫天落雪,
                 //non2, { title: "aaaaaaaa", hp: 50, time: 15 * 60 }, { title: "bbbbbbbb", hp: 50, time: 15 * 60}

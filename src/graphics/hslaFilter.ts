@@ -114,7 +114,7 @@ vec3 hsl2rgb(vec3 hsl) {
 
 void main() {
     vec4 textureRgba = texture(uTexture, vTextureCoord);
-    vec3 textureHsl = rgb2hsl(textureRgba.rgb);
+    vec3 textureHsl = rgb2hsl(textureRgba.rgb / textureRgba.w);
     float th = textureHsl.x;
     float ts = textureHsl.y;
     float tl = textureHsl.z;
@@ -129,7 +129,8 @@ void main() {
         clamp(tl * ul * 2.0, 0.0, 1.0)
     );
     vec3 outRgb = hsl2rgb(outHsl);
-    finalColor = vec4(outRgb, ta * ua);
+    float outA = ta * ua;
+    finalColor = clamp(vec4(outRgb * outA, outA), 0.0, 1.0);
 }`;
 // TODO: gpuProgram
 
