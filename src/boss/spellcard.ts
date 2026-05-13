@@ -188,6 +188,9 @@ export function baseStartSpellcard(spellcardOptions: StartSpellcardOptions) {
                 time: utils.clamp(endClockTs - beginClockTs, 0, maxTime),
             };
         })();
+        if (!isSurvival && endClockTs - beginClockTs >= maxTime) {
+            game.prefabSounds.thse.fault.play();
+        }
         game.debug.godMode.dieCount = 0;
         const resultTexture = game.prefabTextures.spellcardUi.summaryPopup[summary.type];
         summaryPopup = new pixi.Sprite({

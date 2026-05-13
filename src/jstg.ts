@@ -321,6 +321,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 });
                 if (debugOptions.isExposeToGlobal) {
                     console.log("JSTG boss", boss);
+                    (globalThis as any).boss = boss;
                 }
                 return boss;
             };
@@ -442,12 +443,18 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 toLocal(pos: utils.Vec2) {
                     return boardRoot.toLocal(pos);
                 },
+
+                addDestroys(...objs: Destroyable[]) {
+                    for (const obj of objs) { boardDestroysObjRegList.push(obj); }
+                },
+
                 destroy() {
                     if (this.destroyed) { return; }
                     boardRoot.destroy({ children: true });
                     danmakuRegList.destroy();
                     enemyRegList.destroy();
                     for (const pl of _playerRegList.getAlives()) { pl.destroy(); }
+                    boardDestroysObjRegList.destroy();
                 },
                 get destroyed() { return boardRoot.destroyed },
 
@@ -815,12 +822,13 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
             if (debugOptions.isExposeToGlobal) {
                 console.log("JSTG board:", board);
+                (globalThis as any).board = board;
             }
 
-            // TODO: const boardDestroysObjRegList = makeRegList<Destroyable>({ game });
+            const boardDestroysObjRegList = makeRegList<Destroyable>({ game });
 
             return board;
-        })();// TODO: 粒子效果
+        })();
         //#endregion board
 
         //#region boardFrameUi
@@ -914,10 +922,16 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
             combatPauseController,
             /** TODOC: combat.clock */
             get clock() { return combatClockLoop.clock; },
+
+            addDestroys(...objs: Destroyable[]) {
+                for (const obj of objs) { combatDestroysObjRegList.push(obj); }
+            },
+
             destroy() {
                 if (this.destroyed) { return; }
                 boardFrameUi.destroy();
                 board.destroy();
+                combatDestroysObjRegList.destroy();
             },
             get destroyed() { return boardFrameUi.destroyed; },
 
@@ -939,7 +953,10 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
         if (debugOptions.isExposeToGlobal) {
             console.log("JSTG combat:", combat);
+            (globalThis as any).combat = combat;
         }
+
+        const combatDestroysObjRegList = makeRegList<Destroyable>({ game });
 
         return combat;
     }
@@ -1375,6 +1392,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
     if (debugOptions.isExposeToGlobal) {
         console.log("JSTG game:", game);
+        (globalThis as any).game = game;
     }
 
     return game;
@@ -1398,4 +1416,4 @@ export {
     prefabDanmakuHitboxRadius,
     HslaFilter,
     makeSingleBossSpellOptions,
-}
+};

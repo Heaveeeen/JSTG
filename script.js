@@ -21,6 +21,13 @@ import * as pixi from "pixi";
     const { board, rand } = combat;
     const { makeDanmaku, makeFoggyDanmaku, makeLaserBeam, makeGrowingLaserBeam, prefabPlayers, prefabEnemys, forever, coDo, } = board;
 
+    if (game._debugOptions.isExposeToGlobal) {
+        console.log("jstg:", jstg);
+        console.log("pixi:", pixi);
+        globalThis.jstg ??= jstg;
+        globalThis.pixi ??= pixi;
+    }
+
     const txt = new pixi.Text({
         parent: board.root,
         text: 
@@ -60,9 +67,6 @@ import * as pixi from "pixi";
         },
     });
     const se = game.prefabSounds.thse;
-    
-    //@ts-expect-error
-    window.game=game;
 
     // 示例：山城高岭非符
     function scglff() {
