@@ -121,7 +121,6 @@ export const prefabGraphicEffectsFactory = (() => {
         scrap.scale = fs(0);
         scrap.alpha = fa(0);
         let { x: tx, y: ty } = refPos;
-        console.log(scrap);
         const loop = board.forever(loop => {
             if (loop.clock >= dur) {
                 return loop.destroy();
@@ -164,7 +163,6 @@ export const prefabGraphicEffectsFactory = (() => {
         const fa = (t: number) => 0.8 * (1 - t / dur);
         scrap.scale = fs(0);
         scrap.alpha = fa(0);
-        console.log(scrap);
         const loop = board.forever(loop => {
             if (loop.clock >= dur) {
                 return loop.destroy();

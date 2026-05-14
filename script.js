@@ -1,4 +1,6 @@
 // @ ts-check
+//  ↑ 如果想开启 ts 语法检查，请删掉上面那行 @ 后面的那个空格（箭头标出的位置）
+// 就目前来说，不推荐开这个
 
 /// <reference path="./lib/pixi/pixi.d.ts" />
 // ↑ 上面这行用来联动 pixi 的类型注释
@@ -574,11 +576,14 @@ import * as pixi from "pixi";
         }
     }, { order: 0 });
 
+    debugBar.addInput("game.standardFps", { min: 10, max: 120, step: 5 });
+    debugBar.set("game.standardFps", 60);
     game.looper.forever(loop => {
         if (isDown("Escape")) {
             combat.combatPauseController.toggle();
             thse.pause.play();
         }
+        game.standardFps = debugBar.getInt("game.standardFps") || 60;
     }, { order: 0 });
 
 })();

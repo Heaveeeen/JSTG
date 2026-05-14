@@ -81,7 +81,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
     initTimeScale?: number,
 } = {}) {
 
-    const standardFps = gameOptions.standardFps ?? 60;
+    let standardFps = gameOptions.standardFps ?? 60;
 
     const app = new pixi.Application();
 
@@ -1017,8 +1017,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
     app.ticker.add(() => {
         updateGame();
         // 跳帧补偿
-        if (app.ticker.deltaMS > 1.5 * 16.66 && fps < 63) {
-            updateGame();
+        if (app.ticker.deltaMS > 1.5 * 1000 / standardFps && fps < standardFps * 1.05) {
+            updateGame(); // FIXME: 把 standardFps 设为高于 60 的值时，比方说 75 ，可能并不会稳定地带来更高的帧率。这种地方，实在不行就得靠跳帧补偿了。可以做两个模式，一个专门为 75 帧这种略微快放的情况设计啥的……
         }
     });
 
@@ -1303,8 +1303,17 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         StartCombat,
         /** fps 指示器 */
         fpsMonitor,
-        /** @readonly 游戏的标准帧率，默认为 60 。 */
-        standardFps,
+        /**
+         * 游戏的标准帧率，默认为`60`。  
+         * 更改此属性，可以让游戏放慢或加快，且完全不影响游戏逻辑。  
+         * 更改此值会对实际帧率造成不稳定的影响，切勿滥用。  
+         * 如果你想在游戏过程中加快或减慢速度，请考虑使用`game.timeScale`。  
+         * 顺带一提，最低的有效值是`10`。  
+         */
+        get standardFps() { return standardFps; },
+        set standardFps(n: number) {
+            app.ticker.maxFPS = standardFps = n;
+        },
         /**
          * 每帧执行一次给定的回调函数。  
          * @example
@@ -1362,7 +1371,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
          * 在下一帧开始时， timeScale 的值会变为多少？  
          * 若要改变 timeScale ，请更改这个属性。  
          */ // TODO: TEST timeScale
-        timeScaleNextUpdate: 1,
+        timeScaleNextUpdate: timeScale,
         /** 每秒帧数的估算值 */
         get fps() { return fps; },
         /** @generator 等待 timeFrame 帧 */
