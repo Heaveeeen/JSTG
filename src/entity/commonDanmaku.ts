@@ -163,7 +163,7 @@ export class CommonDanmaku extends AbstractDanmaku {
             anchor: 0.5,
             x: this.x, y: this.y, 
             scale: { x: this.sprite.scale.x * 0.5, y: this.sprite.scale.y * 0.5 },
-            rotation: Math.random() * 2 * Math.PI,
+            //rotation: this.combat.rand.float(0, 2 * Math.PI), // RNG-: 雾化消弹特效随机方向，目前来看用不上这个
             filters: this.sprite.filters,
         });
         loop.addDestroys(eraseEffectSprite);
@@ -210,26 +210,8 @@ export class CommonDanmaku extends AbstractDanmaku {
         return (this.x - circle.x) ** 2 + (this.y - circle.y) ** 2 <= (this.hitboxRadius + circle.radius) ** 2;
     }
     
-    override chargeIn(options: {
-        sound?: "none" | "thse_ch02",
-        /** @default this.sprite.filters */
-        filters?: pixi.Filter | readonly pixi.Filter[] | "none"
-    } = {}) {
-        return super.chargeIn({
-            sound: options?.sound,
-            filters: options.filters ?? this.sprite.filters ?? "none",
-        });
-    }
-
-    override chargeOut(options: {
-        sound?: "none" | "thse_enep02",
-        /** @default this.sprite.filters */
-        filters?: pixi.Filter | readonly pixi.Filter[] | "none"
-    } = {}) {
-        return super.chargeOut({
-            sound: options?.sound,
-            filters: options.filters ?? this.sprite.filters ?? "none",
-        });
+    protected override get _effectFilter(): pixi.Filter | readonly pixi.Filter[] | null {
+        return this.sprite.filters;
     }
 
     destroy() {

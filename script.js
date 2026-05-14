@@ -3,7 +3,7 @@
 /// <reference path="./lib/pixi/pixi.d.ts" />
 // ↑ 上面这行用来联动 pixi 的类型注释
 
-import * as jstg from "./src/jstg.ts";
+import * as jstg from "./src/jstg.js";
 import * as pixi from "pixi";
 
 

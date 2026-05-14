@@ -2,7 +2,7 @@ import * as pixi from "pixi";
 import { LoadPixiAsset, LoadPrefabTextures, LoadPrefabTexturesOptions, LoadSvg, PrefabDanmakuNames, DyedTextureColors, makeDyedTextures, makeDyedFrames } from "./textures.js";
 import { KeyName, KeyEnum, makeInput } from "./input.js";
 import { prefabPlayerFactory } from "./player/prefabPlayerFactory.js";
-import { makeRng } from "./random.js";
+import { Rng } from "./random.js";
 import * as utils from './utils.js';
 import { CommonDanmaku, MakeFoggyDanmakuResult, baseMakePrefabDanmaku } from "./entity/commonDanmaku.js";
 import { AbstractDanmaku, EraseDanmakuOptions, prefabDanmakuHitboxRadius } from "./entity/abstractDanmaku.js";
@@ -208,7 +208,10 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
     //#region combat
 
-    async function StartCombat() {
+    async function StartCombat(combatOptions: {
+        /** 随机种子，用于构造 combat.rand */
+        randSeed?: number,
+    } = {}) {
 
         //#region board
         const board = (() => {
@@ -371,6 +374,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
                 playerBulletLayer: makeBoardLayer(-50),
                 /** 自机扔出的灵击圈（默认 Bomb ）所在的图层 */
                 reigekiRingLayer: makeBoardLayer(-100),
+                /** boss 树叶特效所在的图层 */
+                effectLeafLayer: makeBoardLayer(-190),
                 /** boss 蓄力特效所在的图层 */
                 bossChargeRingLayer: makeBoardLayer(-200),
                 /** 所有常规敌人的图层 */
@@ -896,7 +901,7 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
         })();
         //#endregion
 
-        const rand = makeRng();
+        const rand = new Rng({ seed: combatOptions.randSeed ?? null, a: null, c: null, m: null });
 
         const combatPauseController = makePauseController();
 
@@ -1411,7 +1416,7 @@ export {
     Assets,
     KeyEnum,
     Player,
-    makeRng,
+    Rng,
     utils,
     prefabDanmakuHitboxRadius,
     HslaFilter,

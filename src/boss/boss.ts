@@ -68,26 +68,8 @@ export class Boss extends Entity {
 
     getIsInBoundary() { return true; }/** MAYDO: 应该没啥用，Boss.isInBoundary */
 
-    override chargeIn(options: {
-        sound?: "none" | "thse_ch02",
-        /** @default this.shieldFilters */
-        filters?: pixi.Filter | pixi.Filter[] | "none"
-    } = {}) {
-        return super.chargeIn({
-            sound: options?.sound,
-            filters: options.filters ?? this.shieldFilters,
-        });
-    }
-
-    override chargeOut(options: {
-        sound?: "none" | "thse_enep02",
-        /** @default this.shieldFilters */
-        filters?: pixi.Filter | pixi.Filter[] | "none"
-    } = {}) {
-        return super.chargeOut({
-            sound: options?.sound,
-            filters: options.filters ?? this.shieldFilters,
-        });
+    protected override get _effectFilter(): pixi.Filter | readonly pixi.Filter[] | null {
+        return this.shieldFilters;
     }
 
     kill() {

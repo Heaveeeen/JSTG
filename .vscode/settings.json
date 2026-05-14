@@ -11,9 +11,14 @@
             "backgroundColor": "#f07240",
         },
         {
-            "text": "RAND:",
+            "text": "RNG:",
             "color": "#ffffff",
             "backgroundColor": "#52d020",
+        },
+        {
+            "text": "MRAND:",
+            "color": "#ffffff",
+            "backgroundColor": "#69b210",
         },
         {
             "text": "MAYDO:",

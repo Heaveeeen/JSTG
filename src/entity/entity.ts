@@ -294,42 +294,103 @@ export abstract class Entity {
     }
 
     // MAYDO: 给这些方法加个命名空间，effects 啥的，但那样就有不少抽象成本了……
+
+    /** @internal */
+    protected get _effectFilter(): pixi.Filter | readonly pixi.Filter[] | null { return prefabGraphicEffectsFactory.defaultWhiteFilter; }
+
     /** TODOC: Entity effects */
     chargeIn(options: {
         /** @default "thse_ch02" */
         sound?: "none" | "thse_ch02",
-        /** @default prefabGraphicEffectsFactory.defaultWhiteFilter */
+        /**
+         * 默认为`prefabGraphicEffectsFactory.defaultWhiteFilter`。  
+         * 对于一些实体，默认为它们自己的滤镜，例如 boss 会根据其颜色信息采用相应的颜色滤镜。   
+         */
         filters?: pixi.Filter | readonly pixi.Filter[] | "none",
+        /** @default combat.rand.int(4,8) */
+        scrapCount?: number,
     } = {}) {
         if (options.sound === "thse_ch02" || options.sound === undefined) {
             this.game.prefabSounds.thse.ch02.play();
         } else {
             utils.staticAssert<"none">(options.sound);
         }
-        return prefabGraphicEffectsFactory.chargeIn({
+        const chargeIn = prefabGraphicEffectsFactory.chargeIn({
             game: this.game, combat: this.combat, board: this.board,
             refPos: this,
-            filters: options.filters === "none" ? null : options.filters ?? prefabGraphicEffectsFactory.defaultWhiteFilter,
+            filters: options.filters === "none" ? null : options.filters ?? this._effectFilter,
         });
+        const scraps = utils.range(
+            options.scrapCount ?? this.combat.rand.int(4, 8) // RNG: entity.chargeIn 的默认 scrapCount
+        ).map(i => this.scrapIn({ filters: options.filters }));
+        return { chargeIn, scraps };
     }
 
     chargeOut(options: {
         /** @default "thse_enep02" */
         sound?: "none" | "thse_enep02"
-        /** @default prefabGraphicEffectsFactory.defaultWhiteFilter */
+        /**
+         * 默认为`prefabGraphicEffectsFactory.defaultWhiteFilter`。  
+         * 对于一些实体，默认为它们自己的滤镜，例如 boss 会根据其颜色信息采用相应的颜色滤镜。   
+         */
         filters?: pixi.Filter | readonly pixi.Filter[] | "none",
+        /** @default 0 */
+        scrapCount?: number,
     } = {}) {
         if (options.sound === "thse_enep02" || options.sound === undefined) {
             this.game.prefabSounds.thse.enep02.play();
         } else {
             utils.staticAssert<"none">(options.sound);
         }
-        return prefabGraphicEffectsFactory.chargeOut({
+        const chargeOut = prefabGraphicEffectsFactory.chargeOut({
             game: this.game, combat: this.combat, board: this.board,
             refPos: this,
-            filters: options.filters === "none" ? null : options.filters ?? prefabGraphicEffectsFactory.defaultWhiteFilter,
+            filters: options.filters === "none" ? null : options.filters ?? this._effectFilter,
         });
+        const scraps = utils.range(
+            options.scrapCount ?? 0
+        ).map(i => this.scrapOut({ filters: options.filters }));
+        return { chargeOut, scraps };
     }
+
+    scrapIn(options: {
+        /**
+         * 默认为`prefabGraphicEffectsFactory.defaultWhiteFilter`。  
+         * 对于一些实体，默认为它们自己的滤镜，例如 boss 会根据其颜色信息采用相应的颜色滤镜。   
+         */
+        filters?: pixi.Filter | readonly pixi.Filter[] | "none",
+        /** @default "leaf" */
+        texture?: pixi.Texture | "leaf",
+    } = {}) {
+        return prefabGraphicEffectsFactory.scrapIn({
+            game: this.game, combat: this.combat, board: this.board,
+            refPos: this,
+            filters: options.filters === "none" ? null : options.filters ?? this._effectFilter,
+            texture: options.texture ?? "leaf",
+        })
+    }
+
+    scrapOut(options: {
+        /**
+         * 默认为`prefabGraphicEffectsFactory.defaultWhiteFilter`。  
+         * 对于一些实体，默认为它们自己的滤镜，例如 boss 会根据其颜色信息采用相应的颜色滤镜。   
+         */
+        filters?: pixi.Filter | readonly pixi.Filter[] | "none",
+        /** @default "leaf" */
+        texture?: pixi.Texture | "leaf",
+    } = {}) {
+        return prefabGraphicEffectsFactory.scrapOut({
+            game: this.game, combat: this.combat, board: this.board,
+            pos: this,
+            filters: options.filters === "none" ? null : options.filters ?? this._effectFilter,
+            texture: options.texture ?? "leaf",
+        })
+    }
+
+    get leafIn() { return this.scrapIn; }
+    get leafOut() { return this.scrapOut; }
+
+
 
     abstract destroy(): void;
     /**
@@ -360,7 +421,7 @@ class Wanderer {
         halfRange: { x: 90, y: 20 },
     };
 
-    // RAND: wander
+    // RNG: wander
     // TODO: 自动往玩家脑袋顶上跑，利好直线机跟枪的移动方式
     getMoved({ x, y }: utils.Vec2): utils.Vec2;
     getMoved(x: number, y: number): utils.Vec2;

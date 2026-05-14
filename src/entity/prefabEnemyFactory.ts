@@ -28,13 +28,13 @@ export const prefabEnemyFactory = (()=>{
             parent: rootSprite,
             anchor: 0.5,
             texture: game.prefabTextures.enemy.yinYangOrb.innerRing[color],
-            rotation: Math.random() * Math.PI * 2, // RAND: 阴阳玉动画初始相位
+            rotation: combat.rand.float(Math.PI * 2), // RNG: 阴阳玉动画初始相位
         });
         const outerRing = new pixi.Sprite({
             parent: rootSprite,
             anchor: 0.5,
             texture: game.prefabTextures.enemy.yinYangOrb.outerRing[color],
-            rotation: Math.random() * Math.PI * 2, // RAND: 阴阳玉动画初始相位
+            rotation: combat.rand.float(Math.PI * 2), // RNG: 阴阳玉动画初始相位
         });
         const mainOrb = new pixi.Sprite({
             parent: rootSprite,

@@ -227,8 +227,8 @@ export const prefabPlayerFactory = (()=>{
                                                     anchor: 0.5,
                                                     x: bullet.x, y: bullet.y,
                                                     scale: bullet.scale,
-                                                    // RAND: 命中特效随机旋转
-                                                    rotation: bullet.rotation + deg((Math.random() * 60) - 30),
+                                                    // RNG: EFF 命中特效随机旋转
+                                                    rotation: bullet.rotation + deg(combat.rand.float(-30, 30)),
                                                     filters: bullet.filters,
                                                     blendMode: "add",
                                                 });

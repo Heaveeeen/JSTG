@@ -120,6 +120,8 @@ export function range(arg1: number, arg2?: number, arg3?: number) {
     return arr;
 }
 
+export const repeat = (times: number, fn: (i: number) => any) => { for (let i=0; i<times; i++) { fn(i) } };
+
 
 
 /** 如果给定参数不属于 T，让 ts 报错 */
