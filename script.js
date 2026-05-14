@@ -254,8 +254,8 @@ import * as pixi from "pixi";
     //#region 测试 boss
     const non1 = jstg.makeSingleBossSpellOptions({
         time: 30 * 60, hp: 2500,
-        *gen({ boss, spellcard, shield }) { while (true) {
-            const foo = (gun, o) => {let r = gun.aimedGun(boss).rotation; gun.forever(loop => {
+        *gen({ boss, spellcard, shield, loop: genLoop }) { 
+            const runGun = (gun, o) => {let r = gun.aimedGun(boss).rotation; gun.forever(loop => {
                 if (loop.clock >= 80) { gun.destroy(); } else {
                     r += o;
                     gun.speedToA(9, 0.03);
@@ -279,22 +279,25 @@ import * as pixi from "pixi";
                     }
                 }
             })};
-            boss.chargeIn();
+            if (genLoop.clock < 70) { boss.chargeIn(); }
             yield* Sleep(60);
-            boss.chargeOut();
-            const gunLeft = boss.makeGun();
-            gunLeft.y -= 25;
-            gunLeft.rotation = deg(90 + 40);
-            gunLeft.speed = 2;
-            foo(gunLeft, deg(20));
-            const gunRight = boss.makeGun();
-            gunRight.y -= 25;
-            gunRight.rotation = deg(90 - 40);
-            gunRight.speed = 2;
-            foo(gunRight, deg(-20));
-            yield* Sleep(80);
-            boss.glideTo(boss.wander.getStepd());
-        } },
+            if (genLoop.clock < 70) { boss.chargeOut(); }
+            while (true) {
+                const gunLeft = boss.makeGun();
+                gunLeft.y -= 25;
+                gunLeft.rotation = deg(90 + 40);
+                gunLeft.speed = 2;
+                runGun(gunLeft, deg(20));
+                const gunRight = boss.makeGun();
+                gunRight.y -= 25;
+                gunRight.rotation = deg(90 - 40);
+                gunRight.speed = 2;
+                runGun(gunRight, deg(-20));
+                yield* Sleep(80);
+                boss.glideTo(boss.wander.getStepd());
+                yield* Sleep(30);
+            }
+        },
     });
     const 漫天落雪 = jstg.makeSingleBossSpellOptions({
         time: 60 * 60, hp: 4500, title: "冬符「漫天落雪的大口真神原」",

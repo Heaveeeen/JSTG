@@ -77,6 +77,8 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
      * @default "default"
      */
     debugOptions?: "default" | "all" | "none" | GameDebugOptions,
+    /** @default 1 */
+    initTimeScale?: number,
 } = {}) {
 
     const standardFps = gameOptions.standardFps ?? 60;
@@ -152,14 +154,17 @@ export async function LaunchGame(/** 不建议填参数，因为我处理得不�
 
     //#region game
 
-    let timeScale: number = 1;
+    let timeScale: number = gameOptions.initTimeScale ?? 1;
 
     const pauseControllers: (PauseController & { _internalSetCurrentToNext(): void })[] = [];
-    const makePauseController = () => {
+    const makePauseController = (options: {
+        /** @default true */
+        initIsRun?: boolean,
+    } = {}) => {
         const pause = () => controller.isRunNextUpdate = false;
         const resume = () => controller.isRunNextUpdate = true;
         const toggle = () => controller.isRunNextUpdate = !controller.isRunNextUpdate;
-        let isRun = true;
+        let isRun = options.initIsRun ?? true;
         const _internalSetCurrentToNext = () => isRun = controller.isRunNextUpdate;
         const controller = {
             get isRun(): boolean { return isRun },
