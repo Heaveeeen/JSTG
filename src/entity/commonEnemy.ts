@@ -213,7 +213,7 @@ export class CommonEnemy extends AbstractEnemy<CommonDanmaku> {
         }
     }
 
-    drawDebugHitbox(): void {
+    drawDebugHitbox() {
         this.danmaku.hitboxGraphics?.circle(
             0, 0, this.hurtHitboxRadius
         ).fill("hsla(0, 100%, 60%, 0.30)").stroke("#ffaaaa");

@@ -152,6 +152,7 @@ export class LaserBeam extends AbstractDanmaku {
                     -this.hitboxLength, -(this.hitboxHalfWidth + player.hitboxRadius), this.hitboxLength, 2 * (this.hitboxHalfWidth + player.hitboxRadius)
                 ).fill("hsla(180, 100%, 60%, 0.50)").stroke("#ffffff");
                 this.hitboxGraphics.rotation = this.rotation;
+                this.isHitboxGraphicsDirty = false;
             }
             this.visible = showHitbox.isShowDanmakuBoth;
         } else {
@@ -162,9 +163,10 @@ export class LaserBeam extends AbstractDanmaku {
 
     update(player: Player) {
         this.updateLaserPoints();
+        this.updateDebugHitbox(player);
+
         if (!this.isDamageToPlayer) { return; }
 
-        this.updateDebugHitbox(player);
         this.isGrazing = false;
 
         const { x: rx, y: ry } = utils.rotateVec({ x: player.x - this.x, y: player.y - this.y }, this.rotation);

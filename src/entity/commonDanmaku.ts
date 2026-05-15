@@ -40,7 +40,7 @@ export class CommonDanmaku extends AbstractDanmaku {
     }
 
     /** 更新调试用的那个碰撞箱 */
-    updateDebugHitbox(player: Player) {// TODO: 优化这个玩意，现在这玩意太卡了
+    updateDebugHitbox(player: Player) {
         if (!this.isDamageToPlayer) {
             this.clearHitboxGraphics();
         }
@@ -62,6 +62,7 @@ export class CommonDanmaku extends AbstractDanmaku {
                         0, 0, this.hitboxRadius + player.hitboxRadius
                     ).fill("hsla(180, 100%, 60%, 0.50)").stroke("#ffffff");
                 }
+                this.isHitboxGraphicsDirty = false;
             }
             this.visible = showHitbox.isShowDanmakuBoth;
         } else {
